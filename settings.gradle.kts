@@ -2,6 +2,7 @@ rootProject.name = "Sidekick"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
+    includeBuild("build-logic")
     repositories {
         google {
             mavenContent {
@@ -33,3 +34,10 @@ plugins {
 }
 
 include(":composeApp")
+include(":sidekick-plugin-api")
+include(":sidekick-core")
+include(":sidekick-noop")
+include(":sidekick-debug")
+include(":sidekick-preferences-api")
+include(":sidekick-preferences-ksp")
+include(":demo-app")
