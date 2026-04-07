@@ -33,11 +33,10 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
-include(":composeApp")
-include(":sidekick-plugin-api")
-include(":sidekick-core")
-include(":sidekick-noop")
-include(":sidekick-debug")
-include(":sidekick-preferences-api")
-include(":sidekick-preferences-ksp")
+include(":core:plugin-api")
+include(":core:runtime")
+include(":core:debug")
+include(":core:noop")
+include(":plugins:preferences:api")
+include(":plugins:preferences:ksp")
 include(":demo-app")

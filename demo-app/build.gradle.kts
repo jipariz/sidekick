@@ -34,8 +34,8 @@ kotlin {
                 implementation(compose.foundation)
                 implementation(compose.material3)
                 implementation(compose.ui)
-                implementation(projects.sidekickPreferencesApi)
-                implementation(projects.sidekickDebug)
+                implementation(projects.plugins.preferences.api)
+                implementation(projects.core.debug)
             }
         }
         androidMain.dependencies {
@@ -45,21 +45,21 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
-            implementation(projects.sidekickDebug)
+            implementation(projects.core.debug)
         }
         jsMain.dependencies {
-            implementation(projects.sidekickDebug)
+            implementation(projects.core.debug)
         }
         wasmJsMain.dependencies {
-            implementation(projects.sidekickDebug)
+            implementation(projects.core.debug)
         }
     }
 }
 
 dependencies {
-    debugImplementation(projects.sidekickDebug)
-    releaseImplementation(projects.sidekickNoop)
-    add("kspCommonMainMetadata", projects.sidekickPreferencesKsp)
+    debugImplementation(projects.core.debug)
+    releaseImplementation(projects.core.noop)
+    add("kspCommonMainMetadata", projects.plugins.preferences.ksp)
 }
 
 // All Kotlin compilation and KSP tasks must wait for the common metadata KSP pass
