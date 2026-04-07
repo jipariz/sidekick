@@ -27,20 +27,11 @@ import dev.parez.sidekick.SidekickState
 @Composable
 internal fun SidekickMenu(state: SidekickState) {
     Box(modifier = Modifier.fillMaxSize()) {
-        // Scrim
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = Color.Black.copy(alpha = 0.5f),
-            onClick = { state.close() },
-        ) {}
-
         // Bottom sheet panel (75% height)
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxSize(0.75f)
-                .align(Alignment.BottomCenter),
-            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                .fillMaxSize()
         ) {
             Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
                 // Header
