@@ -38,6 +38,9 @@ class SidekickKmpLibraryPlugin : Plugin<Project> {
             iosArm64()
             iosSimulatorArm64()
             jvm()
+            js {
+                browser()
+            }
             @OptIn(ExperimentalWasmDsl::class)
             wasmJs {
                 browser()

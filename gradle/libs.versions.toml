@@ -15,7 +15,7 @@ junit = "4.13.2"
 kotlin = "2.2.21"
 kotlinx-coroutines = "1.10.2"
 ksp = "2.2.21-2.0.5"
-androidx-datastore = "1.1.7"
+androidx-datastore = "1.3.0-alpha07"
 kotlinpoet = "2.2.0"
 
 [libraries]
