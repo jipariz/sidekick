@@ -1,0 +1,53 @@
+CREATE TABLE NetworkCall (
+    id                TEXT    NOT NULL PRIMARY KEY,
+    url               TEXT    NOT NULL,
+    method            TEXT    NOT NULL,
+    requestHeaders    TEXT    NOT NULL,
+    requestBody       TEXT,
+    requestTimestamp  INTEGER NOT NULL,
+    responseCode      INTEGER,
+    responseHeaders   TEXT    NOT NULL DEFAULT '{}',
+    responseBody      TEXT,
+    responseTimestamp INTEGER,
+    error             TEXT,
+    status            TEXT    NOT NULL DEFAULT 'PENDING'
+);
+
+selectAll:
+SELECT * FROM NetworkCall ORDER BY requestTimestamp DESC;
+
+selectById:
+SELECT * FROM NetworkCall WHERE id = ?;
+
+insertCall:
+INSERT INTO NetworkCall(id, url, method, requestHeaders, requestBody, requestTimestamp, status)
+VALUES (?, ?, ?, ?, ?, ?, 'PENDING');
+
+updateResponse:
+UPDATE NetworkCall
+SET responseCode = ?, responseHeaders = ?, responseBody = ?, responseTimestamp = ?, status = 'COMPLETE'
+WHERE id = ?;
+
+updateResponseBody:
+UPDATE NetworkCall
+SET responseBody = ?
+WHERE id = ?;
+
+updateError:
+UPDATE NetworkCall
+SET error = ?, status = 'ERROR'
+WHERE id = ?;
+
+deleteAll:
+DELETE FROM NetworkCall;
+
+deleteOlderThan:
+DELETE FROM NetworkCall WHERE requestTimestamp < ?;
+
+countAll:
+SELECT COUNT(*) FROM NetworkCall;
+
+deleteOldestOverLimit:
+DELETE FROM NetworkCall WHERE id IN (
+    SELECT id FROM NetworkCall ORDER BY requestTimestamp ASC LIMIT ?
+);
