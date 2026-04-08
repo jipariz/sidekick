@@ -10,8 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
-import dev.parez.sidekick.network.ui.NetworkCallDetailScreen
-import dev.parez.sidekick.network.ui.NetworkCallListScreen
+import dev.parez.sidekick.network.ui.NetworkMonitorContent
 import dev.parez.sidekick.plugin.SidekickPlugin
 import kotlinx.coroutines.launch
 
@@ -34,14 +33,12 @@ class NetworkMonitorPlugin(
         var selected by remember { mutableStateOf<NetworkCall?>(null) }
         val scope = rememberCoroutineScope()
 
-        if (selected == null) {
-            NetworkCallListScreen(
-                calls = calls,
-                onSelect = { selected = it },
-                onClear = { scope.launch { store.clear() } },
-            )
-        } else {
-            NetworkCallDetailScreen(call = selected!!, onBack = { selected = null })
-        }
+        NetworkMonitorContent(
+            calls = calls,
+            selected = selected,
+            onSelect = { selected = it },
+            onClear = { scope.launch { store.clear() } },
+            onBack = { selected = null },
+        )
     }
 }
