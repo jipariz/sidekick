@@ -2,10 +2,10 @@ package dev.parez.sidekick.network.ktor
 
 import dev.parez.sidekick.network.NetworkMonitorStore
 import dev.parez.sidekick.network.currentTimeMillis
+import io.ktor.client.call.save
 import io.ktor.client.plugins.api.ClientPlugin
 import io.ktor.client.plugins.api.Send
 import io.ktor.client.plugins.api.createClientPlugin
-import io.ktor.client.plugins.observer.ResponseObserver
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
@@ -27,8 +27,8 @@ public val NetworkMonitorKtor: ClientPlugin<NetworkMonitorKtorConfig> =
         val config = pluginConfig
         val store = config.store
 
-        // ── Request capture ────────────────────────────────────────────────────
         on(Send) { request ->
+            // ── Filter ────────────────────────────────────────────────────────
             if (!config.shouldLog(request)) {
                 request.attributes.put(DisableLogging, Unit)
                 return@on proceed(request)
@@ -37,8 +37,9 @@ public val NetworkMonitorKtor: ClientPlugin<NetworkMonitorKtorConfig> =
             val id = Uuid.random().toString()
             request.attributes.put(CallId, id)
 
-            val headers = request.headers.build().sanitize(config.sanitizedHeaders)
-            val bodyText = runCatching { request.body.toString() }.getOrNull()
+            // ── Request capture ───────────────────────────────────────────────
+            val reqHeaders = request.headers.build().sanitize(config.sanitizedHeaders)
+            val reqBody = runCatching { request.body.toString() }.getOrNull()
                 ?.takeIf { it != "EmptyContent" }
                 ?.truncate(config.maxContentLength)
 
@@ -47,52 +48,48 @@ public val NetworkMonitorKtor: ClientPlugin<NetworkMonitorKtorConfig> =
                     id = id,
                     url = request.url.buildString(),
                     method = request.method.value,
-                    headers = headers,
-                    body = bodyText,
+                    headers = reqHeaders,
+                    body = reqBody,
                     timestamp = currentTimeMillis(),
                 )
             }
 
-            try {
+            // ── Execute request ───────────────────────────────────────────────
+            val call = try {
                 proceed(request)
             } catch (e: Throwable) {
                 runCatching { store.recordError(id, e) }
                 throw e
             }
-        }
 
-        // ── Response capture ───────────────────────────────────────────────────
-        ResponseObserver.install(
-            ResponseObserver.prepare {
-                onResponse { response ->
-                    val id = response.call.attributes.getOrNull(CallId) ?: return@onResponse
+            // ── Response metadata ─────────────────────────────────────────────
+            runCatching {
+                store.recordResponse(
+                    id = id,
+                    code = call.response.status.value,
+                    headers = call.response.headers.sanitize(config.sanitizedHeaders),
+                    timestamp = currentTimeMillis(),
+                )
+            }
 
-                    // Record metadata independently so it is always captured even if
-                    // body reading fails or is skipped.
-                    runCatching {
-                        store.recordResponse(
-                            id = id,
-                            code = response.status.value,
-                            headers = response.headers.sanitize(config.sanitizedHeaders),
-                            timestamp = currentTimeMillis(),
-                        )
-                    }
-
-                    // Only read the body as text for text-based content types; binary
-                    // responses (images, protobuf, etc.) are silently skipped to avoid
-                    // charset mis-decoding and unnecessary memory pressure.
-                    val contentType = response.contentType()
-                    if (contentType == null || contentType.isTextBased()) {
-                        runCatching {
-                            val charset = contentType?.charset() ?: io.ktor.utils.io.charsets.Charsets.UTF_8
-                            val body = response.bodyAsText(charset)
-                            store.recordResponseBody(id = id, body = body.truncate(config.maxContentLength))
-                        }
-                    }
+            // ── Response body ─────────────────────────────────────────────────
+            // Buffer the response in memory via call.save() so we can capture
+            // the body text AND still return intact bytes for downstream use
+            // (e.g. ContentNegotiation deserialisation). Binary responses are
+            // passed through unchanged to avoid unnecessary memory pressure.
+            val contentType = call.response.contentType()
+            if (contentType == null || contentType.isTextBased()) {
+                val savedCall = call.save()
+                runCatching {
+                    val charset = contentType?.charset() ?: io.ktor.utils.io.charsets.Charsets.UTF_8
+                    val body = savedCall.response.bodyAsText(charset)
+                    store.recordResponseBody(id = id, body = body.truncate(config.maxContentLength))
                 }
-            },
-            client,
-        )
+                savedCall
+            } else {
+                call
+            }
+        }
     }
 
 private fun Headers.sanitize(sanitized: List<SanitizedHeader>): Map<String, String> =

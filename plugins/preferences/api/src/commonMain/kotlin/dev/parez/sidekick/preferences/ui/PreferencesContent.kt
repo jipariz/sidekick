@@ -5,11 +5,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,6 +28,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ToggleOff
 import androidx.compose.material.icons.filled.ToggleOn
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -47,6 +51,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.parez.sidekick.preferences.BooleanPref
 import dev.parez.sidekick.preferences.DoublePref
+import dev.parez.sidekick.preferences.EnumPref
 import dev.parez.sidekick.preferences.FloatPref
 import dev.parez.sidekick.preferences.IntPref
 import dev.parez.sidekick.preferences.LongPref
@@ -245,6 +250,35 @@ private fun CompactPreferenceItem(
             }
         }
 
+        is EnumPref -> {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TypeBadge(def)
+                    Text(def.label, style = MaterialTheme.typography.titleSmall)
+                }
+                if (def.description.isNotEmpty()) {
+                    Text(
+                        def.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                EnumEditor(
+                    options = def.options,
+                    currentValue = (value as? Enum<*>)?.name ?: value.toString(),
+                    onChange = onChange,
+                )
+            }
+        }
+
         else -> {
             Row(
                 modifier = Modifier
@@ -379,6 +413,11 @@ private fun PreferenceCardEditor(
         is LongPref   -> NumberEditor(value = value.toString(), onSave = { it.toLongOrNull()?.let(onChange) })
         is FloatPref  -> NumberEditor(value = value.toString(), onSave = { it.toFloatOrNull()?.let(onChange) })
         is DoublePref -> NumberEditor(value = value.toString(), onSave = { it.toDoubleOrNull()?.let(onChange) })
+        is EnumPref -> EnumEditor(
+            options = def.options,
+            currentValue = (value as? Enum<*>)?.name ?: value.toString(),
+            onChange = onChange,
+        )
         else          -> ReadOnlyEditor(value = value.toString())
     }
 }
@@ -448,6 +487,28 @@ private fun ReadOnlyEditor(value: String) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun EnumEditor(options: List<String>, currentValue: String, onChange: (Any) -> Unit) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        options.forEach { option ->
+            FilterChip(
+                selected = currentValue == option,
+                onClick = { onChange(option) },
+                label = {
+                    Text(
+                        text = option.lowercase().replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                },
+            )
+        }
+    }
+}
+
 // ── Type badge ────────────────────────────────────────────────────────────────
 
 @Composable
@@ -459,6 +520,7 @@ private fun TypeBadge(def: PreferenceDefinition<*>, modifier: Modifier = Modifie
         is LongPref    -> Triple(MaterialTheme.colorScheme.tertiaryContainer,  MaterialTheme.colorScheme.onTertiaryContainer,  "LONG")
         is FloatPref   -> Triple(MaterialTheme.colorScheme.tertiaryContainer,  MaterialTheme.colorScheme.onTertiaryContainer,  "FLOAT")
         is DoublePref  -> Triple(MaterialTheme.colorScheme.tertiaryContainer,  MaterialTheme.colorScheme.onTertiaryContainer,  "DOUBLE")
+        is EnumPref    -> Triple(MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.onTertiaryContainer, "ENUM")
         else           -> Triple(MaterialTheme.colorScheme.surfaceVariant,     MaterialTheme.colorScheme.onSurfaceVariant,     "VAL")
     }
     Surface(color = bg, shape = MaterialTheme.shapes.extraSmall, modifier = modifier) {

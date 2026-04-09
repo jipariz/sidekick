@@ -4,6 +4,7 @@ import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.KSPLogger
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessor
+import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.validate
@@ -61,11 +62,28 @@ class SidekickPreferencesProcessor(
                     it.name?.asString() == "defaultValue"
                 }?.value as? String ?: ""
 
-                val typeName = prop.type.resolve().declaration.simpleName.asString()
+                val resolvedType = prop.type.resolve()
+                val typeDecl = resolvedType.declaration
+                val typeName = typeDecl.simpleName.asString()
+                val qualifiedName = typeDecl.qualifiedName?.asString()
+
+                val isEnum = typeDecl is KSClassDeclaration &&
+                    typeDecl.classKind == ClassKind.ENUM_CLASS
+
+                val enumValues: List<String> = if (isEnum) {
+                    (typeDecl as KSClassDeclaration).declarations
+                        .filterIsInstance<KSClassDeclaration>()
+                        .filter { it.classKind == ClassKind.ENUM_ENTRY }
+                        .map { it.simpleName.asString() }
+                        .toList()
+                } else emptyList()
 
                 PreferenceProperty(
                     name = prop.simpleName.asString(),
                     type = typeName,
+                    qualifiedType = qualifiedName,
+                    isEnum = isEnum,
+                    enumValues = enumValues,
                     defaultValue = defaultValue,
                     label = label,
                     description = description,

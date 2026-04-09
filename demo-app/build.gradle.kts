@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlinxSerialization)
 }
 
 kotlin {
@@ -34,10 +35,16 @@ kotlin {
                 implementation(compose.foundation)
                 implementation(compose.material3)
                 implementation(compose.ui)
+                implementation(compose.materialIconsExtended)
                 implementation(projects.plugins.preferences.api)
                 implementation(projects.plugins.networkMonitor.plugin)
                 implementation(projects.plugins.networkMonitor.ktor)
                 implementation(libs.ktor.client.core)
+                implementation(libs.kotlinx.serialization.json)
+                implementation(libs.ktor.client.contentNegotiation)
+                implementation(libs.ktor.serialization.kotlinxJson)
+                implementation(libs.coil.compose)
+                implementation(libs.coil.network.ktor)
                 implementation(projects.core.runtime)
             }
         }
@@ -69,20 +76,24 @@ dependencies {
     add("kspCommonMainMetadata", projects.plugins.preferences.ksp)
 }
 
-// All Kotlin compilation and KSP tasks must wait for the common metadata KSP pass
-tasks.matching { task ->
-    task.name != "kspCommonMainKotlinMetadata" &&
-        (task.name.startsWith("compile") && task.name.contains("Kotlin") ||
-            task.name.startsWith("ksp"))
-}.configureEach {
-    dependsOn("kspCommonMainKotlinMetadata")
+// All Kotlin compilation and KSP tasks must wait for the common metadata KSP pass.
+// Uses configureEach (lazy) instead of matching + configureEach to stay compatible
+// with Gradle's configuration cache.
+tasks.configureEach {
+    if (name != "kspCommonMainKotlinMetadata" &&
+        ((name.startsWith("compile") && name.contains("Kotlin")) || name.startsWith("ksp"))
+    ) {
+        dependsOn("kspCommonMainKotlinMetadata")
+    }
 }
 // The KSP common-main task's outputs are declared as a source-set srcDir, which the
 // Gradle build cache doesn't restore reliably.  Disable caching and always re-check.
-tasks.matching { it.name == "kspCommonMainKotlinMetadata" }.configureEach {
-    outputs.cacheIf { false }
-    val outDir = layout.buildDirectory.dir("generated/ksp/metadata/commonMain/kotlin")
-    outputs.upToDateWhen { outDir.get().asFile.exists() }
+tasks.configureEach {
+    if (name == "kspCommonMainKotlinMetadata") {
+        outputs.cacheIf { false }
+        val outDir = layout.buildDirectory.dir("generated/ksp/metadata/commonMain/kotlin")
+        outputs.upToDateWhen { outDir.get().asFile.exists() }
+    }
 }
 
 android {

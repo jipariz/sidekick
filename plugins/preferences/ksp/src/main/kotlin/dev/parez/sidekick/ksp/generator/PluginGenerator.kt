@@ -37,8 +37,16 @@ class PluginGenerator(
             add("listOf(\n")
             indent()
             for (prop in properties) {
-                val prefClass = ClassName("dev.parez.sidekick.preferences", prop.definitionClassName())
-                add("%T(%S, %S, %S, ${prop.defaultLiteral()}),\n", prefClass, prop.name, prop.label, prop.description)
+                if (prop.isEnum) {
+                    val enumPrefClass = ClassName("dev.parez.sidekick.preferences", "EnumPref")
+                    val optionsList = prop.enumValues.joinToString(", ") { "\"$it\"" }
+                    add("%T(%S, %S, %S, %S, listOf($optionsList)),\n",
+                        enumPrefClass, prop.name, prop.label, prop.description, prop.defaultValue)
+                } else {
+                    val prefClass = ClassName("dev.parez.sidekick.preferences", prop.definitionClassName())
+                    add("%T(%S, %S, %S, ${prop.defaultLiteral()}),\n",
+                        prefClass, prop.name, prop.label, prop.description)
+                }
             }
             unindent()
             add(")")
@@ -64,7 +72,15 @@ class PluginGenerator(
             indent()
             for (prop in properties) {
                 val setterName = "set${prop.name.replaceFirstChar { it.uppercaseChar() }}"
-                add("%S -> accessor.%N(value as %T)\n", prop.name, setterName, prop.kotlinTypeName())
+                if (prop.isEnum) {
+                    val qualifiedType = prop.qualifiedType ?: prop.type
+                    val enumType = ClassName.bestGuess(qualifiedType)
+                    add("%S -> accessor.%N(%T.valueOf(value as %T))\n",
+                        prop.name, setterName, enumType, String::class.asClassName())
+                } else {
+                    add("%S -> accessor.%N(value as %T)\n",
+                        prop.name, setterName, prop.kotlinTypeName())
+                }
             }
             unindent()
             add("}\n")
@@ -119,7 +135,6 @@ private fun PreferenceProperty.kotlinTypeName(): ClassName = when (type) {
     else      -> String::class.asClassName()
 }
 
-// Returns a KotlinPoet literal string (NOT a %S-style format—embedded directly in CodeBlock)
 private fun PreferenceProperty.defaultLiteral(): String = when (type) {
     "Boolean" -> defaultValue.toBooleanStrictOrNull()?.toString() ?: "false"
     "Int"     -> defaultValue.toIntOrNull()?.toString() ?: "0"

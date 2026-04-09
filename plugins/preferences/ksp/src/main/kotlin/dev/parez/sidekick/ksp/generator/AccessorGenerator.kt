@@ -48,34 +48,87 @@ class AccessorGenerator(
                     .build()
             )
 
-        for (prop in properties) {
-            val kotlinType = prop.kotlinTypeName()
-            val stateFlowType = stateFlowClass.parameterizedBy(kotlinType)
-
+        // Add coroutine scope only if there are enum properties
+        val hasEnumProps = properties.any { it.isEnum }
+        if (hasEnumProps) {
+            val coroutineScopeClass = ClassName("kotlinx.coroutines", "CoroutineScope")
+            val dispatchersClass = ClassName("kotlinx.coroutines", "Dispatchers")
+            val supervisorJobClass = ClassName("kotlinx.coroutines", "SupervisorJob")
             classBuilder.addProperty(
-                prop.buildObserveProperty(stateFlowType)
-            )
-
-            val setterName = "set${prop.name.replaceFirstChar { it.uppercaseChar() }}"
-            classBuilder.addFunction(
-                FunSpec.builder(setterName)
-                    .addModifiers(KModifier.SUSPEND)
-                    .addParameter("value", kotlinType)
-                    .addStatement("_store.set(%S, value)", prop.name)
+                PropertySpec.builder("_scope", coroutineScopeClass)
+                    .addModifiers(KModifier.PRIVATE)
+                    .initializer("%T(%T.Default + %T())", coroutineScopeClass, dispatchersClass, supervisorJobClass)
                     .build()
             )
         }
 
-        val fileSpec = FileSpec.builder(packageName, accessorName)
+        for (prop in properties) {
+            if (prop.isEnum) {
+                // Enum: StateFlow<EnumType> mapped from string store
+                val qualifiedType = prop.qualifiedType ?: prop.type
+                val enumType = ClassName.bestGuess(qualifiedType)
+                val stateFlowType = stateFlowClass.parameterizedBy(enumType)
+                val sharingStartedClass = ClassName("kotlinx.coroutines.flow", "SharingStarted")
+
+                classBuilder.addProperty(
+                    PropertySpec.builder(prop.name, stateFlowType)
+                        .initializer(
+                            "_store.observe(%S, %S)\n" +
+                                "    .map { name -> runCatching { %T.valueOf(name) }.getOrElse { %T.%N } }\n" +
+                                "    .stateIn(_scope, %T.Eagerly, %T.%N)",
+                            prop.name,
+                            prop.defaultValue,
+                            enumType,
+                            enumType,
+                            prop.defaultValue,
+                            sharingStartedClass,
+                            enumType,
+                            prop.defaultValue,
+                        )
+                        .build()
+                )
+
+                val setterName = "set${prop.name.replaceFirstChar { it.uppercaseChar() }}"
+                classBuilder.addFunction(
+                    FunSpec.builder(setterName)
+                        .addModifiers(KModifier.SUSPEND)
+                        .addParameter("value", enumType)
+                        .addStatement("_store.set(%S, value.name)", prop.name)
+                        .build()
+                )
+            } else {
+                // Primitive / string
+                val kotlinType = prop.kotlinTypeName()
+                val stateFlowType = stateFlowClass.parameterizedBy(kotlinType)
+
+                classBuilder.addProperty(prop.buildObserveProperty(stateFlowType))
+
+                val setterName = "set${prop.name.replaceFirstChar { it.uppercaseChar() }}"
+                classBuilder.addFunction(
+                    FunSpec.builder(setterName)
+                        .addModifiers(KModifier.SUSPEND)
+                        .addParameter("value", kotlinType)
+                        .addStatement("_store.set(%S, value)", prop.name)
+                        .build()
+                )
+            }
+        }
+
+        val fileSpecBuilder = FileSpec.builder(packageName, accessorName)
             .addImport("dev.parez.sidekick.preferences", "createPreferenceStore")
             .addType(classBuilder.build())
-            .build()
+
+        if (hasEnumProps) {
+            fileSpecBuilder
+                .addImport("kotlinx.coroutines.flow", "map")
+                .addImport("kotlinx.coroutines.flow", "stateIn")
+        }
 
         codeGenerator.createNewFile(
             Dependencies(false),
             packageName,
             accessorName,
-        ).bufferedWriter().use { fileSpec.writeTo(it) }
+        ).bufferedWriter().use { fileSpecBuilder.build().writeTo(it) }
     }
 }
 
@@ -91,7 +144,6 @@ private fun PreferenceProperty.kotlinTypeName(): ClassName = when (type) {
 private fun PreferenceProperty.buildObserveProperty(
     stateFlowType: com.squareup.kotlinpoet.TypeName,
 ): PropertySpec {
-    // Use KotlinPoet %S for String (adds quotes), %L for numeric/Boolean literals
     return when (type) {
         "Boolean" -> PropertySpec.builder(name, stateFlowType)
             .initializer("_store.observe(%S, %L)", name, defaultValue.toBooleanStrictOrNull() ?: false)

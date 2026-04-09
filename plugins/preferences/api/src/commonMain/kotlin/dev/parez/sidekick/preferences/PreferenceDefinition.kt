@@ -24,3 +24,16 @@ class FloatPref(key: String, label: String, description: String, defaultValue: F
 
 class DoublePref(key: String, label: String, description: String, defaultValue: Double) :
     PreferenceDefinition<Double>(key, label, description, defaultValue)
+
+/**
+ * A preference that can only take one of a fixed set of string values (enum entry names).
+ * The UI renders each option as a selectable chip.
+ * The stored value and [defaultValue] are the enum entry name strings (e.g. "FIRE").
+ */
+class EnumPref(
+    key: String,
+    label: String,
+    description: String,
+    defaultValue: String,
+    val options: List<String>,
+) : PreferenceDefinition<String>(key, label, description, defaultValue)
