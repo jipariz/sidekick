@@ -35,10 +35,10 @@ plugins {
 
 include(":core:plugin-api")
 include(":core:runtime")
-include(":core:debug")
 include(":core:noop")
 include(":plugins:preferences:api")
 include(":plugins:preferences:ksp")
 include(":plugins:network-monitor:api")
+include(":plugins:network-monitor:plugin")
 include(":plugins:network-monitor:ktor")
 include(":demo-app")

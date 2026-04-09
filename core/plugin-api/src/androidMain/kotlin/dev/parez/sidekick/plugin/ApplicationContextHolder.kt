@@ -1,4 +1,4 @@
-package dev.parez.sidekick.preferences
+package dev.parez.sidekick.plugin
 
 import android.content.Context
 

@@ -8,6 +8,7 @@ import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.plugins.observer.ResponseObserver
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.charset
 import io.ktor.http.contentType
@@ -65,6 +66,9 @@ public val NetworkMonitorKtor: ClientPlugin<NetworkMonitorKtorConfig> =
             ResponseObserver.prepare {
                 onResponse { response ->
                     val id = response.call.attributes.getOrNull(CallId) ?: return@onResponse
+
+                    // Record metadata independently so it is always captured even if
+                    // body reading fails or is skipped.
                     runCatching {
                         store.recordResponse(
                             id = id,
@@ -72,8 +76,18 @@ public val NetworkMonitorKtor: ClientPlugin<NetworkMonitorKtorConfig> =
                             headers = response.headers.sanitize(config.sanitizedHeaders),
                             timestamp = currentTimeMillis(),
                         )
-                        val body = response.bodyAsText(response.contentType()?.charset() ?: io.ktor.utils.io.charsets.Charsets.UTF_8)
-                        store.recordResponseBody(id = id, body = body.truncate(config.maxContentLength))
+                    }
+
+                    // Only read the body as text for text-based content types; binary
+                    // responses (images, protobuf, etc.) are silently skipped to avoid
+                    // charset mis-decoding and unnecessary memory pressure.
+                    val contentType = response.contentType()
+                    if (contentType == null || contentType.isTextBased()) {
+                        runCatching {
+                            val charset = contentType?.charset() ?: io.ktor.utils.io.charsets.Charsets.UTF_8
+                            val body = response.bodyAsText(charset)
+                            store.recordResponseBody(id = id, body = body.truncate(config.maxContentLength))
+                        }
                     }
                 }
             },
@@ -88,3 +102,16 @@ private fun Headers.sanitize(sanitized: List<SanitizedHeader>): Map<String, Stri
     }
 
 private fun String.truncate(max: Int) = if (length > max) take(max) + "…" else this
+
+/**
+ * Returns true if this content type carries human-readable text that can be safely
+ * decoded as a string. Binary types (images, audio, protobuf, etc.) return false.
+ */
+private fun ContentType.isTextBased(): Boolean =
+    contentType == "text" ||
+        (contentType == "application" && contentSubtype in TEXT_APPLICATION_SUBTYPES)
+
+private val TEXT_APPLICATION_SUBTYPES = setOf(
+    "json", "xml", "x-www-form-urlencoded",
+    "graphql", "ld+json", "x-ndjson", "x-yaml", "yaml",
+)

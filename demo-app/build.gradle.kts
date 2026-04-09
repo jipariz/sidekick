@@ -35,10 +35,10 @@ kotlin {
                 implementation(compose.material3)
                 implementation(compose.ui)
                 implementation(projects.plugins.preferences.api)
-                implementation(projects.plugins.networkMonitor.api)
+                implementation(projects.plugins.networkMonitor.plugin)
                 implementation(projects.plugins.networkMonitor.ktor)
                 implementation(libs.ktor.client.core)
-                implementation(projects.core.debug)
+                implementation(projects.core.runtime)
             }
         }
         androidMain.dependencies {
@@ -49,25 +49,22 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
-            implementation(projects.core.debug)
             implementation(libs.ktor.client.cio)
         }
         jsMain.dependencies {
-            implementation(projects.core.debug)
             implementation(libs.ktor.client.js)
             implementation(npm("sql.js", "1.10.3"))
             implementation(npm("@cashapp/sqldelight-sqljs-worker", "2.1.0"))
             implementation(devNpm("copy-webpack-plugin", "9.1.0"))
         }
         wasmJsMain.dependencies {
-            implementation(projects.core.debug)
             implementation(libs.ktor.client.js)
         }
     }
 }
 
 dependencies {
-    debugImplementation(projects.core.debug)
+    debugImplementation(projects.core.runtime)
     releaseImplementation(projects.core.noop)
     add("kspCommonMainMetadata", projects.plugins.preferences.ksp)
 }

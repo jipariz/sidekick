@@ -6,14 +6,14 @@ plugins {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            api(projects.core.pluginApi)
             implementation(libs.kotlinx.coroutinesCore)
             implementation(libs.sqldelight.coroutines)
             implementation(libs.sqldelight.asyncExtensions)
             implementation(libs.sqldelight.primitiveAdapters)
-            implementation(compose.materialIconsExtended)
         }
         androidMain.dependencies {
+            // ApplicationContextHolder lives in core:plugin-api androidMain
+            implementation(projects.core.pluginApi)
             implementation(libs.sqldelight.driver.android)
         }
         iosMain.dependencies {

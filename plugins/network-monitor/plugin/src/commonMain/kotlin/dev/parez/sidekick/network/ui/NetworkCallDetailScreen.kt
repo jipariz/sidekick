@@ -371,7 +371,6 @@ private fun CopyableCodeBlock(text: String) {
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column {
-            // Copy button header
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
