@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -39,9 +38,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
@@ -50,42 +46,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import dev.parez.sidekick.demo.PokemonListEntry
-import dev.parez.sidekick.demo.PokemonRepository
 import dev.parez.sidekick.demo.toDisplayName
-
-private const val PAGE_SIZE = 20
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PokemonListScreen(
-    repository: PokemonRepository,
     columns: Int,
     showNumbers: Boolean,
     onSelect: (PokemonListEntry) -> Unit,
+    viewModel: PokemonListViewModel = koinViewModel(),
 ) {
-    val items by repository.observePokemonList().collectAsState(emptyList())
-    var isLoading by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var query by remember { mutableStateOf("") }
-
-    val filtered = remember(items, query) {
-        if (query.isBlank()) items
-        else items.filter { it.name.contains(query, ignoreCase = true) }
-    }
-
-    suspend fun loadNextPage() {
-        if (isLoading) return
-        isLoading = true
-        error = null
-        try {
-            runCatching { repository.fetchNextPage(PAGE_SIZE) }
-                .onFailure { error = it.message ?: "Unknown error" }
-        } finally {
-            isLoading = false
-        }
-    }
-
-    LaunchedEffect(Unit) { loadNextPage() }
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
@@ -98,87 +70,107 @@ fun PokemonListScreen(
             )
         },
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-        ) {
-            // ── Search bar ────────────────────────────────────────────────────
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = {
-                    Text(
-                        "Search Pokémon…",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                singleLine = true,
-                shape = MaterialTheme.shapes.extraLarge,
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                ),
+        when (val state = uiState) {
+            is ListUiState.Loading -> LoadingState(Modifier.padding(padding))
+            is ListUiState.Error -> ErrorState(
+                message = state.message,
+                onRetry = viewModel::onRetry,
+                modifier = Modifier.padding(padding),
             )
+            is ListUiState.Content -> ContentState(
+                state = state,
+                columns = columns,
+                showNumbers = showNumbers,
+                onSelect = onSelect,
+                onQueryChanged = viewModel::onSearchQueryChanged,
+                onLoadMore = viewModel::loadNextPage,
+                onRetry = viewModel::onRetry,
+                modifier = Modifier.padding(padding),
+            )
+        }
+    }
+}
 
-            // ── Grid ──────────────────────────────────────────────────────────
-            when {
-                error != null && items.isEmpty() -> ErrorState(
-                    message = error!!,
-                    onRetry = { error = null },
+@Composable
+private fun ContentState(
+    state: ListUiState.Content,
+    columns: Int,
+    showNumbers: Boolean,
+    onSelect: (PokemonListEntry) -> Unit,
+    onQueryChanged: (String) -> Unit,
+    onLoadMore: () -> Unit,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxSize()) {
+        // ── Search bar ────────────────────────────────────────────────────
+        OutlinedTextField(
+            value = state.query,
+            onValueChange = onQueryChanged,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            placeholder = {
+                Text(
+                    "Search Pokémon…",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                items.isEmpty() && isLoading -> LoadingState()
-                else -> LazyVerticalGrid(
-                    columns = GridCells.Fixed(columns.coerceIn(1, 3)),
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    items(filtered, key = { it.id }) { entry ->
-                        PokemonCard(
-                            entry = entry,
-                            showNumber = showNumbers,
-                            onClick = { onSelect(entry) },
-                        )
-                    }
+            },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            singleLine = true,
+            shape = MaterialTheme.shapes.extraLarge,
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+            ),
+        )
 
-                    // Footer: load-more / spinner / end-of-list
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            when {
-                                isLoading -> CircularProgressIndicator(modifier = Modifier.size(32.dp))
-                                error != null -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(
-                                        error!!,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.error,
-                                    )
-                                    Spacer(Modifier.height(8.dp))
-                                    Button(onClick = { error = null }) {
-                                        Text("Retry")
-                                    }
-                                }
-                                repository.hasMore && query.isBlank() -> Button(onClick = {}) {
-                                    LaunchedEffect(Unit) { loadNextPage() }
-                                    Text("Load more")
-                                }
-                                !repository.hasMore -> Text(
-                                    "All ${items.size} Pokémon loaded",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+        // ── Grid ──────────────────────────────────────────────────────────
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(columns.coerceIn(1, 3)),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            items(state.filteredItems, key = { it.id }) { entry ->
+                PokemonCard(
+                    entry = entry,
+                    showNumber = showNumbers,
+                    onClick = { onSelect(entry) },
+                )
+            }
+
+            // Footer: load-more / spinner / end-of-list
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    when {
+                        state.isLoadingMore -> CircularProgressIndicator(modifier = Modifier.size(32.dp))
+                        state.error != null -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                state.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Button(onClick = onRetry) {
+                                Text("Retry")
                             }
                         }
+                        state.hasMore && state.query.isBlank() -> Button(onClick = {}) {
+                            LaunchedEffect(Unit) { onLoadMore() }
+                            Text("Load more")
+                        }
+                        !state.hasMore -> Text(
+                            "All ${state.items.size} Pokémon loaded",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
             }
@@ -235,15 +227,15 @@ private fun PokemonCard(
 }
 
 @Composable
-private fun LoadingState() {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+private fun LoadingState(modifier: Modifier = Modifier) {
+    Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         CircularProgressIndicator()
     }
 }
 
 @Composable
-private fun ErrorState(message: String, onRetry: () -> Unit) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+private fun ErrorState(message: String, onRetry: () -> Unit, modifier: Modifier = Modifier) {
+    Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),

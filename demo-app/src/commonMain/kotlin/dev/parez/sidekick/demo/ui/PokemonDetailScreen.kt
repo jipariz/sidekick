@@ -30,12 +30,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,26 +42,21 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import dev.parez.sidekick.demo.PokemonDetail
-import dev.parez.sidekick.demo.PokemonRepository
 import dev.parez.sidekick.demo.artworkUrlFor
 import dev.parez.sidekick.demo.statDisplayName
 import dev.parez.sidekick.demo.toDisplayName
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PokemonDetailScreen(
     id: Int,
     name: String,
-    repository: PokemonRepository,
     onBack: () -> Unit,
+    viewModel: PokemonDetailViewModel = koinViewModel { parametersOf(id) },
 ) {
-    val detail by repository.observeDetail(id).collectAsState(null)
-    var error by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(id) {
-        runCatching { repository.fetchDetail(id) }
-            .onFailure { error = it.message ?: "Unknown error" }
-    }
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
@@ -97,25 +88,28 @@ fun PokemonDetailScreen(
             )
         },
     ) { padding ->
-        when {
-            error != null -> Box(
-                Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    error!!,
-                    color = MaterialTheme.colorScheme.error,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(32.dp),
-                )
-            }
-            detail == null -> Box(
+        when (val state = uiState) {
+            is DetailUiState.Loading -> Box(
                 Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator()
             }
-            else -> DetailContent(detail = detail!!, modifier = Modifier.padding(padding))
+            is DetailUiState.Error -> Box(
+                Modifier.fillMaxSize().padding(padding),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    state.message,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(32.dp),
+                )
+            }
+            is DetailUiState.Content -> DetailContent(
+                detail = state.detail,
+                modifier = Modifier.padding(padding),
+            )
         }
     }
 }
