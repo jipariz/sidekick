@@ -41,6 +41,7 @@ class PokemonListViewModel(
         isLoadingMore,
         error,
     ) { items, query, loading, err ->
+        println("[ListVM] combine: items=${items.size}, query=$query, loading=$loading, err=$err")
         if (items.isEmpty() && loading && err == null) {
             ListUiState.Loading
         } else if (items.isEmpty() && err != null) {
@@ -70,11 +71,17 @@ class PokemonListViewModel(
     fun loadNextPage() {
         if (isLoadingMore.value) return
         viewModelScope.launch {
+            println("[ListVM] loadNextPage: starting")
             isLoadingMore.value = true
             error.value = null
             runCatching { repository.fetchNextPage(PAGE_SIZE) }
-                .onFailure { error.value = it.message ?: "Unknown error" }
+                .onSuccess { println("[ListVM] loadNextPage: success") }
+                .onFailure {
+                    println("[ListVM] loadNextPage: error=${it.message}")
+                    error.value = it.message ?: "Unknown error"
+                }
             isLoadingMore.value = false
+            println("[ListVM] loadNextPage: done, isLoadingMore=false")
         }
     }
 
