@@ -37,8 +37,8 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -63,27 +63,22 @@ fun PokemonListScreen(
     showNumbers: Boolean,
     onSelect: (PokemonListEntry) -> Unit,
 ) {
-    val items = remember { mutableStateListOf<PokemonListEntry>() }
+    val items by repository.observePokemonList().collectAsState(emptyList())
     var isLoading by remember { mutableStateOf(false) }
-    var hasMore by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var query by remember { mutableStateOf("") }
 
-    val filtered = remember(items.toList(), query) {
-        if (query.isBlank()) items.toList()
+    val filtered = remember(items, query) {
+        if (query.isBlank()) items
         else items.filter { it.name.contains(query, ignoreCase = true) }
     }
 
     suspend fun loadNextPage() {
-        if (isLoading || !hasMore) return
+        if (isLoading) return
         isLoading = true
         error = null
         try {
-            runCatching { repository.getListPage(offset = items.size, limit = PAGE_SIZE) }
-                .onSuccess { response ->
-                    items.addAll(response.results)
-                    hasMore = response.next != null
-                }
+            runCatching { repository.fetchNextPage(PAGE_SIZE) }
                 .onFailure { error = it.message ?: "Unknown error" }
         } finally {
             isLoading = false
@@ -134,7 +129,7 @@ fun PokemonListScreen(
             when {
                 error != null && items.isEmpty() -> ErrorState(
                     message = error!!,
-                    onRetry = { error = null; hasMore = true },
+                    onRetry = { error = null },
                 )
                 items.isEmpty() && isLoading -> LoadingState()
                 else -> LazyVerticalGrid(
@@ -169,15 +164,15 @@ fun PokemonListScreen(
                                         color = MaterialTheme.colorScheme.error,
                                     )
                                     Spacer(Modifier.height(8.dp))
-                                    Button(onClick = { error = null; hasMore = true }) {
+                                    Button(onClick = { error = null }) {
                                         Text("Retry")
                                     }
                                 }
-                                hasMore && query.isBlank() -> Button(onClick = {}) {
+                                repository.hasMore && query.isBlank() -> Button(onClick = {}) {
                                     LaunchedEffect(Unit) { loadNextPage() }
                                     Text("Load more")
                                 }
-                                !hasMore -> Text(
+                                !repository.hasMore -> Text(
                                     "All ${items.size} Pokémon loaded",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,

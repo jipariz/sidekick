@@ -3,14 +3,13 @@ package dev.parez.sidekick.demo.db
 import androidx.room3.Entity
 import androidx.room3.PrimaryKey
 
-@Entity(tableName = "cached_list_page")
-data class CachedListPageEntity(
-    @PrimaryKey val offset: Int,
-    val responseJson: String,
-)
-
-@Entity(tableName = "cached_detail")
-data class CachedDetailEntity(
+@Entity(tableName = "pokemon")
+data class PokemonEntity(
     @PrimaryKey val id: Int,
-    val responseJson: String,
+    val name: String,
+    val height: Int? = null,
+    val weight: Int? = null,
+    val typesJson: String? = null,
+    val statsJson: String? = null,
+    val abilitiesJson: String? = null,
 )
