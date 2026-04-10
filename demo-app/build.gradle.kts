@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlinxSerialization)
+    alias(libs.plugins.room3)
 }
 
 kotlin {
@@ -46,26 +47,43 @@ kotlin {
                 implementation(libs.coil.compose)
                 implementation(libs.coil.network.ktor)
                 implementation(projects.core.runtime)
+                implementation(libs.room3.runtime)
             }
         }
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.ktor.client.okhttp)
+            implementation(libs.sqlite.bundled)
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
             implementation(libs.ktor.client.cio)
+            implementation(libs.sqlite.bundled)
+        }
+        jsMain {
+            kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/js/jsMain/kotlin"))
         }
         jsMain.dependencies {
             implementation(libs.ktor.client.js)
+            implementation(libs.sqlite.web)
             implementation(npm("sql.js", "1.10.3"))
             implementation(npm("@cashapp/sqldelight-sqljs-worker", "2.1.0"))
             implementation(devNpm("copy-webpack-plugin", "9.1.0"))
+            implementation(
+                npm("sqlite-wasm-worker", layout.projectDirectory.dir("sqlite-worker").asFile)
+            )
+        }
+        wasmJsMain {
+            kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/wasmJs/wasmJsMain/kotlin"))
         }
         wasmJsMain.dependencies {
             implementation(libs.ktor.client.js)
+            implementation(libs.sqlite.web)
+            implementation(
+                npm("sqlite-wasm-worker", layout.projectDirectory.dir("sqlite-worker").asFile)
+            )
         }
     }
 }
@@ -74,6 +92,14 @@ dependencies {
     debugImplementation(projects.core.runtime)
     releaseImplementation(projects.core.noop)
     add("kspCommonMainMetadata", projects.plugins.preferences.ksp)
+    add("kspAndroid", libs.room3.compiler)
+    add("kspJvm", libs.room3.compiler)
+    add("kspJs", libs.room3.compiler)
+    add("kspWasmJs", libs.room3.compiler)
+}
+
+room3 {
+    schemaDirectory("$projectDir/schemas")
 }
 
 // All Kotlin compilation and KSP tasks must wait for the common metadata KSP pass.

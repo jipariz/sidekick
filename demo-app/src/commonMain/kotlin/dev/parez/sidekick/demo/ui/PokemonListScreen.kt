@@ -49,8 +49,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import dev.parez.sidekick.demo.PokemonApi
 import dev.parez.sidekick.demo.PokemonListEntry
+import dev.parez.sidekick.demo.PokemonRepository
 import dev.parez.sidekick.demo.toDisplayName
 
 private const val PAGE_SIZE = 20
@@ -58,7 +58,7 @@ private const val PAGE_SIZE = 20
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PokemonListScreen(
-    api: PokemonApi,
+    repository: PokemonRepository,
     columns: Int,
     showNumbers: Boolean,
     onSelect: (PokemonListEntry) -> Unit,
@@ -79,7 +79,7 @@ fun PokemonListScreen(
         isLoading = true
         error = null
         try {
-            runCatching { api.fetchList(offset = items.size, limit = PAGE_SIZE) }
+            runCatching { repository.getListPage(offset = items.size, limit = PAGE_SIZE) }
                 .onSuccess { response ->
                     items.addAll(response.results)
                     hasMore = response.next != null

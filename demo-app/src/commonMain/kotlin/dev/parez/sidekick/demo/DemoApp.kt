@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import dev.parez.sidekick.SidekickShell
+import dev.parez.sidekick.demo.db.createPokemonCache
 import dev.parez.sidekick.demo.theme.colorSchemeFor
 import dev.parez.sidekick.demo.ui.PokemonDetailScreen
 import dev.parez.sidekick.demo.ui.PokemonListScreen
@@ -27,7 +28,7 @@ private sealed class Screen {
 fun DemoApp() {
     val prefsPlugin = remember { AppPreferencesPlugin() }
     val networkPlugin = remember { NetworkMonitorPlugin(retentionMs = RetentionPeriod.ONE_HOUR) }
-    val api = remember { PokemonApi() }
+    val repository = remember { PokemonRepository(PokemonApi(), createPokemonCache()) }
 
     val darkMode by prefsPlugin.accessor.darkMode.collectAsState()
     val colorTheme by prefsPlugin.accessor.colorTheme.collectAsState()
@@ -39,7 +40,7 @@ fun DemoApp() {
     MaterialTheme(colorScheme = colorScheme) {
         SidekickShell(plugins = listOf(prefsPlugin, networkPlugin)) {
             PokemonCatalog(
-                api = api,
+                repository = repository,
                 showNumbers = showNumbers,
                 gridColumns = gridColumns,
             )
@@ -51,7 +52,7 @@ fun DemoApp() {
 
 @Composable
 private fun PokemonCatalog(
-    api: PokemonApi,
+    repository: PokemonRepository,
     showNumbers: Boolean,
     gridColumns: Int,
 ) {
@@ -59,7 +60,7 @@ private fun PokemonCatalog(
 
     when (val s = screen) {
         is Screen.List -> PokemonListScreen(
-            api = api,
+            repository = repository,
             columns = gridColumns,
             showNumbers = showNumbers,
             onSelect = { entry -> screen = Screen.Detail(entry.id, entry.name) },
@@ -67,7 +68,7 @@ private fun PokemonCatalog(
         is Screen.Detail -> PokemonDetailScreen(
             id = s.id,
             name = s.name,
-            api = api,
+            repository = repository,
             onBack = { screen = Screen.List },
         )
     }

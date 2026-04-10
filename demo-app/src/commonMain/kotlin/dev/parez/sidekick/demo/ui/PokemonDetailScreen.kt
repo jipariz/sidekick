@@ -44,8 +44,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import dev.parez.sidekick.demo.PokemonApi
 import dev.parez.sidekick.demo.PokemonDetail
+import dev.parez.sidekick.demo.PokemonRepository
 import dev.parez.sidekick.demo.artworkUrlFor
 import dev.parez.sidekick.demo.statDisplayName
 import dev.parez.sidekick.demo.toDisplayName
@@ -55,14 +55,14 @@ import dev.parez.sidekick.demo.toDisplayName
 fun PokemonDetailScreen(
     id: Int,
     name: String,
-    api: PokemonApi,
+    repository: PokemonRepository,
     onBack: () -> Unit,
 ) {
     var detail by remember { mutableStateOf<PokemonDetail?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(id) {
-        runCatching { api.fetchDetail(id) }
+        runCatching { repository.getDetail(id) }
             .onSuccess { detail = it }
             .onFailure { error = it.message ?: "Unknown error" }
     }
