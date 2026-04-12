@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.parez.sidekick.demo.PokemonListEntry
 import dev.parez.sidekick.demo.PokemonRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -70,18 +71,22 @@ class PokemonListViewModel(
 
     fun loadNextPage() {
         if (isLoadingMore.value) return
+        isLoadingMore.value = true
         viewModelScope.launch {
             println("[ListVM] loadNextPage: starting")
-            isLoadingMore.value = true
             error.value = null
-            runCatching { repository.fetchNextPage(PAGE_SIZE) }
-                .onSuccess { println("[ListVM] loadNextPage: success") }
-                .onFailure {
-                    println("[ListVM] loadNextPage: error=${it.message}")
-                    error.value = it.message ?: "Unknown error"
-                }
-            isLoadingMore.value = false
-            println("[ListVM] loadNextPage: done, isLoadingMore=false")
+            try {
+                repository.fetchNextPage(PAGE_SIZE)
+                println("[ListVM] loadNextPage: success")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                println("[ListVM] loadNextPage: error=${e.message}")
+                error.value = e.message ?: "Unknown error"
+            } finally {
+                isLoadingMore.value = false
+                println("[ListVM] loadNextPage: done, isLoadingMore=false")
+            }
         }
     }
 
