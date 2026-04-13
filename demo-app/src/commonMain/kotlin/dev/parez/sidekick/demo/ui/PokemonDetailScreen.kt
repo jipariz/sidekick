@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -54,7 +55,7 @@ fun PokemonDetailScreen(
     id: Int,
     name: String,
     onBack: () -> Unit,
-    viewModel: PokemonDetailViewModel = koinViewModel { parametersOf(id) },
+    viewModel: PokemonDetailViewModel = koinViewModel(key = id) { parametersOf(id) },
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -99,12 +100,20 @@ fun PokemonDetailScreen(
                 Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(
-                    state.message,
-                    color = MaterialTheme.colorScheme.error,
-                    textAlign = TextAlign.Center,
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.padding(32.dp),
-                )
+                ) {
+                    Text(
+                        state.message,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center,
+                    )
+                    Button(onClick = { viewModel.fetchDetail() }) {
+                        Text("Retry")
+                    }
+                }
             }
             is DetailUiState.Content -> DetailContent(
                 detail = state.detail,
