@@ -6,8 +6,8 @@ import androidx.room3.RoomDatabase
 import androidx.room3.RoomDatabaseConstructor
 
 @Database(
-    entities = [CachedListPageEntity::class, CachedDetailEntity::class],
-    version = 1,
+    entities = [PokemonEntity::class],
+    version = 2,
 )
 @ConstructedBy(PokemonDatabaseConstructor::class)
 abstract class PokemonDatabase : RoomDatabase() {

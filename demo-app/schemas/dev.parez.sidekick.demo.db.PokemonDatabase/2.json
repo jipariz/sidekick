@@ -1,0 +1,62 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "fe98c85f07240fbb43037aac8ff6c230",
+    "entities": [
+      {
+        "tableName": "pokemon",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `name` TEXT NOT NULL, `height` INTEGER, `weight` INTEGER, `typesJson` TEXT, `statsJson` TEXT, `abilitiesJson` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "height",
+            "columnName": "height",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "weight",
+            "columnName": "weight",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "typesJson",
+            "columnName": "typesJson",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "statsJson",
+            "columnName": "statsJson",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "abilitiesJson",
+            "columnName": "abilitiesJson",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'fe98c85f07240fbb43037aac8ff6c230')"
+    ]
+  }
+}

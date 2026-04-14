@@ -48,6 +48,10 @@ kotlin {
                 implementation(libs.coil.network.ktor)
                 implementation(projects.core.runtime)
                 implementation(libs.room3.runtime)
+                implementation(libs.koin.core)
+                implementation(libs.koin.compose)
+                implementation(libs.koin.compose.viewmodel)
+                implementation(libs.androidx.lifecycle.viewmodelCompose)
             }
         }
         androidMain.dependencies {
