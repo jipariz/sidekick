@@ -21,6 +21,19 @@ public class NetworkMonitorKtorConfig {
     public var store: NetworkMonitorStore = NetworkMonitorStore
 
     /**
+     * Optional callback invoked for each captured network request.
+     * Receives the call ID, HTTP method, and URL. Use this to emit
+     * correlated log entries (e.g. via Kermit with a networkCallId metadata tag).
+     */
+    public var onRequest: ((id: String, method: String, url: String) -> Unit)? = null
+
+    /**
+     * Optional callback invoked when a network response is received.
+     * Receives the call ID, HTTP status code, and URL.
+     */
+    public var onResponse: ((id: String, statusCode: Int, url: String) -> Unit)? = null
+
+    /**
      * Exclude requests matching [predicate] from being recorded.
      * If no filters are registered, all requests are recorded.
      */

@@ -26,6 +26,8 @@ public val NetworkMonitorKtor: ClientPlugin<NetworkMonitorKtorConfig> =
 
         val config = pluginConfig
         val store = config.store
+        val onRequest = config.onRequest
+        val onResponse = config.onResponse
 
         on(Send) { request ->
             // ── Filter ────────────────────────────────────────────────────────
@@ -43,16 +45,21 @@ public val NetworkMonitorKtor: ClientPlugin<NetworkMonitorKtorConfig> =
                 ?.takeIf { it != "EmptyContent" }
                 ?.truncate(config.maxContentLength)
 
+            val url = request.url.buildString()
+            val method = request.method.value
+
             runCatching {
                 store.recordRequest(
                     id = id,
-                    url = request.url.buildString(),
-                    method = request.method.value,
+                    url = url,
+                    method = method,
                     headers = reqHeaders,
                     body = reqBody,
                     timestamp = currentTimeMillis(),
                 )
             }
+
+            runCatching { onRequest?.invoke(id, method, url) }
 
             // ── Execute request ───────────────────────────────────────────────
             val call = try {
@@ -63,14 +70,17 @@ public val NetworkMonitorKtor: ClientPlugin<NetworkMonitorKtorConfig> =
             }
 
             // ── Response metadata ─────────────────────────────────────────────
+            val statusCode = call.response.status.value
             runCatching {
                 store.recordResponse(
                     id = id,
-                    code = call.response.status.value,
+                    code = statusCode,
                     headers = call.response.headers.sanitize(config.sanitizedHeaders),
                     timestamp = currentTimeMillis(),
                 )
             }
+
+            runCatching { onResponse?.invoke(id, statusCode, url) }
 
             // ── Response body ─────────────────────────────────────────────────
             // Buffer the response in memory via call.save() so we can capture
