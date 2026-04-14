@@ -55,7 +55,7 @@ fun PokemonDetailScreen(
     id: Int,
     name: String,
     onBack: () -> Unit,
-    viewModel: PokemonDetailViewModel = koinViewModel { parametersOf(id) },
+    viewModel: PokemonDetailViewModel = koinViewModel(key = "pokemon-detail-$id") { parametersOf(id) },
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
