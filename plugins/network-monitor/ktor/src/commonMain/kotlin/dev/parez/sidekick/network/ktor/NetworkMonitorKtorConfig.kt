@@ -1,5 +1,6 @@
 package dev.parez.sidekick.network.ktor
 
+import dev.parez.sidekick.logs.LogMonitorStore
 import dev.parez.sidekick.network.NetworkMonitorStore
 import dev.parez.sidekick.network.RetentionPeriod
 import io.ktor.client.request.HttpRequestBuilder
@@ -21,17 +22,21 @@ public class NetworkMonitorKtorConfig {
     public var store: NetworkMonitorStore = NetworkMonitorStore
 
     /**
-     * Optional callback invoked for each captured network request.
-     * Receives the call ID, HTTP method, and URL. Use this to emit
-     * correlated log entries (e.g. via Kermit with a networkCallId metadata tag).
+     * Optional log store for automatic log-network correlation.
+     * When set, the interceptor emits log entries for each HTTP request and
+     * response with `networkCallId` metadata, enabling the log-monitor plugin
+     * to link log entries to network calls.
+     *
+     * Set to [LogMonitorStore] to enable:
+     * ```
+     * install(NetworkMonitorKtor) {
+     *     logStore = LogMonitorStore
+     * }
+     * ```
+     *
+     * When null (default), no log entries are emitted.
      */
-    public var onRequest: ((id: String, method: String, url: String) -> Unit)? = null
-
-    /**
-     * Optional callback invoked when a network response is received.
-     * Receives the call ID, HTTP status code, and URL.
-     */
-    public var onResponse: ((id: String, statusCode: Int, url: String) -> Unit)? = null
+    public var logStore: LogMonitorStore? = null
 
     /**
      * Exclude requests matching [predicate] from being recorded.

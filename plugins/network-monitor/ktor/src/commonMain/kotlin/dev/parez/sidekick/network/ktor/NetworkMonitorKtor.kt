@@ -1,5 +1,6 @@
 package dev.parez.sidekick.network.ktor
 
+import dev.parez.sidekick.logs.LogLevel
 import dev.parez.sidekick.network.NetworkMonitorStore
 import dev.parez.sidekick.network.currentTimeMillis
 import io.ktor.client.call.save
@@ -26,8 +27,7 @@ public val NetworkMonitorKtor: ClientPlugin<NetworkMonitorKtorConfig> =
 
         val config = pluginConfig
         val store = config.store
-        val onRequest = config.onRequest
-        val onResponse = config.onResponse
+        val logStore = config.logStore
 
         on(Send) { request ->
             // ── Filter ────────────────────────────────────────────────────────
@@ -59,13 +59,27 @@ public val NetworkMonitorKtor: ClientPlugin<NetworkMonitorKtorConfig> =
                 )
             }
 
-            runCatching { onRequest?.invoke(id, method, url) }
+            // Auto-emit log entry with networkCallId metadata
+            logStore?.record(
+                level = LogLevel.INFO,
+                tag = "HTTP",
+                message = "$method $url",
+                throwable = null,
+                metadata = mapOf("networkCallId" to id),
+            )
 
             // ── Execute request ───────────────────────────────────────────────
             val call = try {
                 proceed(request)
             } catch (e: Throwable) {
                 runCatching { store.recordError(id, e) }
+                logStore?.record(
+                    level = LogLevel.ERROR,
+                    tag = "HTTP",
+                    message = "FAILED $method $url: ${e.message}",
+                    throwable = e,
+                    metadata = mapOf("networkCallId" to id),
+                )
                 throw e
             }
 
@@ -80,7 +94,16 @@ public val NetworkMonitorKtor: ClientPlugin<NetworkMonitorKtorConfig> =
                 )
             }
 
-            runCatching { onResponse?.invoke(id, statusCode, url) }
+            logStore?.let {
+                val level = if (statusCode in 200..399) LogLevel.DEBUG else LogLevel.WARN
+                it.record(
+                    level = level,
+                    tag = "HTTP",
+                    message = "$statusCode $method $url",
+                    throwable = null,
+                    metadata = mapOf("networkCallId" to id),
+                )
+            }
 
             // ── Response body ─────────────────────────────────────────────────
             // Buffer the response in memory via call.save() so we can capture
