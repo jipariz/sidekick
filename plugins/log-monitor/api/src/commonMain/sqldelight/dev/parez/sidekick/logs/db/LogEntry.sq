@@ -1,0 +1,33 @@
+CREATE TABLE LogEntry (
+    id        TEXT    NOT NULL PRIMARY KEY,
+    timestamp INTEGER NOT NULL,
+    level     TEXT    NOT NULL,
+    tag       TEXT    NOT NULL,
+    message   TEXT    NOT NULL,
+    throwable TEXT,
+    metadata  TEXT
+);
+
+selectAll:
+SELECT * FROM LogEntry ORDER BY timestamp DESC;
+
+selectById:
+SELECT * FROM LogEntry WHERE id = ?;
+
+insertEntry:
+INSERT INTO LogEntry(id, timestamp, level, tag, message, throwable, metadata)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+deleteAll:
+DELETE FROM LogEntry;
+
+deleteOlderThan:
+DELETE FROM LogEntry WHERE timestamp < ?;
+
+countAll:
+SELECT COUNT(*) FROM LogEntry;
+
+deleteOldestOverLimit:
+DELETE FROM LogEntry WHERE id IN (
+    SELECT id FROM LogEntry ORDER BY timestamp ASC LIMIT ?
+);

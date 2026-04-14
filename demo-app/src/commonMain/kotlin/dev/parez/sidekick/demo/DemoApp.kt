@@ -34,8 +34,13 @@ import dev.parez.sidekick.demo.theme.AppTypography
 import dev.parez.sidekick.demo.theme.colorSchemeFor
 import dev.parez.sidekick.demo.ui.PokemonDetailScreen
 import dev.parez.sidekick.demo.ui.PokemonListScreen
+import dev.parez.sidekick.logs.LogMonitorPlugin
+import dev.parez.sidekick.logs.RetentionPeriod as LogRetentionPeriod
+import dev.parez.sidekick.logs.kermit.LogMonitorLogWriter
 import dev.parez.sidekick.network.NetworkMonitorPlugin
 import dev.parez.sidekick.network.RetentionPeriod
+import co.touchlab.kermit.Logger
+import co.touchlab.kermit.platformLogWriter
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
@@ -61,6 +66,11 @@ fun DemoApp() {
     KoinApplication(application = { modules(appModule) }) {
         val prefsPlugin = remember { AppPreferencesPlugin() }
         val networkPlugin = remember { NetworkMonitorPlugin(retentionMs = RetentionPeriod.ONE_HOUR) }
+        val logPlugin = remember {
+            LogMonitorPlugin(retentionMs = LogRetentionPeriod.ONE_HOUR).also { plugin ->
+                Logger.setLogWriters(platformLogWriter(), LogMonitorLogWriter(plugin.store))
+            }
+        }
 
         val darkMode by prefsPlugin.accessor.darkMode.collectAsState()
         val colorTheme by prefsPlugin.accessor.colorTheme.collectAsState()
@@ -70,7 +80,7 @@ fun DemoApp() {
         val colorScheme = colorSchemeFor(theme = colorTheme, dark = darkMode)
 
         MaterialTheme(colorScheme = colorScheme, typography = AppTypography) {
-            SidekickShell(plugins = listOf(prefsPlugin, networkPlugin)) {
+            SidekickShell(plugins = listOf(prefsPlugin, networkPlugin, logPlugin)) {
                 PokemonCatalog(
                     showNumbers = showNumbers,
                     gridColumns = gridColumns,
