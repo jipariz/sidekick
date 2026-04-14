@@ -347,15 +347,13 @@ private fun CopyableMonoBlock(text: String) {
             fontFamily = FontFamily.Monospace,
             modifier = Modifier.weight(1f),
         )
-        Spacer(Modifier.width(4.dp))
         IconButton(
             onClick = { clipboard.setText(AnnotatedString(text)) },
-            modifier = Modifier.size(24.dp),
         ) {
             Icon(
                 Icons.Default.ContentCopy,
                 contentDescription = "Copy",
-                modifier = Modifier.size(14.dp),
+                modifier = Modifier.size(18.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -374,17 +372,16 @@ private fun CopyableCodeBlock(text: String) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                    .padding(horizontal = 4.dp),
                 horizontalArrangement = Arrangement.End,
             ) {
                 IconButton(
                     onClick = { clipboard.setText(AnnotatedString(text)) },
-                    modifier = Modifier.size(24.dp),
                 ) {
                     Icon(
                         Icons.Default.ContentCopy,
                         contentDescription = "Copy",
-                        modifier = Modifier.size(14.dp),
+                        modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }

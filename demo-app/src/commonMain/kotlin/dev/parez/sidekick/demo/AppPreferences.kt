@@ -4,7 +4,7 @@ import dev.parez.sidekick.preferences.Preference
 import dev.parez.sidekick.preferences.SidekickPreferences
 
 enum class ColorTheme {
-    DEFAULT, FIRE, WATER, GRASS, ELECTRIC, PSYCHIC
+    DYNAMIC, DEFAULT, FIRE, WATER, GRASS, ELECTRIC, PSYCHIC
 }
 
 @SidekickPreferences(title = "App")

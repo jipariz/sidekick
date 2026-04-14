@@ -51,14 +51,14 @@ val LocalSidekickColors = staticCompositionLocalOf<SidekickColors> {
  * @param httpDelete      Badge color for DELETE requests. Defaults to [MaterialTheme.colorScheme.error].
  * @param httpPatch       Badge color for PATCH requests. Defaults to [MaterialTheme.colorScheme.tertiaryContainer].
  * @param httpOther       Badge color for all other methods. Defaults to [MaterialTheme.colorScheme.outline].
- * @param onHttpBadge     Text color on all method badges. Defaults to [Color.White].
+ * @param onHttpBadge     Text color on all method badges. Defaults to [MaterialTheme.colorScheme.onPrimary].
  * @param statusSuccess   Chip color for 2xx responses. Defaults to [MaterialTheme.colorScheme.secondary].
  * @param statusRedirect  Chip color for 3xx responses. Defaults to [MaterialTheme.colorScheme.primary].
  * @param statusClientError Chip color for 4xx responses. Defaults to [MaterialTheme.colorScheme.tertiary].
  * @param statusServerError Chip color for 5xx responses. Defaults to [MaterialTheme.colorScheme.error].
  * @param statusPending   Chip color for in-flight requests. Defaults to [MaterialTheme.colorScheme.outlineVariant].
  * @param statusNetworkError Chip color for network errors. Defaults to [MaterialTheme.colorScheme.error].
- * @param onStatusChip    Text color on all status chips. Defaults to [Color.White].
+ * @param onStatusChip    Text color on all status chips. Defaults to [MaterialTheme.colorScheme.onSecondary].
  */
 @Composable
 fun sidekickColors(
@@ -68,14 +68,14 @@ fun sidekickColors(
     httpDelete: Color = MaterialTheme.colorScheme.error,
     httpPatch: Color = MaterialTheme.colorScheme.tertiaryContainer,
     httpOther: Color = MaterialTheme.colorScheme.outline,
-    onHttpBadge: Color = Color.White,
+    onHttpBadge: Color = MaterialTheme.colorScheme.onPrimary,
     statusSuccess: Color = MaterialTheme.colorScheme.secondary,
     statusRedirect: Color = MaterialTheme.colorScheme.primary,
     statusClientError: Color = MaterialTheme.colorScheme.tertiary,
     statusServerError: Color = MaterialTheme.colorScheme.error,
     statusPending: Color = MaterialTheme.colorScheme.outlineVariant,
     statusNetworkError: Color = MaterialTheme.colorScheme.error,
-    onStatusChip: Color = Color.White,
+    onStatusChip: Color = MaterialTheme.colorScheme.onSecondary,
 ): SidekickColors = SidekickColors(
     httpGet = httpGet,
     httpPost = httpPost,

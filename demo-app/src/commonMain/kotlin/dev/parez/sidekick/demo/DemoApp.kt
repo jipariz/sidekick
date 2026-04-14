@@ -1,6 +1,16 @@
 package dev.parez.sidekick.demo
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CatchingPokemon
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
 import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneStrategy
@@ -8,6 +18,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -17,6 +30,7 @@ import dev.parez.sidekick.SidekickShell
 import dev.parez.sidekick.demo.di.appModule
 import dev.parez.sidekick.demo.navigation.PokemonDetailDestination
 import dev.parez.sidekick.demo.navigation.PokemonListDestination
+import dev.parez.sidekick.demo.theme.AppTypography
 import dev.parez.sidekick.demo.theme.colorSchemeFor
 import dev.parez.sidekick.demo.ui.PokemonDetailScreen
 import dev.parez.sidekick.demo.ui.PokemonListScreen
@@ -55,7 +69,7 @@ fun DemoApp() {
 
         val colorScheme = colorSchemeFor(theme = colorTheme, dark = darkMode)
 
-        MaterialTheme(colorScheme = colorScheme) {
+        MaterialTheme(colorScheme = colorScheme, typography = AppTypography) {
             SidekickShell(plugins = listOf(prefsPlugin, networkPlugin)) {
                 PokemonCatalog(
                     showNumbers = showNumbers,
@@ -82,13 +96,16 @@ private fun PokemonCatalog(
         sceneStrategies = listOf(sceneStrategy),
         entryProvider = entryProvider {
             entry<PokemonListDestination>(
-                metadata = ListDetailSceneStrategy.listPane(),
+                metadata = ListDetailSceneStrategy.listPane(
+                    detailPlaceholder = { DetailPlaceholder() },
+                ),
             ) {
                 PokemonListScreen(
                     columns = gridColumns,
                     showNumbers = showNumbers,
                     onSelect = { entry ->
-                        backStack += PokemonDetailDestination(entry.id, entry.name)
+                        backStack.removeAll { it is PokemonDetailDestination }
+                        backStack.add(PokemonDetailDestination(entry.id, entry.name))
                     },
                 )
             }
@@ -104,4 +121,28 @@ private fun PokemonCatalog(
             }
         },
     )
+}
+
+// ── Detail pane placeholder (shown when no Pokémon is selected in split view) ─
+
+@Composable
+private fun DetailPlaceholder() {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.CatchingPokemon,
+            contentDescription = null,
+            modifier = Modifier.size(72.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+        )
+        Spacer(Modifier.height(16.dp))
+        Text(
+            text = "Select a Pokémon",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
