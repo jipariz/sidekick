@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -237,6 +237,11 @@ private fun StatBar(name: String, value: Int, maxValue: Int) {
         fraction < 0.66f -> MaterialTheme.colorScheme.tertiary
         else             -> MaterialTheme.colorScheme.primary
     }
+    val ratingLabel = when {
+        fraction < 0.33f -> "L"
+        fraction < 0.66f -> "M"
+        else             -> "H"
+    }
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -260,7 +265,7 @@ private fun StatBar(name: String, value: Int, maxValue: Int) {
             modifier = Modifier
                 .weight(1f)
                 .height(8.dp)
-                .clip(RoundedCornerShape(4.dp)),
+                .clip(MaterialTheme.shapes.extraSmall),
         ) {
             Surface(
                 modifier = Modifier.fillMaxSize(),
@@ -273,6 +278,14 @@ private fun StatBar(name: String, value: Int, maxValue: Int) {
                 color = barColor,
             ) {}
         }
+        Text(
+            text = ratingLabel,
+            style = MaterialTheme.typography.labelSmall,
+            fontFamily = FontFamily.Monospace,
+            color = barColor,
+            modifier = Modifier.width(14.dp),
+            textAlign = TextAlign.Center,
+        )
     }
 }
 
@@ -280,7 +293,7 @@ private fun StatBar(name: String, value: Int, maxValue: Int) {
 private fun TypeChip(typeName: String) {
     Surface(
         color = typeColor(typeName),
-        shape = RoundedCornerShape(50),
+        shape = CircleShape,
     ) {
         Text(
             text = typeName.replaceFirstChar { it.uppercase() },
@@ -299,7 +312,7 @@ private fun AbilityChip(name: String, isHidden: Boolean) {
             MaterialTheme.colorScheme.surfaceVariant
         else
             MaterialTheme.colorScheme.secondaryContainer,
-        shape = RoundedCornerShape(50),
+        shape = CircleShape,
     ) {
         Text(
             text = if (isHidden) "${name.toDisplayName()} (hidden)" else name.toDisplayName(),

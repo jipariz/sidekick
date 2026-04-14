@@ -17,6 +17,7 @@ import dev.parez.sidekick.SidekickShell
 import dev.parez.sidekick.demo.di.appModule
 import dev.parez.sidekick.demo.navigation.PokemonDetailDestination
 import dev.parez.sidekick.demo.navigation.PokemonListDestination
+import dev.parez.sidekick.demo.theme.AppTypography
 import dev.parez.sidekick.demo.theme.colorSchemeFor
 import dev.parez.sidekick.demo.ui.PokemonDetailScreen
 import dev.parez.sidekick.demo.ui.PokemonListScreen
@@ -55,7 +56,7 @@ fun DemoApp() {
 
         val colorScheme = colorSchemeFor(theme = colorTheme, dark = darkMode)
 
-        MaterialTheme(colorScheme = colorScheme) {
+        MaterialTheme(colorScheme = colorScheme, typography = AppTypography) {
             SidekickShell(plugins = listOf(prefsPlugin, networkPlugin)) {
                 PokemonCatalog(
                     showNumbers = showNumbers,

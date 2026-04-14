@@ -1,12 +1,17 @@
 package dev.parez.sidekick.demo.theme
 
 import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import dev.parez.sidekick.demo.ColorTheme
 
+@Composable
 fun colorSchemeFor(theme: ColorTheme, dark: Boolean): ColorScheme = when (theme) {
+    ColorTheme.DYNAMIC   -> dynamicColorScheme(dark) ?: if (dark) defaultDark() else defaultLight()
     ColorTheme.FIRE      -> if (dark) fireDark()      else fireLight()
     ColorTheme.WATER     -> if (dark) waterDark()     else waterLight()
     ColorTheme.GRASS     -> if (dark) grassDark()     else grassLight()
@@ -14,6 +19,30 @@ fun colorSchemeFor(theme: ColorTheme, dark: Boolean): ColorScheme = when (theme)
     ColorTheme.PSYCHIC   -> if (dark) psychicDark()   else psychicLight()
     ColorTheme.DEFAULT   -> if (dark) defaultDark()   else defaultLight()
 }
+
+/**
+ * Returns the platform's dynamic color scheme, or null if unavailable.
+ * On Android 12+ this uses the user's wallpaper-derived colors.
+ */
+@Composable
+expect fun dynamicColorScheme(dark: Boolean): ColorScheme?
+
+// ── Typography ───────────────────────────────────────────────────────────────
+
+private val defaultTypography = Typography()
+
+/**
+ * App typography with emphasized display/headline weights for brand expression.
+ */
+val AppTypography = Typography(
+    displayLarge = defaultTypography.displayLarge.copy(fontWeight = FontWeight.Bold),
+    displayMedium = defaultTypography.displayMedium.copy(fontWeight = FontWeight.Bold),
+    displaySmall = defaultTypography.displaySmall.copy(fontWeight = FontWeight.SemiBold),
+    headlineLarge = defaultTypography.headlineLarge.copy(fontWeight = FontWeight.SemiBold),
+    headlineMedium = defaultTypography.headlineMedium.copy(fontWeight = FontWeight.SemiBold),
+    headlineSmall = defaultTypography.headlineSmall.copy(fontWeight = FontWeight.Medium),
+    titleLarge = defaultTypography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+)
 
 // ── Default (Indigo / Teal) ───────────────────────────────────────────────────
 
