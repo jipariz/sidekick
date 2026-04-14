@@ -55,7 +55,7 @@ fun PokemonDetailScreen(
     id: Int,
     name: String,
     onBack: () -> Unit,
-    viewModel: PokemonDetailViewModel = koinViewModel(key = id) { parametersOf(id) },
+    viewModel: PokemonDetailViewModel = koinViewModel { parametersOf(id) },
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -100,20 +100,12 @@ fun PokemonDetailScreen(
                 Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center,
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                Text(
+                    state.message,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
                     modifier = Modifier.padding(32.dp),
-                ) {
-                    Text(
-                        state.message,
-                        color = MaterialTheme.colorScheme.error,
-                        textAlign = TextAlign.Center,
-                    )
-                    Button(onClick = { viewModel.fetchDetail() }) {
-                        Text("Retry")
-                    }
-                }
+                )
             }
             is DetailUiState.Content -> DetailContent(
                 detail = state.detail,

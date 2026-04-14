@@ -162,7 +162,8 @@ private fun ContentState(
                                 Text("Retry")
                             }
                         }
-                        state.hasMore && state.query.isBlank() -> Button(onClick = onLoadMore) {
+                        state.hasMore && state.query.isBlank() -> Button(onClick = {}) {
+                            LaunchedEffect(Unit) { onLoadMore() }
                             Text("Load more")
                         }
                         !state.hasMore -> Text(

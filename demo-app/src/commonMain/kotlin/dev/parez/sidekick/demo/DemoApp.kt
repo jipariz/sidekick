@@ -1,26 +1,43 @@
 package dev.parez.sidekick.demo
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
+import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
+import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneStrategy
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.ui.NavDisplay
+import androidx.savedstate.serialization.SavedStateConfiguration
 import dev.parez.sidekick.SidekickShell
 import dev.parez.sidekick.demo.di.appModule
+import dev.parez.sidekick.demo.navigation.PokemonDetailDestination
+import dev.parez.sidekick.demo.navigation.PokemonListDestination
 import dev.parez.sidekick.demo.theme.colorSchemeFor
 import dev.parez.sidekick.demo.ui.PokemonDetailScreen
 import dev.parez.sidekick.demo.ui.PokemonListScreen
 import dev.parez.sidekick.network.NetworkMonitorPlugin
 import dev.parez.sidekick.network.RetentionPeriod
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.polymorphic
+import kotlinx.serialization.modules.subclass
 import org.koin.compose.KoinApplication
 
-// ── Navigation ────────────────────────────────────────────────────────────────
+// ── Navigation serializer module ─────────────────────────────────────────────
 
-private sealed class Screen {
-    object List : Screen()
-    data class Detail(val id: Int, val name: String) : Screen()
+private val navSerializersModule = SerializersModule {
+    polymorphic(NavKey::class) {
+        subclass(PokemonListDestination::class)
+        subclass(PokemonDetailDestination::class)
+    }
+}
+
+private val navSavedStateConfig = SavedStateConfiguration {
+    serializersModule = navSerializersModule
 }
 
 // ── Root composable ───────────────────────────────────────────────────────────
@@ -49,25 +66,42 @@ fun DemoApp() {
     }
 }
 
-// ── Catalog (navigation host) ─────────────────────────────────────────────────
+// ── Catalog (adaptive list-detail with Navigation 3) ─────────────────────────
 
+@OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
 private fun PokemonCatalog(
     showNumbers: Boolean,
     gridColumns: Int,
 ) {
-    var screen by remember { mutableStateOf<Screen>(Screen.List) }
+    val backStack = rememberNavBackStack(navSavedStateConfig, PokemonListDestination)
+    val sceneStrategy = rememberListDetailSceneStrategy<NavKey>()
 
-    when (val s = screen) {
-        is Screen.List -> PokemonListScreen(
-            columns = gridColumns,
-            showNumbers = showNumbers,
-            onSelect = { entry -> screen = Screen.Detail(entry.id, entry.name) },
-        )
-        is Screen.Detail -> PokemonDetailScreen(
-            id = s.id,
-            name = s.name,
-            onBack = { screen = Screen.List },
-        )
-    }
+    NavDisplay(
+        backStack = backStack,
+        sceneStrategies = listOf(sceneStrategy),
+        entryProvider = entryProvider {
+            entry<PokemonListDestination>(
+                metadata = ListDetailSceneStrategy.listPane(),
+            ) {
+                PokemonListScreen(
+                    columns = gridColumns,
+                    showNumbers = showNumbers,
+                    onSelect = { entry ->
+                        backStack += PokemonDetailDestination(entry.id, entry.name)
+                    },
+                )
+            }
+
+            entry<PokemonDetailDestination>(
+                metadata = ListDetailSceneStrategy.detailPane(),
+            ) { destination ->
+                PokemonDetailScreen(
+                    id = destination.id,
+                    name = destination.name,
+                    onBack = { backStack.removeLastOrNull() },
+                )
+            }
+        },
+    )
 }

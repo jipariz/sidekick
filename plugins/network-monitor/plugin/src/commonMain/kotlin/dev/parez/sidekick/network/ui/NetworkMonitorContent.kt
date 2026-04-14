@@ -1,46 +1,48 @@
 package dev.parez.sidekick.network.ui
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
+import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
+import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneStrategy
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.ui.NavDisplay
 import dev.parez.sidekick.network.NetworkCall
+import kotlinx.serialization.Serializable
 
-// ── Adaptive breakpoints ──────────────────────────────────────────────────────
+// ── Navigation keys ──────────────────────────────────────────────────────────
 
-/** Compact → single-pane: list + push to detail. */
-private val CompactBreakpoint = 600.dp
+@Serializable
+private data object NetworkListKey : NavKey
 
-/** Expanded → fixed-width list pane at 360 dp. */
-private val ExpandedBreakpoint = 840.dp
+@Serializable
+private data class NetworkDetailKey(val callId: String) : NavKey
 
-/** Fixed width of the list pane in expanded (desktop/web) layout. */
-private val ExpandedListWidth = 360.dp
+// ── Root composable ──────────────────────────────────────────────────────────
 
 /**
  * Root composable for the Network Monitor plugin.
- * Picks a layout based on the available width:
- *
- * - **< 600 dp (compact/mobile)** — Single pane. The list navigates to the detail screen.
- * - **600–840 dp (medium/tablet)** — Two panes side-by-side at 40 / 60 split.
- * - **≥ 840 dp (expanded/desktop/web)** — Two panes: list fixed at 360 dp, detail fills rest.
+ * Uses Navigation 3 with adaptive list-detail layout:
+ * - On compact screens: single-pane push navigation.
+ * - On wider screens: side-by-side list + detail panes.
  */
+@OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
 internal fun NetworkMonitorContent(
     calls: List<NetworkCall>,
@@ -49,165 +51,61 @@ internal fun NetworkMonitorContent(
     onClear: () -> Unit,
     onBack: () -> Unit,
 ) {
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        when {
-            maxWidth >= ExpandedBreakpoint -> ExpandedLayout(
-                calls = calls,
-                selected = selected,
-                onSelect = onSelect,
-                onClear = onClear,
-                onDismiss = onBack,
-            )
-            maxWidth >= CompactBreakpoint -> MediumLayout(
-                calls = calls,
-                selected = selected,
-                onSelect = onSelect,
-                onClear = onClear,
-                onDismiss = onBack,
-            )
-            else -> CompactLayout(
-                calls = calls,
-                selected = selected,
-                onSelect = onSelect,
-                onClear = onClear,
-                onBack = onBack,
-            )
-        }
-    }
-}
+    val backStack = buildList<NavKey> {
+        add(NetworkListKey)
+        if (selected != null) add(NetworkDetailKey(selected.id))
+    }.toMutableStateList()
 
-// ── Compact layout (<600 dp) ──────────────────────────────────────────────────
+    val sceneStrategy = rememberListDetailSceneStrategy<NavKey>()
 
-@Composable
-private fun CompactLayout(
-    calls: List<NetworkCall>,
-    selected: NetworkCall?,
-    onSelect: (NetworkCall) -> Unit,
-    onClear: () -> Unit,
-    onBack: () -> Unit,
-) {
-    if (selected == null) {
-        NetworkCallListPane(
-            calls = calls,
-            onSelect = onSelect,
-            onClear = onClear,
-            showChevron = true,
-        )
-    } else {
-        NetworkCallDetailPane(
-            call = selected,
-            showBackButton = true,
-            onBack = onBack,
-        )
-    }
-}
-
-// ── Medium layout (600–840 dp) ────────────────────────────────────────────────
-
-@Composable
-private fun MediumLayout(
-    calls: List<NetworkCall>,
-    selected: NetworkCall?,
-    onSelect: (NetworkCall) -> Unit,
-    onClear: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    Row(Modifier.fillMaxSize()) {
-        // List pane — 40 %
-        Surface(
-            modifier = Modifier
-                .weight(2f)
-                .fillMaxHeight(),
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
-        ) {
-            NetworkCallListPane(
-                calls = calls,
-                selected = selected,
-                onSelect = onSelect,
-                onClear = onClear,
-                showChevron = false,
-            )
-        }
-
-        VerticalDivider()
-
-        // Detail pane — 60 %
-        Box(
-            modifier = Modifier
-                .weight(3f)
-                .fillMaxHeight(),
-        ) {
-            if (selected != null) {
-                NetworkCallDetailPane(
-                    call = selected,
-                    showBackButton = false,
-                    onBack = onDismiss,
+    NavDisplay(
+        backStack = backStack,
+        sceneStrategies = listOf(sceneStrategy),
+        onBack = {
+            onBack()
+            true
+        },
+        entryProvider = entryProvider {
+            entry<NetworkListKey>(
+                metadata = ListDetailSceneStrategy.listPane(),
+            ) {
+                NetworkCallListPane(
+                    calls = calls,
+                    selected = selected,
+                    onSelect = onSelect,
+                    onClear = onClear,
+                    showChevron = true,
                 )
-            } else {
-                DetailEmptyState()
             }
-        }
-    }
-}
 
-// ── Expanded layout (≥840 dp) ─────────────────────────────────────────────────
-
-@Composable
-private fun ExpandedLayout(
-    calls: List<NetworkCall>,
-    selected: NetworkCall?,
-    onSelect: (NetworkCall) -> Unit,
-    onClear: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    Row(Modifier.fillMaxSize()) {
-        // List pane — fixed 360 dp
-        Surface(
-            modifier = Modifier
-                .width(ExpandedListWidth)
-                .fillMaxHeight(),
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
-        ) {
-            NetworkCallListPane(
-                calls = calls,
-                selected = selected,
-                onSelect = onSelect,
-                onClear = onClear,
-                showChevron = false,
-            )
-        }
-
-        VerticalDivider()
-
-        // Detail pane — fills remaining width
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight(),
-        ) {
-            if (selected != null) {
-                NetworkCallDetailPane(
-                    call = selected,
-                    showBackButton = false,
-                    onBack = onDismiss,
-                )
-            } else {
-                DetailEmptyState()
+            entry<NetworkDetailKey>(
+                metadata = ListDetailSceneStrategy.detailPane(),
+            ) { key ->
+                val call = calls.firstOrNull { it.id == key.callId }
+                if (call != null) {
+                    NetworkCallDetailPane(
+                        call = call,
+                        showBackButton = true,
+                        onBack = onBack,
+                    )
+                } else {
+                    DetailEmptyState()
+                }
             }
-        }
-    }
+        },
+    )
 }
 
 // ── Detail empty state ────────────────────────────────────────────────────────
 
 @Composable
-private fun DetailEmptyState() {
+internal fun DetailEmptyState() {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(32.dp),
         ) {
-            androidx.compose.material3.Icon(
+            Icon(
                 Icons.Default.TouchApp,
                 contentDescription = null,
                 modifier = Modifier.size(48.dp),
@@ -224,7 +122,7 @@ private fun DetailEmptyState() {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
                 modifier = Modifier.padding(top = 4.dp),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                textAlign = TextAlign.Center,
             )
         }
     }
