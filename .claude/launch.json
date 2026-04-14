@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "demo-wasm",
+      "runtimeExecutable": "/Users/parez/Documents/sidekick/gradlew",
+      "runtimeArgs": [":demo-app:wasmJsBrowserDevelopmentRun", "--continuous"],
+      "port": 8080
+    }
+  ]
+}
