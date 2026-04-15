@@ -29,7 +29,7 @@ Every app needs the core runtime (debug builds) and the no-op stub (release buil
 ```kotlin
 // build.gradle.kts
 dependencies {
-    debugImplementation(projects.core.debug)
+    debugImplementation(projects.core.runtime)
     releaseImplementation(projects.core.noop)
 }
 ```
@@ -43,7 +43,7 @@ commonMain.dependencies {
     // ...
 }
 jvmMain.dependencies {
-    implementation(projects.core.debug)
+    implementation(projects.core.runtime)
 }
 ```
 
@@ -116,9 +116,10 @@ Wrap your root composable with `SidekickShell` and pass your list of plugins:
 @Composable
 fun App() {
     val networkPlugin = remember { NetworkMonitorPlugin() }
+    val plugins = remember(networkPlugin) { listOf(networkPlugin) }
 
     MaterialTheme {
-        SidekickShell(plugins = listOf(networkPlugin)) {
+        SidekickShell(plugins = plugins) {
             // your app content
         }
     }
@@ -262,31 +263,6 @@ LogMonitorStore.record(
 )
 ```
 
-#### Linking Logs to Network Calls
-
-When both the Log Monitor and Network Monitor are installed, you can enable automatic correlation so HTTP requests appear as log entries with a **"View Network Call"** chip that navigates directly to the network call detail.
-
-Set `logStore` in your Ktor client configuration:
-
-```kotlin
-val httpClient = HttpClient {
-    install(NetworkMonitorKtor) {
-        logStore = LogMonitorStore  // enables log-network linking
-    }
-}
-```
-
-This automatically emits:
-- An **INFO** log for each HTTP request (`GET https://api.example.com/data`)
-- A **DEBUG** log for successful responses, **WARN** for 4xx/5xx (`200 GET https://...`)
-- An **ERROR** log with stacktrace for network failures
-
-Each log entry carries a `networkCallId` in its metadata. Tapping "View Network Call" in the log detail navigates to the corresponding network call in the Network Monitor.
-
-**No Network Monitor?** If the Network Monitor plugin isn't registered, the "View Network Call" chip simply doesn't appear. The Log Monitor works independently.
-
-**No Log Monitor?** If `logStore` is `null` (the default), no log entries are emitted. The Network Monitor works independently.
-
 #### Retention
 
 ```kotlin
@@ -323,20 +299,6 @@ The Log Monitor panel adapts to the available screen width:
 - Stacktrace (copyable, if present)
 - Timestamp
 - Metadata table (if present)
-- "View Network Call" chip (when `networkCallId` metadata is present)
-
-#### Cross-Plugin Navigation
-
-The Log Monitor uses `SidekickNavigator` (provided via `LocalSidekickNavigator`) for cross-plugin navigation. Any plugin can use this API:
-
-```kotlin
-val navigator = LocalSidekickNavigator.current
-
-// Navigate to another plugin, optionally with a deep link
-navigator.navigateToPlugin("network-monitor", deepLink = callId)
-```
-
-The target plugin consumes the deep link via `navigator.consumeDeepLink()`.
 
 ---
 
@@ -579,14 +541,14 @@ Replace `core:debug` with `core:noop` in release builds. The no-op implementatio
 ```kotlin
 // build.gradle.kts (Android)
 dependencies {
-    debugImplementation(projects.core.debug)
+    debugImplementation(projects.core.runtime)
     releaseImplementation(projects.core.noop)
 }
 
 // build.gradle.kts (non-Android targets — configure per source set)
 jvmMain.dependencies {
     // swap this manually or via a build flag
-    implementation(projects.core.debug)
+    implementation(projects.core.runtime)
 }
 ```
 
