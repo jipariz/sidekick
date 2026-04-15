@@ -12,6 +12,7 @@ A Kotlin Multiplatform debug overlay SDK for Android, iOS, Desktop (JVM), and We
   - [Network Monitor](#network-monitor)
   - [Log Monitor](#log-monitor)
   - [Preferences](#preferences)
+  - [Custom Screens](#custom-screens)
 - [Custom Theming](#custom-theming)
 - [Creating a Custom Plugin](#creating-a-custom-plugin)
 - [Release Builds](#release-builds)
@@ -64,6 +65,9 @@ commonMain.dependencies {
 
     // Preferences
     implementation(projects.plugins.preferences.api)
+
+    // Custom screens
+    implementation(projects.plugins.customScreens.api)
 }
 ```
 
@@ -404,6 +408,50 @@ class MyPreferencesPlugin : PreferencesPlugin(
     },
 )
 ```
+
+---
+
+### Custom Screens
+
+`CustomScreenPlugin` wraps any Composable as a first-class debug screen in the Sidekick overlay. Each instance appears as its own card in the plugin grid.
+
+#### Setup
+
+```kotlin
+commonMain.dependencies {
+    implementation(projects.plugins.customScreens.api)
+}
+```
+
+#### Usage
+
+```kotlin
+val featureFlagsScreen = remember {
+    CustomScreenPlugin(
+        id    = "com.myapp.feature-flags",
+        title = "Feature Flags",
+        icon  = Icons.Default.Flag,
+    ) {
+        // any Composable — DI, ViewModels, CompositionLocals all work here
+        FeatureFlagsScreen()
+    }
+}
+
+SidekickShell(plugins = listOf(featureFlagsScreen)) {
+    MyAppContent()
+}
+```
+
+Create as many instances as you need and pass them all to `SidekickShell`. Because `content` executes inside the host app's composition tree, DI frameworks (Koin, Hilt, custom `CompositionLocal`s) work without any extra wiring.
+
+#### Parameters
+
+| Parameter | Description |
+|---|---|
+| `id` | Unique identifier for this screen. Kebab-case or reverse-domain recommended (e.g. `"com.myapp.flags"`). |
+| `title` | Label shown in the plugin grid card and screen header. |
+| `icon` | Icon shown in the plugin grid card. |
+| `content` | Composable rendered when the user opens this screen. |
 
 ---
 
