@@ -42,6 +42,7 @@ kotlin {
                 implementation(projects.plugins.networkMonitor.ktor)
                 implementation(projects.plugins.logMonitor.plugin)
                 implementation(projects.plugins.logMonitor.kermit)
+                implementation(projects.plugins.customScreens.api)
                 implementation(libs.kermit)
                 implementation(libs.ktor.client.core)
                 implementation(libs.kotlinx.serialization.json)
