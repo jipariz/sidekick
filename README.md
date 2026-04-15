@@ -158,8 +158,9 @@ SidekickShell(plugins = listOf(networkPlugin)) { ... }
 ```kotlin
 val httpClient = HttpClient {
     install(NetworkMonitorKtor) {
-        // Maximum characters captured per request/response body (default: 65 536)
-        maxContentLength = 32_768
+        // Maximum characters captured per request/response body
+        // Use ContentLength.Default (65 536), ContentLength.Full (unlimited), or any Int
+        maxContentLength = ContentLength.Default
 
         // Redact sensitive headers
         sanitizeHeader { name -> name.equals("Authorization", ignoreCase = true) }
@@ -171,12 +172,17 @@ val httpClient = HttpClient {
 }
 ```
 
+| `ContentLength` constant | Value |
+|---|---|
+| `ContentLength.Default` | 65,536 characters *(default)* |
+| `ContentLength.Full` | `Int.MAX_VALUE` — no truncation |
+
 #### Retention
 
 Control how long calls are kept in the database:
 
 ```kotlin
-NetworkMonitorPlugin(retentionMs = RetentionPeriod.ONE_DAY)
+NetworkMonitorPlugin(retentionPeriod = RetentionPeriod.ONE_DAY)
 ```
 
 | Constant | Duration |
@@ -226,7 +232,7 @@ The Kermit bridge forwards all Kermit log calls to the Log Monitor. Configure it
 
 ```kotlin
 val logPlugin = remember {
-    LogMonitorPlugin(retentionMs = RetentionPeriod.ONE_HOUR).also { plugin ->
+    LogMonitorPlugin(retentionPeriod = RetentionPeriod.ONE_HOUR).also { plugin ->
         Logger.setLogWriters(platformLogWriter(), LogMonitorLogWriter(plugin.store))
     }
 }
@@ -284,7 +290,7 @@ Each log entry carries a `networkCallId` in its metadata. Tapping "View Network 
 #### Retention
 
 ```kotlin
-LogMonitorPlugin(retentionMs = RetentionPeriod.ONE_DAY)
+LogMonitorPlugin(retentionPeriod = RetentionPeriod.ONE_DAY)
 ```
 
 | Constant | Duration |

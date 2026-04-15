@@ -1,6 +1,5 @@
 package dev.parez.sidekick.demo
 
-import dev.parez.sidekick.logs.LogMonitorStore
 import dev.parez.sidekick.network.RetentionPeriod
 import dev.parez.sidekick.network.ktor.NetworkMonitorKtor
 import io.ktor.client.HttpClient
@@ -19,9 +18,6 @@ val pokeHttpClient: HttpClient by lazy {
         install(NetworkMonitorKtor) {
             retentionPeriod = RetentionPeriod.ONE_HOUR
             sanitizeHeader { it.equals("Authorization", ignoreCase = true) }
-            // Enable automatic log-network correlation: HTTP requests/responses
-            // appear as log entries with a "View Network Call" link.
-            logStore = LogMonitorStore
         }
     }
 }

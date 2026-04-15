@@ -15,6 +15,8 @@ import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
 import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneStrategy
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,10 +53,23 @@ internal fun NetworkMonitorContent(
     onClear: () -> Unit,
     onBack: () -> Unit,
 ) {
-    val backStack = buildList<NavKey> {
-        add(NetworkListKey)
-        if (selected != null) add(NetworkDetailKey(selected.id))
-    }.toMutableStateList()
+    // Nav3 requires a stable SnapshotStateList that is mutated imperatively.
+    // Rebuilding a new list on each recomposition breaks NavDisplay (it captures
+    // the first reference internally). Use SideEffect to sync after each composition.
+    val backStack = remember { mutableListOf<NavKey>(NetworkListKey).toMutableStateList() }
+    SideEffect {
+        val currentDetail = backStack.filterIsInstance<NetworkDetailKey>().firstOrNull()
+        when {
+            selected != null && currentDetail == null ->
+                backStack.add(NetworkDetailKey(selected.id))
+            selected != null && currentDetail != null && currentDetail.callId != selected.id -> {
+                backStack.remove(currentDetail as NavKey)
+                backStack.add(NetworkDetailKey(selected.id))
+            }
+            selected == null && currentDetail != null ->
+                backStack.remove(currentDetail as NavKey)
+        }
+    }
 
     val sceneStrategy = rememberListDetailSceneStrategy<NavKey>()
 

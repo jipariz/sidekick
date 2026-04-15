@@ -18,9 +18,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.NetworkCheck
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -40,7 +37,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.parez.sidekick.logs.LogEntry
-import dev.parez.sidekick.plugin.LocalSidekickNavigator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,34 +84,11 @@ internal fun LogEntryDetailPane(
         LevelSummaryStrip(entry)
 
         // -- Content ----------------------------------------------------------
-        val navigator = LocalSidekickNavigator.current
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
         ) {
-            // Cross-plugin link: navigate to network call detail
-            entry.metadata?.get("networkCallId")?.let { callId ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                ) {
-                    AssistChip(
-                        onClick = { navigator.navigateToPlugin("network-monitor", callId) },
-                        label = { Text("View Network Call") },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Default.NetworkCheck,
-                                contentDescription = null,
-                                modifier = Modifier.size(AssistChipDefaults.IconSize),
-                            )
-                        },
-                    )
-                }
-            }
-
             DetailSection(label = "Tag") {
                 CopyableMonoBlock(entry.tag)
             }

@@ -12,15 +12,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import dev.parez.sidekick.logs.ui.LogMonitorContent
 import dev.parez.sidekick.plugin.SidekickPlugin
+import kotlin.time.Duration
 import kotlinx.coroutines.launch
 
 class LogMonitorPlugin(
     val store: LogMonitorStore = LogMonitorStore,
-    retentionMs: Long = RetentionPeriod.ONE_HOUR,
+    retentionPeriod: Duration = RetentionPeriod.ONE_HOUR,
 ) : SidekickPlugin {
 
     init {
-        store.init(retentionMs)
+        store.init(retentionPeriod)
     }
 
     override val id: String = "log-monitor"

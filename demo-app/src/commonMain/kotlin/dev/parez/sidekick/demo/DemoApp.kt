@@ -65,9 +65,9 @@ private val navSavedStateConfig = SavedStateConfiguration {
 fun DemoApp() {
     KoinApplication(application = { modules(appModule) }) {
         val prefsPlugin = remember { AppPreferencesPlugin() }
-        val networkPlugin = remember { NetworkMonitorPlugin(retentionMs = RetentionPeriod.ONE_HOUR) }
+        val networkPlugin = remember { NetworkMonitorPlugin(retentionPeriod = RetentionPeriod.ONE_HOUR) }
         val logPlugin = remember {
-            LogMonitorPlugin(retentionMs = LogRetentionPeriod.ONE_HOUR).also { plugin ->
+            LogMonitorPlugin(retentionPeriod = LogRetentionPeriod.ONE_HOUR).also { plugin ->
                 Logger.setLogWriters(platformLogWriter(), LogMonitorLogWriter(plugin.store))
             }
         }
