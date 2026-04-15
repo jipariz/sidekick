@@ -33,6 +33,15 @@ jobs:
       - name: Build WasmJS demo
         run: ./gradlew :demo-app:wasmJsBrowserDistribution --no-daemon
 
+      - name: Inject coi-serviceworker for SharedArrayBuffer support
+        working-directory: demo-app/build/dist/wasmJs/productionExecutable
+        run: |
+          # GitHub Pages cannot set COOP/COEP headers, so we use
+          # coi-serviceworker to enable SharedArrayBuffer client-side
+          # (required by SQLite WASM / Room).
+          curl -sL https://unpkg.com/coi-serviceworker@0.1.7/coi-serviceworker.min.js -o coi-serviceworker.min.js
+          sed -i 's|</head>|<script src="coi-serviceworker.min.js"></script></head>|' index.html
+
       - name: Upload demo artifact
         uses: actions/upload-artifact@v4
         with:
