@@ -1,0 +1,68 @@
+site_name: Sidekick
+site_description: A Kotlin Multiplatform debug overlay SDK for Android, iOS, Desktop, and Web.
+site_url: https://jipariz.github.io/sidekick/
+repo_url: https://github.com/jipariz/sidekick
+repo_name: jipariz/sidekick
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - content.code.copy
+    - content.code.annotate
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.inlinehilite
+  - tables
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: installation.md
+      - Quick Start: quick-start.md
+      - Release Builds: release-builds.md
+  - Plugins:
+      - Network Monitor: plugins/network-monitor.md
+      - Log Monitor: plugins/log-monitor.md
+      - Preferences: plugins/preferences.md
+      - Custom Screens: plugins/custom-screens.md
+      - Creating a Custom Plugin: plugins/custom-plugin.md
+  - Theming: theming.md
+  - Claude Code Skills: claude-code-skills.md
+  - Live Demo: demo/index.html
