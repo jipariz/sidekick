@@ -83,6 +83,9 @@ jobs:
           name: demo-dist
           path: site/demo/
 
+      - name: Add .nojekyll
+        run: touch site/.nojekyll
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
