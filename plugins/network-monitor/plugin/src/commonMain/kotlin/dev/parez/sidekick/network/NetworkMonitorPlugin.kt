@@ -12,15 +12,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import dev.parez.sidekick.network.ui.NetworkMonitorContent
 import dev.parez.sidekick.plugin.SidekickPlugin
+import kotlin.time.Duration
 import kotlinx.coroutines.launch
 
 class NetworkMonitorPlugin(
     private val store: NetworkMonitorStore = NetworkMonitorStore,
-    retentionMs: Long = RetentionPeriod.ONE_HOUR,
+    retentionPeriod: Duration = RetentionPeriod.ONE_HOUR,
 ) : SidekickPlugin {
 
     init {
-        store.init(retentionMs)
+        store.init(retentionPeriod)
     }
 
     override val id: String = "network-monitor"
@@ -29,7 +30,7 @@ class NetworkMonitorPlugin(
 
     @Composable
     override fun Content() {
-        val calls by store.calls().collectAsState(emptyList())
+        val calls by store.calls.collectAsState(emptyList())
         var selected by remember { mutableStateOf<NetworkCall?>(null) }
         val scope = rememberCoroutineScope()
 

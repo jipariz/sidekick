@@ -2,6 +2,7 @@ package dev.parez.sidekick.demo.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import co.touchlab.kermit.Logger
 import dev.parez.sidekick.demo.PokemonDetail
 import dev.parez.sidekick.demo.PokemonRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,9 +45,14 @@ class PokemonDetailViewModel(
     }
 
     fun fetchDetail() {
+        Logger.i("DetailVM") { "fetchDetail: id=$id" }
         viewModelScope.launch {
             runCatching { repository.fetchDetail(id) }
-                .onFailure { error.value = it.message ?: "Unknown error" }
+                .onSuccess { Logger.d("DetailVM") { "fetchDetail: success for id=$id" } }
+                .onFailure {
+                    Logger.e("DetailVM", it) { "fetchDetail failed for id=$id" }
+                    error.value = it.message ?: "Unknown error"
+                }
         }
     }
 }

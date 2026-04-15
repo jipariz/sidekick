@@ -10,6 +10,7 @@ A Kotlin Multiplatform debug overlay SDK for Android, iOS, Desktop (JVM), and We
 - [Quick Start](#quick-start)
 - [Plugins](#plugins)
   - [Network Monitor](#network-monitor)
+  - [Log Monitor](#log-monitor)
   - [Preferences](#preferences)
 - [Custom Theming](#custom-theming)
 - [Creating a Custom Plugin](#creating-a-custom-plugin)
@@ -28,7 +29,7 @@ Every app needs the core runtime (debug builds) and the no-op stub (release buil
 ```kotlin
 // build.gradle.kts
 dependencies {
-    debugImplementation(projects.core.debug)
+    debugImplementation(projects.core.runtime)
     releaseImplementation(projects.core.noop)
 }
 ```
@@ -42,7 +43,7 @@ commonMain.dependencies {
     // ...
 }
 jvmMain.dependencies {
-    implementation(projects.core.debug)
+    implementation(projects.core.runtime)
 }
 ```
 
@@ -52,9 +53,17 @@ Add the plugins you want to use:
 
 ```kotlin
 commonMain.dependencies {
-    implementation(projects.plugins.preferences.api)
-    implementation(projects.plugins.networkMonitor.api)
+    // Network monitor
+    implementation(projects.plugins.networkMonitor.plugin)
     implementation(projects.plugins.networkMonitor.ktor) // Ktor integration
+
+    // Log monitor
+    implementation(projects.plugins.logMonitor.plugin)
+    implementation(projects.plugins.logMonitor.kermit)   // Kermit integration (optional)
+    implementation("co.touchlab:kermit:2.0.5")           // if using the Kermit bridge
+
+    // Preferences
+    implementation(projects.plugins.preferences.api)
 }
 ```
 
@@ -107,9 +116,10 @@ Wrap your root composable with `SidekickShell` and pass your list of plugins:
 @Composable
 fun App() {
     val networkPlugin = remember { NetworkMonitorPlugin() }
+    val plugins = remember(networkPlugin) { listOf(networkPlugin) }
 
     MaterialTheme {
-        SidekickShell(plugins = listOf(networkPlugin)) {
+        SidekickShell(plugins = plugins) {
             // your app content
         }
     }
@@ -149,8 +159,9 @@ SidekickShell(plugins = listOf(networkPlugin)) { ... }
 ```kotlin
 val httpClient = HttpClient {
     install(NetworkMonitorKtor) {
-        // Maximum characters captured per request/response body (default: 65 536)
-        maxContentLength = 32_768
+        // Maximum characters captured per request/response body
+        // Use ContentLength.Default (65 536), ContentLength.Full (unlimited), or any Int
+        maxContentLength = ContentLength.Default
 
         // Redact sensitive headers
         sanitizeHeader { name -> name.equals("Authorization", ignoreCase = true) }
@@ -162,12 +173,17 @@ val httpClient = HttpClient {
 }
 ```
 
+| `ContentLength` constant | Value |
+|---|---|
+| `ContentLength.Default` | 65,536 characters *(default)* |
+| `ContentLength.Full` | `Int.MAX_VALUE` — no truncation |
+
 #### Retention
 
 Control how long calls are kept in the database:
 
 ```kotlin
-NetworkMonitorPlugin(retentionMs = RetentionPeriod.ONE_DAY)
+NetworkMonitorPlugin(retentionPeriod = RetentionPeriod.ONE_DAY)
 ```
 
 | Constant | Duration |
@@ -188,6 +204,101 @@ The Network Monitor panel adapts to the available screen width:
 | ≥ 840 dp | Two panes — list fixed at 360 dp |
 
 Each request shows the HTTP method badge, host, path, status code (color-coded), and duration. The detail view has Request and Response tabs with copyable headers and pretty-printed JSON bodies.
+
+---
+
+### Log Monitor
+
+The Log Monitor captures and displays application log messages. It works with any logging SDK through the `LogCollector` interface, with built-in support for [Kermit](https://github.com/nicklockwood/Kermit) by Touchlab.
+
+#### Modules
+
+| Module | Purpose |
+|---|---|
+| `plugins:log-monitor:api` | Core data model, `LogMonitorStore`, `LogCollector` interface |
+| `plugins:log-monitor:plugin` | Compose UI + `LogMonitorPlugin` |
+| `plugins:log-monitor:kermit` | Kermit `LogWriter` bridge |
+
+#### Basic Setup
+
+```kotlin
+val logPlugin = remember { LogMonitorPlugin() }
+
+SidekickShell(plugins = listOf(logPlugin)) { ... }
+```
+
+#### Integrating with Kermit
+
+The Kermit bridge forwards all Kermit log calls to the Log Monitor. Configure it once at app startup:
+
+```kotlin
+val logPlugin = remember {
+    LogMonitorPlugin(retentionPeriod = RetentionPeriod.ONE_HOUR).also { plugin ->
+        Logger.setLogWriters(platformLogWriter(), LogMonitorLogWriter(plugin.store))
+    }
+}
+```
+
+All `Logger.d(...)`, `Logger.i(...)`, `Logger.e(...)` calls now appear in the Sidekick log panel automatically.
+
+#### Integrating with Other Logging SDKs
+
+Implement the `LogCollector` interface to bridge any logging library:
+
+```kotlin
+fun interface LogCollector {
+    fun log(level: LogLevel, tag: String, message: String, throwable: Throwable?)
+}
+```
+
+`LogMonitorStore` itself implements `LogCollector`, so you can pass it directly to your SDK's log writer or interceptor. Alternatively, call `LogMonitorStore.record()` for more control:
+
+```kotlin
+LogMonitorStore.record(
+    level = LogLevel.INFO,
+    tag = "MyTag",
+    message = "Something happened",
+    throwable = null,
+    metadata = mapOf("key" to "value"),  // optional metadata
+)
+```
+
+#### Retention
+
+```kotlin
+LogMonitorPlugin(retentionPeriod = RetentionPeriod.ONE_DAY)
+```
+
+| Constant | Duration |
+|---|---|
+| `RetentionPeriod.ONE_HOUR` | 1 hour *(default)* |
+| `RetentionPeriod.ONE_DAY` | 24 hours |
+| `RetentionPeriod.ONE_WEEK` | 7 days |
+| `RetentionPeriod.FOREVER` | Never purged |
+
+Maximum stored entries: 1,000 (oldest are pruned automatically).
+
+#### UI
+
+The Log Monitor panel adapts to the available screen width:
+
+| Width | Layout |
+|---|---|
+| < 600 dp | Single pane -- tap a log entry to see its detail |
+| 600--840 dp | Two panes at 40/60 split |
+| >= 840 dp | Two panes -- list fixed at 360 dp |
+
+**List view** features:
+- Color-coded level badges (V=gray, D=green, I=blue, W=amber, E=red, A=red)
+- **Level filter chips** -- toggle each log level on/off
+- **Search** -- filter by tag or message text
+- Error count indicator
+
+**Detail view** shows:
+- Full message (copyable)
+- Stacktrace (copyable, if present)
+- Timestamp
+- Metadata table (if present)
 
 ---
 
@@ -430,14 +541,14 @@ Replace `core:debug` with `core:noop` in release builds. The no-op implementatio
 ```kotlin
 // build.gradle.kts (Android)
 dependencies {
-    debugImplementation(projects.core.debug)
+    debugImplementation(projects.core.runtime)
     releaseImplementation(projects.core.noop)
 }
 
 // build.gradle.kts (non-Android targets — configure per source set)
 jvmMain.dependencies {
     // swap this manually or via a build flag
-    implementation(projects.core.debug)
+    implementation(projects.core.runtime)
 }
 ```
 

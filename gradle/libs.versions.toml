@@ -22,6 +22,7 @@ ktor = "3.1.3"
 kotlinxSerialization = "1.8.1"
 coil = "3.2.0"
 koin = "4.1.1"
+kermit = "2.0.5"
 navigation3 = "1.1.0"
 navigation3JetBrains = "1.0.0-alpha06"
 compose-multiplatform-adaptive = "1.3.0-alpha06"
@@ -69,6 +70,7 @@ room3-runtime                     = { module = "androidx.room3:room3-runtime",  
 room3-compiler                    = { module = "androidx.room3:room3-compiler",                           version.ref = "room3" }
 sqlite-bundled                    = { module = "androidx.sqlite:sqlite-bundled",                          version.ref = "sqlite" }
 sqlite-web                        = { module = "androidx.sqlite:sqlite-web",                              version.ref = "sqlite" }
+kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 kotlinx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
 kotlinx-navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigation3-ui", version.ref = "navigation3JetBrains" }
 jetbrains-material3-adaptiveNavigation3 = { module = "org.jetbrains.compose.material3.adaptive:adaptive-navigation3", version.ref = "compose-multiplatform-adaptive" }

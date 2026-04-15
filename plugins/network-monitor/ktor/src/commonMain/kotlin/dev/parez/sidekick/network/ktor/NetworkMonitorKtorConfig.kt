@@ -3,19 +3,34 @@ package dev.parez.sidekick.network.ktor
 import dev.parez.sidekick.network.NetworkMonitorStore
 import dev.parez.sidekick.network.RetentionPeriod
 import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.utils.io.KtorDsl
+import kotlin.time.Duration
 
+/**
+ * The maximum length of the content that will be logged.
+ * After this, request/response body will be truncated.
+ */
+public object ContentLength {
+    /** Default value: 65,536 characters. */
+    public const val Default: Int = 65_536
+
+    /** Log the full content without truncation. */
+    public const val Full: Int = Int.MAX_VALUE
+}
+
+@KtorDsl
 public class NetworkMonitorKtorConfig {
     internal val filters = mutableListOf<(HttpRequestBuilder) -> Boolean>()
     internal val sanitizedHeaders = mutableListOf<SanitizedHeader>()
 
     /** Maximum number of characters captured from a request/response body. */
-    public var maxContentLength: Int = 65_536
+    public var maxContentLength: Int = ContentLength.Default
 
     /**
-     * Calls older than this many milliseconds are purged on next [NetworkMonitorStore.init].
+     * Calls older than this duration are purged on next [NetworkMonitorStore.init].
      * Use constants from [RetentionPeriod].
      */
-    public var retentionPeriod: Long = RetentionPeriod.ONE_HOUR
+    public var retentionPeriod: Duration = RetentionPeriod.ONE_HOUR
 
     /** The store to write captured calls into. Override for testing. */
     public var store: NetworkMonitorStore = NetworkMonitorStore

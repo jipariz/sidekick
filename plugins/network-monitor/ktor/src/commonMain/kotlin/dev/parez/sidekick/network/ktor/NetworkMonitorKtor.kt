@@ -43,11 +43,14 @@ public val NetworkMonitorKtor: ClientPlugin<NetworkMonitorKtorConfig> =
                 ?.takeIf { it != "EmptyContent" }
                 ?.truncate(config.maxContentLength)
 
+            val url = request.url.buildString()
+            val method = request.method.value
+
             runCatching {
                 store.recordRequest(
                     id = id,
-                    url = request.url.buildString(),
-                    method = request.method.value,
+                    url = url,
+                    method = method,
                     headers = reqHeaders,
                     body = reqBody,
                     timestamp = currentTimeMillis(),
@@ -63,10 +66,11 @@ public val NetworkMonitorKtor: ClientPlugin<NetworkMonitorKtorConfig> =
             }
 
             // ── Response metadata ─────────────────────────────────────────────
+            val statusCode = call.response.status.value
             runCatching {
                 store.recordResponse(
                     id = id,
-                    code = call.response.status.value,
+                    code = statusCode,
                     headers = call.response.headers.sanitize(config.sanitizedHeaders),
                     timestamp = currentTimeMillis(),
                 )

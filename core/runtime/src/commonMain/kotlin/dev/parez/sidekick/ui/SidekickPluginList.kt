@@ -16,7 +16,7 @@ import dev.parez.sidekick.SidekickState
 @Composable
 internal fun SidekickPluginList(state: SidekickState) {
     LazyColumn {
-        items(state.plugins) { plugin ->
+        items(state.plugins, key = { it.id }) { plugin ->
             ListItem(
                 headlineContent = { Text(plugin.title, style = MaterialTheme.typography.titleMedium) },
                 leadingContent = {
