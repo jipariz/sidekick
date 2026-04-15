@@ -30,7 +30,7 @@ class NetworkMonitorPlugin(
 
     @Composable
     override fun Content() {
-        val calls by store.calls().collectAsState(emptyList())
+        val calls by store.calls.collectAsState(emptyList())
         var selected by remember { mutableStateOf<NetworkCall?>(null) }
         val scope = rememberCoroutineScope()
 

@@ -79,8 +79,12 @@ fun DemoApp() {
 
         val colorScheme = colorSchemeFor(theme = colorTheme, dark = darkMode)
 
+        val plugins = remember(prefsPlugin, networkPlugin, logPlugin) {
+            listOf(prefsPlugin, networkPlugin, logPlugin)
+        }
+
         MaterialTheme(colorScheme = colorScheme, typography = AppTypography) {
-            SidekickShell(plugins = listOf(prefsPlugin, networkPlugin, logPlugin)) {
+            SidekickShell(plugins = plugins) {
                 PokemonCatalog(
                     showNumbers = showNumbers,
                     gridColumns = gridColumns,

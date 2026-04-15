@@ -47,7 +47,7 @@ object NetworkMonitorStore {
         }
     }
 
-    fun calls(): Flow<List<NetworkCall>> = _database
+    val calls: Flow<List<NetworkCall>> = _database
         .flatMapLatest { db ->
             if (db != null) {
                 db.networkCallQueries

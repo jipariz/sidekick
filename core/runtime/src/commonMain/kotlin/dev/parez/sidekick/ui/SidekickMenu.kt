@@ -34,17 +34,18 @@ internal fun SidekickMenu(state: SidekickState) {
     ) {
         Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
             // Header
+            val activePlugin = state.activePlugin
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (state.activePlugin != null) {
+                if (activePlugin != null) {
                     IconButton(onClick = { state.backToList() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
                 Text(
-                    text = state.activePlugin?.title ?: "Sidekick",
+                    text = activePlugin?.title ?: "Sidekick",
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.padding(start = 8.dp),
                 )

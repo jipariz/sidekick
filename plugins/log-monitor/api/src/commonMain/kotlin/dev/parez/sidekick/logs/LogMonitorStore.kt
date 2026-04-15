@@ -49,7 +49,7 @@ object LogMonitorStore : LogCollector {
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun entries(): Flow<List<LogEntry>> = _database
+    val entries: Flow<List<LogEntry>> = _database
         .flatMapLatest { db ->
             if (db != null) {
                 db.logEntryQueries

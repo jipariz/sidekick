@@ -30,7 +30,7 @@ class LogMonitorPlugin(
 
     @Composable
     override fun Content() {
-        val entries by store.entries().collectAsState(emptyList())
+        val entries by store.entries.collectAsState(emptyList())
         var selected by remember { mutableStateOf<LogEntry?>(null) }
         val scope = rememberCoroutineScope()
 
