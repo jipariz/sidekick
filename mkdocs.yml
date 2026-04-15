@@ -65,4 +65,4 @@ nav:
       - Creating a Custom Plugin: plugins/custom-plugin.md
   - Theming: theming.md
   - Claude Code Skills: claude-code-skills.md
-  - Live Demo: demo/index.html
+  - Live Demo: https://jipariz.github.io/sidekick/demo/
