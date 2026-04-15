@@ -33,6 +33,11 @@ jobs:
       - name: Build WasmJS demo
         run: ./gradlew :demo-app:wasmJsBrowserDistribution --no-daemon
 
+      - name: Inject coi-serviceworker into index.html
+        run: |
+          sed -i 's|<script type="application/javascript" src="demo-app.js"></script>|<script src="coi-serviceworker.min.js"></script><script type="application/javascript" src="demo-app.js"></script>|' \
+            demo-app/build/dist/wasmJs/productionExecutable/index.html
+
       - name: Upload demo artifact
         uses: actions/upload-artifact@v4
         with:
