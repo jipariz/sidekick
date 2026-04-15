@@ -17,8 +17,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import dev.parez.sidekick.plugin.SidekickAppInfo
 import dev.parez.sidekick.plugin.SidekickColors
 import dev.parez.sidekick.plugin.SidekickPlugin
+import dev.parez.sidekick.plugin.rememberSidekickAppInfo
 import dev.parez.sidekick.ui.SidekickMenu
 import dev.parez.sidekick.ui.theme.LocalSidekickThemeActive
 import dev.parez.sidekick.ui.theme.SidekickDefaultColorScheme
@@ -57,6 +59,9 @@ import dev.parez.sidekick.ui.theme.isM3Default
  * ```
  *
  * @param plugins        Plugins to show in the debug panel.
+ * @param appInfo        Optional host-app metadata (version, build type, device) shown in the
+ *                       panel header. Use the platform-specific [SidekickAppInfo.detect] factory
+ *                       or construct manually. When null the header shows no app info.
  * @param state          Optional state; defaults to [rememberSidekickState].
  * @param sidekickColors Sidekick-specific semantic colors (HTTP badges, status chips).
  *                       When null they are auto-derived from the resolved [MaterialTheme].
@@ -65,6 +70,7 @@ import dev.parez.sidekick.ui.theme.isM3Default
 @Composable
 fun SidekickShell(
     plugins: List<SidekickPlugin>,
+    appInfo: SidekickAppInfo? = rememberSidekickAppInfo(),
     state: SidekickState = rememberSidekickState(plugins),
     sidekickColors: SidekickColors? = null,
     content: @Composable () -> Unit,
@@ -98,7 +104,7 @@ fun SidekickShell(
                 enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
                 exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
             ) {
-                SidekickMenu(state)
+                SidekickMenu(state, appInfo)
             }
         }
     }
