@@ -10,6 +10,7 @@ A Kotlin Multiplatform debug overlay SDK for Android, iOS, Desktop (JVM), and We
 - [Quick Start](#quick-start)
 - [Plugins](#plugins)
   - [Network Monitor](#network-monitor)
+  - [Log Monitor](#log-monitor)
   - [Preferences](#preferences)
 - [Custom Theming](#custom-theming)
 - [Creating a Custom Plugin](#creating-a-custom-plugin)
@@ -52,9 +53,17 @@ Add the plugins you want to use:
 
 ```kotlin
 commonMain.dependencies {
-    implementation(projects.plugins.preferences.api)
-    implementation(projects.plugins.networkMonitor.api)
+    // Network monitor
+    implementation(projects.plugins.networkMonitor.plugin)
     implementation(projects.plugins.networkMonitor.ktor) // Ktor integration
+
+    // Log monitor
+    implementation(projects.plugins.logMonitor.plugin)
+    implementation(projects.plugins.logMonitor.kermit)   // Kermit integration (optional)
+    implementation("co.touchlab:kermit:2.0.5")           // if using the Kermit bridge
+
+    // Preferences
+    implementation(projects.plugins.preferences.api)
 }
 ```
 
@@ -188,6 +197,140 @@ The Network Monitor panel adapts to the available screen width:
 | ≥ 840 dp | Two panes — list fixed at 360 dp |
 
 Each request shows the HTTP method badge, host, path, status code (color-coded), and duration. The detail view has Request and Response tabs with copyable headers and pretty-printed JSON bodies.
+
+---
+
+### Log Monitor
+
+The Log Monitor captures and displays application log messages. It works with any logging SDK through the `LogCollector` interface, with built-in support for [Kermit](https://github.com/nicklockwood/Kermit) by Touchlab.
+
+#### Modules
+
+| Module | Purpose |
+|---|---|
+| `plugins:log-monitor:api` | Core data model, `LogMonitorStore`, `LogCollector` interface |
+| `plugins:log-monitor:plugin` | Compose UI + `LogMonitorPlugin` |
+| `plugins:log-monitor:kermit` | Kermit `LogWriter` bridge |
+
+#### Basic Setup
+
+```kotlin
+val logPlugin = remember { LogMonitorPlugin() }
+
+SidekickShell(plugins = listOf(logPlugin)) { ... }
+```
+
+#### Integrating with Kermit
+
+The Kermit bridge forwards all Kermit log calls to the Log Monitor. Configure it once at app startup:
+
+```kotlin
+val logPlugin = remember {
+    LogMonitorPlugin(retentionMs = RetentionPeriod.ONE_HOUR).also { plugin ->
+        Logger.setLogWriters(platformLogWriter(), LogMonitorLogWriter(plugin.store))
+    }
+}
+```
+
+All `Logger.d(...)`, `Logger.i(...)`, `Logger.e(...)` calls now appear in the Sidekick log panel automatically.
+
+#### Integrating with Other Logging SDKs
+
+Implement the `LogCollector` interface to bridge any logging library:
+
+```kotlin
+fun interface LogCollector {
+    fun log(level: LogLevel, tag: String, message: String, throwable: Throwable?)
+}
+```
+
+`LogMonitorStore` itself implements `LogCollector`, so you can pass it directly to your SDK's log writer or interceptor. Alternatively, call `LogMonitorStore.record()` for more control:
+
+```kotlin
+LogMonitorStore.record(
+    level = LogLevel.INFO,
+    tag = "MyTag",
+    message = "Something happened",
+    throwable = null,
+    metadata = mapOf("key" to "value"),  // optional metadata
+)
+```
+
+#### Linking Logs to Network Calls
+
+When both the Log Monitor and Network Monitor are installed, you can enable automatic correlation so HTTP requests appear as log entries with a **"View Network Call"** chip that navigates directly to the network call detail.
+
+Set `logStore` in your Ktor client configuration:
+
+```kotlin
+val httpClient = HttpClient {
+    install(NetworkMonitorKtor) {
+        logStore = LogMonitorStore  // enables log-network linking
+    }
+}
+```
+
+This automatically emits:
+- An **INFO** log for each HTTP request (`GET https://api.example.com/data`)
+- A **DEBUG** log for successful responses, **WARN** for 4xx/5xx (`200 GET https://...`)
+- An **ERROR** log with stacktrace for network failures
+
+Each log entry carries a `networkCallId` in its metadata. Tapping "View Network Call" in the log detail navigates to the corresponding network call in the Network Monitor.
+
+**No Network Monitor?** If the Network Monitor plugin isn't registered, the "View Network Call" chip simply doesn't appear. The Log Monitor works independently.
+
+**No Log Monitor?** If `logStore` is `null` (the default), no log entries are emitted. The Network Monitor works independently.
+
+#### Retention
+
+```kotlin
+LogMonitorPlugin(retentionMs = RetentionPeriod.ONE_DAY)
+```
+
+| Constant | Duration |
+|---|---|
+| `RetentionPeriod.ONE_HOUR` | 1 hour *(default)* |
+| `RetentionPeriod.ONE_DAY` | 24 hours |
+| `RetentionPeriod.ONE_WEEK` | 7 days |
+| `RetentionPeriod.FOREVER` | Never purged |
+
+Maximum stored entries: 1,000 (oldest are pruned automatically).
+
+#### UI
+
+The Log Monitor panel adapts to the available screen width:
+
+| Width | Layout |
+|---|---|
+| < 600 dp | Single pane -- tap a log entry to see its detail |
+| 600--840 dp | Two panes at 40/60 split |
+| >= 840 dp | Two panes -- list fixed at 360 dp |
+
+**List view** features:
+- Color-coded level badges (V=gray, D=green, I=blue, W=amber, E=red, A=red)
+- **Level filter chips** -- toggle each log level on/off
+- **Search** -- filter by tag or message text
+- Error count indicator
+
+**Detail view** shows:
+- Full message (copyable)
+- Stacktrace (copyable, if present)
+- Timestamp
+- Metadata table (if present)
+- "View Network Call" chip (when `networkCallId` metadata is present)
+
+#### Cross-Plugin Navigation
+
+The Log Monitor uses `SidekickNavigator` (provided via `LocalSidekickNavigator`) for cross-plugin navigation. Any plugin can use this API:
+
+```kotlin
+val navigator = LocalSidekickNavigator.current
+
+// Navigate to another plugin, optionally with a deep link
+navigator.navigateToPlugin("network-monitor", deepLink = callId)
+```
+
+The target plugin consumes the deep link via `navigator.consumeDeepLink()`.
 
 ---
 
