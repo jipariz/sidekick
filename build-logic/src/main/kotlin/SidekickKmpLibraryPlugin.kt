@@ -38,6 +38,7 @@ class SidekickKmpLibraryPlugin : Plugin<Project> {
                 compilerOptions {
                     jvmTarget.set(JvmTarget.JVM_11)
                 }
+                publishLibraryVariants("release", "debug")
             }
             iosArm64()
             iosSimulatorArm64()

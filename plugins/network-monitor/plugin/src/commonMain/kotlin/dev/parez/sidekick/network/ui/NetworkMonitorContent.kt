@@ -66,6 +66,7 @@ internal fun NetworkMonitorContent(
                     onSelect = onSelect,
                     onClear = onClear,
                     showChevron = true,
+                    onBack = onBack,
                 )
             }
         },
@@ -78,7 +79,6 @@ internal fun NetworkMonitorContent(
                         call = call,
                         showBackButton = true,
                         onBack = {
-                            onBack()
                             scope.launch { navigator.navigateBack() }
                         },
                     )

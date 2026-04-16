@@ -29,7 +29,7 @@ class LogMonitorPlugin(
     override val icon: ImageVector = Icons.AutoMirrored.Default.List
 
     @Composable
-    override fun Content() {
+    override fun Content(navigateBackToList: () -> Unit) {
         val entries by store.entries.collectAsState(emptyList())
         var selected by remember { mutableStateOf<LogEntry?>(null) }
         val scope = rememberCoroutineScope()
@@ -39,7 +39,7 @@ class LogMonitorPlugin(
             selected = selected,
             onSelect = { selected = it },
             onClear = { scope.launch { store.clear() } },
-            onBack = { selected = null },
+            onBack = navigateBackToList,
         )
     }
 }

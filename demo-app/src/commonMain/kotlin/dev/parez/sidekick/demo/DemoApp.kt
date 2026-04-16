@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.outlined.CatchingPokemon
 import androidx.compose.material3.Icon
@@ -36,6 +37,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Alignment
@@ -124,7 +126,15 @@ fun DemoApp() {
                 ) {
                     Sidekick(
                         plugins = plugins,
-                        onClose = { sidekickVisible = false },
+                        actions = {
+                            IconButton(
+                                onClick = { sidekickVisible = false },
+                                modifier = Modifier
+                                    .padding(16.dp),
+                            ) {
+                                Icon(Icons.Filled.Close, contentDescription = "Open Sidekick")
+                            }
+                        }
                     )
                 }
             }

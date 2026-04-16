@@ -29,7 +29,7 @@ class NetworkMonitorPlugin(
     override val icon: ImageVector = Icons.Default.NetworkCheck
 
     @Composable
-    override fun Content() {
+    override fun Content(navigateBackToList: () -> Unit) {
         val calls by store.calls.collectAsState(emptyList())
         var selected by remember { mutableStateOf<NetworkCall?>(null) }
         val scope = rememberCoroutineScope()
@@ -39,7 +39,7 @@ class NetworkMonitorPlugin(
             selected = selected,
             onSelect = { selected = it },
             onClear = { scope.launch { store.clear() } },
-            onBack = { selected = null },
+            onBack = navigateBackToList,
         )
     }
 }

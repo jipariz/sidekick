@@ -23,6 +23,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -45,72 +46,78 @@ internal fun LogEntryDetailPane(
     showBackButton: Boolean = true,
     onBack: () -> Unit,
 ) {
-    Column(Modifier.fillMaxSize()) {
-        // -- TopAppBar --------------------------------------------------------
-        TopAppBar(
-            title = {
-                Column {
-                    Text(
-                        text = entry.tag,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontFamily = FontFamily.Monospace,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = "${entry.level.fullLabel()} - ${formatTimestamp(entry.timestamp)}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                    )
-                }
-            },
-            navigationIcon = {
-                if (showBackButton) {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Column {
+                        Text(
+                            text = entry.tag,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontFamily = FontFamily.Monospace,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = "${entry.level.fullLabel()} - ${formatTimestamp(entry.timestamp)}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
                     }
-                }
-            },
-            actions = {
-                LevelBadge(entry.level, modifier = Modifier.padding(end = 12.dp))
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            ),
-        )
-
-        // -- Level summary strip ----------------------------------------------
-        LevelSummaryStrip(entry)
-
-        // -- Content ----------------------------------------------------------
+                },
+                navigationIcon = {
+                    if (showBackButton) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    }
+                },
+                actions = {
+                    LevelBadge(entry.level, modifier = Modifier.padding(end = 12.dp))
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                ),
+            )
+        }
+    ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+            Modifier.padding(it).
+            fillMaxSize()
         ) {
-            DetailSection(label = "Tag") {
-                CopyableMonoBlock(entry.tag)
-            }
-            DetailSection(label = "Message") {
-                CopyableCodeBlock(entry.message)
-            }
-            entry.throwable?.let {
-                DetailSection(label = "Stacktrace") {
-                    CopyableCodeBlock(it)
+            // -- Level summary strip ----------------------------------------------
+            LevelSummaryStrip(entry)
+
+            // -- Content ----------------------------------------------------------
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                DetailSection(label = "Tag") {
+                    CopyableMonoBlock(entry.tag)
                 }
-            }
-            DetailSection(label = "Timestamp") {
-                MonoText(formatTimestamp(entry.timestamp))
-            }
-            entry.metadata?.let { meta ->
-                if (meta.isNotEmpty()) {
-                    DetailSection(label = "Metadata") {
-                        MetadataTable(meta)
+                DetailSection(label = "Message") {
+                    CopyableCodeBlock(entry.message)
+                }
+                entry.throwable?.let {
+                    DetailSection(label = "Stacktrace") {
+                        CopyableCodeBlock(it)
                     }
                 }
+                DetailSection(label = "Timestamp") {
+                    MonoText(formatTimestamp(entry.timestamp))
+                }
+                entry.metadata?.let { meta ->
+                    if (meta.isNotEmpty()) {
+                        DetailSection(label = "Metadata") {
+                            MetadataTable(meta)
+                        }
+                    }
+                }
+                Spacer(Modifier.height(24.dp))
             }
-            Spacer(Modifier.height(24.dp))
         }
     }
 }

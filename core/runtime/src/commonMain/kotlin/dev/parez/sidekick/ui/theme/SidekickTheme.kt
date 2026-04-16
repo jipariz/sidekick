@@ -6,18 +6,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
-import dev.parez.sidekick.plugin.LocalSidekickColors
-import dev.parez.sidekick.plugin.SidekickColors
-import dev.parez.sidekick.plugin.sidekickColors
 
 /**
  * Default dark Material 3 color scheme for the Sidekick overlay.
- * Used as a fallback when the host app has not applied a custom MaterialTheme.
+ * Used when [useSidekickTheme] is `true` and the system is in dark mode.
  */
-val SidekickDefaultColorScheme: ColorScheme = darkColorScheme(
+val SidekickDarkColorScheme: ColorScheme = darkColorScheme(
     primary = Color(0xFFBAC3FF),
     onPrimary = Color(0xFF15267B),
     primaryContainer = Color(0xFF5C6BC0),
@@ -54,6 +49,7 @@ val SidekickDefaultColorScheme: ColorScheme = darkColorScheme(
 
 /**
  * Light variant of the Sidekick library color scheme.
+ * Used when [useSidekickTheme] is `true` and the system is in light mode.
  */
 val SidekickLightColorScheme: ColorScheme = lightColorScheme(
     primary = Color(0xFF4A5798),
@@ -91,94 +87,22 @@ val SidekickLightColorScheme: ColorScheme = lightColorScheme(
 )
 
 /**
- * Signals that a [SidekickTheme] has been explicitly applied in this subtree.
- * Prevents [SidekickShell] from overriding an intentional theme with the fallback.
- */
-internal val LocalSidekickThemeActive = compositionLocalOf { false }
-
-/**
- * Flexible theme wrapper for the Sidekick library.
+ * Sidekick library theme.
  *
- * When [useLibraryTheme] is `true` (default), Sidekick applies its own
- * [lightColorScheme][SidekickLightColorScheme] / [darkColorScheme][SidekickDefaultColorScheme]
- * based on the system dark-mode setting. When `false`, the host application's ambient
- * [MaterialTheme] is inherited as-is — only the [SidekickColors] semantic tokens are provided.
- *
- * Use this at the entry point of Sidekick's UI to give host apps control over theming:
- * ```kotlin
- * // Library's own palette
- * LibraryTheme { SidekickShell(plugins) { MyApp() } }
- *
- * // Inherit host's MaterialTheme
- * LibraryTheme(useLibraryTheme = false) { SidekickShell(plugins) { MyApp() } }
- * ```
- *
- * @param useLibraryTheme When true, apply the library's color scheme; when false,
- *                        pass through the host's ambient MaterialTheme.
- * @param sidekickColors  Sidekick semantic tokens. When null, auto-derived from the active scheme.
+ * When [useSidekickTheme] is `true` (default), applies the library's own
+ * [SidekickLightColorScheme] / [SidekickDarkColorScheme] based on the system dark-mode setting.
+ * When `false`, the host application's ambient [MaterialTheme] is inherited as-is.
  */
 @Composable
-fun LibraryTheme(
-    useLibraryTheme: Boolean = true,
-    sidekickColors: SidekickColors? = null,
+internal fun SidekickTheme(
+    useSidekickTheme: Boolean = true,
     content: @Composable () -> Unit,
 ) {
-    if (useLibraryTheme) {
-        val colorScheme = if (isSystemInDarkTheme()) SidekickDefaultColorScheme else SidekickLightColorScheme
-        MaterialTheme(colorScheme = colorScheme) {
-            val resolvedColors = sidekickColors ?: sidekickColors()
-            CompositionLocalProvider(
-                LocalSidekickColors provides resolvedColors,
-                LocalSidekickThemeActive provides true,
-            ) {
-                content()
-            }
+    when {
+        useSidekickTheme -> {
+            val colorScheme = if (isSystemInDarkTheme()) SidekickDarkColorScheme else SidekickLightColorScheme
+            MaterialTheme(colorScheme = colorScheme, content = content)
         }
-    } else {
-        // Pass through host's MaterialTheme, only provide Sidekick semantic tokens
-        val resolvedColors = sidekickColors ?: sidekickColors()
-        CompositionLocalProvider(
-            LocalSidekickColors provides resolvedColors,
-            LocalSidekickThemeActive provides true,
-        ) {
-            content()
-        }
+        else -> content()
     }
-}
-
-/**
- * Explicit Sidekick theme wrapper with a specific color scheme.
- *
- * @param colorScheme    Explicit Material 3 color scheme. Defaults to [SidekickDefaultColorScheme].
- * @param sidekickColors Sidekick semantic tokens. When null, auto-derived from [colorScheme].
- */
-@Composable
-fun SidekickTheme(
-    colorScheme: ColorScheme = SidekickDefaultColorScheme,
-    sidekickColors: SidekickColors? = null,
-    content: @Composable () -> Unit,
-) {
-    MaterialTheme(colorScheme = colorScheme) {
-        val resolvedColors = sidekickColors ?: sidekickColors()
-        CompositionLocalProvider(
-            LocalSidekickColors provides resolvedColors,
-            LocalSidekickThemeActive provides true,
-        ) {
-            content()
-        }
-    }
-}
-
-// ─── Internal helpers ────────────────────────────────────────────────────────
-
-private val m3DefaultLight = lightColorScheme()
-private val m3DefaultDark = darkColorScheme()
-
-internal fun ColorScheme.isM3Default(): Boolean {
-    return (primary == m3DefaultLight.primary
-            && secondary == m3DefaultLight.secondary
-            && tertiary == m3DefaultLight.tertiary)
-        || (primary == m3DefaultDark.primary
-            && secondary == m3DefaultDark.secondary
-            && tertiary == m3DefaultDark.tertiary)
 }

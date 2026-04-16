@@ -60,6 +60,7 @@ internal fun LogMonitorContent(
                     onSelect = onSelect,
                     onClear = onClear,
                     showChevron = true,
+                    onBack = onBack,
                 )
             }
         },
@@ -72,7 +73,6 @@ internal fun LogMonitorContent(
                         entry = entry,
                         showBackButton = true,
                         onBack = {
-                            onBack()
                             scope.launch { navigator.navigateBack() }
                         },
                     )
