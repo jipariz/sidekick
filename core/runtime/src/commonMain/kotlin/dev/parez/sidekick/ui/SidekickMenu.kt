@@ -1,5 +1,11 @@
 package dev.parez.sidekick.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,10 +31,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.navigation3.runtime.entryProvider
-import androidx.navigation3.ui.NavDisplay
-import dev.parez.sidekick.PluginListKey
-import dev.parez.sidekick.PluginScreenKey
 import dev.parez.sidekick.SidekickState
 import dev.parez.sidekick.plugin.PlatformInfo
 import dev.parez.sidekick.plugin.SidekickAppInfo
@@ -69,21 +71,25 @@ internal fun SidekickMenu(state: SidekickState, appInfo: SidekickAppInfo?) {
 
             HorizontalDivider()
 
-            // ── Content — Navigation 3 ────────────────────────────────────────
-            NavDisplay(
-                backStack = state.backStack,
-                entryProvider = entryProvider {
-                    entry<PluginListKey> {
-                        SidekickPluginList(state)
-                    }
-                    entry<PluginScreenKey> { key ->
-                        val plugin = state.plugins.firstOrNull { it.id == key.pluginId }
-                        if (plugin != null) {
-                            SidekickPluginScreen(plugin)
-                        }
+            // ── Content — simple state-based routing with animated transitions ─
+            AnimatedContent(
+                targetState = activePlugin,
+                transitionSpec = {
+                    if (targetState != null) {
+                        (slideInHorizontally { it } + fadeIn()) togetherWith
+                            (slideOutHorizontally { -it } + fadeOut())
+                    } else {
+                        (slideInHorizontally { -it } + fadeIn()) togetherWith
+                            (slideOutHorizontally { it } + fadeOut())
                     }
                 },
-            )
+            ) { plugin ->
+                if (plugin != null) {
+                    SidekickPluginScreen(plugin)
+                } else {
+                    SidekickPluginList(state)
+                }
+            }
         }
     }
 }

@@ -7,40 +7,29 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.TouchApp
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
-import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
-import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneStrategy
+import androidx.compose.material3.adaptive.layout.AnimatedPane
+import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffold
+import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
+import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.toMutableStateList
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.navigation3.runtime.NavKey
-import androidx.navigation3.runtime.entryProvider
-import androidx.navigation3.ui.NavDisplay
 import dev.parez.sidekick.network.NetworkCall
-import kotlinx.serialization.Serializable
-
-// ── Navigation keys ──────────────────────────────────────────────────────────
-
-@Serializable
-private data object NetworkListKey : NavKey
-
-@Serializable
-private data class NetworkDetailKey(val callId: String) : NavKey
 
 // ── Root composable ──────────────────────────────────────────────────────────
 
 /**
  * Root composable for the Network Monitor plugin.
- * Uses Navigation 3 with adaptive list-detail layout:
+ * Uses Material 3 Adaptive ListDetailPaneScaffold:
  * - On compact screens: single-pane push navigation.
  * - On wider screens: side-by-side list + detail panes.
  */
@@ -53,37 +42,24 @@ internal fun NetworkMonitorContent(
     onClear: () -> Unit,
     onBack: () -> Unit,
 ) {
-    // Nav3 requires a stable SnapshotStateList that is mutated imperatively.
-    // Rebuilding a new list on each recomposition breaks NavDisplay (it captures
-    // the first reference internally). Use SideEffect to sync after each composition.
-    val backStack = remember { mutableListOf<NavKey>(NetworkListKey).toMutableStateList() }
-    SideEffect {
-        val currentDetail = backStack.filterIsInstance<NetworkDetailKey>().firstOrNull()
-        when {
-            selected != null && currentDetail == null ->
-                backStack.add(NetworkDetailKey(selected.id))
-            selected != null && currentDetail != null && currentDetail.callId != selected.id -> {
-                backStack.remove(currentDetail as NavKey)
-                backStack.add(NetworkDetailKey(selected.id))
-            }
-            selected == null && currentDetail != null ->
-                backStack.remove(currentDetail as NavKey)
+    val navigator = rememberListDetailPaneScaffoldNavigator<String>()
+    val scope = rememberCoroutineScope()
+
+    // Sync external selection state with the scaffold navigator
+    LaunchedEffect(selected?.id) {
+        if (selected != null) {
+            navigator.navigateTo(
+                pane = ListDetailPaneScaffoldRole.Detail,
+                contentKey = selected.id,
+            )
         }
     }
 
-    val sceneStrategy = rememberListDetailSceneStrategy<NavKey>()
-
-    NavDisplay(
-        backStack = backStack,
-        sceneStrategies = listOf(sceneStrategy),
-        onBack = {
-            onBack()
-            true
-        },
-        entryProvider = entryProvider {
-            entry<NetworkListKey>(
-                metadata = ListDetailSceneStrategy.listPane(),
-            ) {
+    ListDetailPaneScaffold(
+        directive = navigator.scaffoldDirective,
+        value = navigator.scaffoldValue,
+        listPane = {
+            AnimatedPane {
                 NetworkCallListPane(
                     calls = calls,
                     selected = selected,
@@ -92,16 +68,19 @@ internal fun NetworkMonitorContent(
                     showChevron = true,
                 )
             }
-
-            entry<NetworkDetailKey>(
-                metadata = ListDetailSceneStrategy.detailPane(),
-            ) { key ->
-                val call = calls.firstOrNull { it.id == key.callId }
+        },
+        detailPane = {
+            AnimatedPane {
+                val callId = navigator.currentDestination?.contentKey
+                val call = callId?.let { id -> calls.firstOrNull { it.id == id } }
                 if (call != null) {
                     NetworkCallDetailPane(
                         call = call,
                         showBackButton = true,
-                        onBack = onBack,
+                        onBack = {
+                            onBack()
+                            scope.launch { navigator.navigateBack() }
+                        },
                     )
                 } else {
                     DetailEmptyState()

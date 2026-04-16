@@ -16,27 +16,25 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
-import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
-import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneStrategy
+import androidx.compose.material3.adaptive.layout.AnimatedPane
+import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffold
+import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
+import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation3.runtime.NavKey
-import androidx.navigation3.runtime.entryProvider
-import androidx.navigation3.runtime.rememberNavBackStack
-import androidx.navigation3.ui.NavDisplay
-import androidx.savedstate.serialization.SavedStateConfiguration
 import dev.parez.sidekick.SidekickShell
-import dev.parez.sidekick.demo.di.appModule
+import dev.parez.sidekick.demo.di.LibraryKoinContext
 import dev.parez.sidekick.demo.navigation.PokemonDetailDestination
-import dev.parez.sidekick.demo.navigation.PokemonListDestination
 import dev.parez.sidekick.demo.theme.AppTypography
 import dev.parez.sidekick.demo.theme.colorSchemeFor
 import dev.parez.sidekick.demo.ui.PokemonDetailScreen
@@ -49,29 +47,13 @@ import dev.parez.sidekick.network.NetworkMonitorPlugin
 import dev.parez.sidekick.network.RetentionPeriod
 import co.touchlab.kermit.Logger
 import co.touchlab.kermit.platformLogWriter
-import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.modules.polymorphic
-import kotlinx.serialization.modules.subclass
-import org.koin.compose.KoinApplication
-
-// ── Navigation serializer module ─────────────────────────────────────────────
-
-private val navSerializersModule = SerializersModule {
-    polymorphic(NavKey::class) {
-        subclass(PokemonListDestination::class)
-        subclass(PokemonDetailDestination::class)
-    }
-}
-
-private val navSavedStateConfig = SavedStateConfiguration {
-    serializersModule = navSerializersModule
-}
+import org.koin.compose.KoinIsolatedContext
 
 // ── Root composable ───────────────────────────────────────────────────────────
 
 @Composable
 fun DemoApp() {
-    KoinApplication(application = { modules(appModule) }) {
+    KoinIsolatedContext(context = LibraryKoinContext.koinApp) {
         val prefsPlugin = remember { AppPreferencesPlugin() }
         val networkPlugin = remember { NetworkMonitorPlugin(retentionPeriod = RetentionPeriod.ONE_HOUR) }
         val logPlugin = remember {
@@ -87,10 +69,6 @@ fun DemoApp() {
 
         val colorScheme = colorSchemeFor(theme = colorTheme, dark = darkMode)
 
-        // Example: two custom screens added to the overlay via CustomScreenPlugin.
-        // DI works naturally inside the content lambdas (they run in the host
-        // app's composition tree, so Koin / Hilt / CompositionLocals are all
-        // available without any extra wiring).
         val buildInfoPlugin = remember {
             CustomScreenPlugin(
                 id = "build-info",
@@ -123,7 +101,7 @@ fun DemoApp() {
     }
 }
 
-// ── Catalog (adaptive list-detail with Navigation 3) ─────────────────────────
+// ── Catalog (adaptive list-detail with ListDetailPaneScaffold) ───────────────
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
@@ -131,36 +109,40 @@ private fun PokemonCatalog(
     showNumbers: Boolean,
     gridColumns: Int,
 ) {
-    val backStack = rememberNavBackStack(navSavedStateConfig, PokemonListDestination)
-    val sceneStrategy = rememberListDetailSceneStrategy<NavKey>()
+    val navigator = rememberListDetailPaneScaffoldNavigator<PokemonDetailDestination>()
+    val scope = rememberCoroutineScope()
 
-    NavDisplay(
-        backStack = backStack,
-        sceneStrategies = listOf(sceneStrategy),
-        entryProvider = entryProvider {
-            entry<PokemonListDestination>(
-                metadata = ListDetailSceneStrategy.listPane(
-                    detailPlaceholder = { DetailPlaceholder() },
-                ),
-            ) {
+    ListDetailPaneScaffold(
+        directive = navigator.scaffoldDirective,
+        value = navigator.scaffoldValue,
+        listPane = {
+            AnimatedPane {
                 PokemonListScreen(
                     columns = gridColumns,
                     showNumbers = showNumbers,
                     onSelect = { entry ->
-                        backStack.removeAll { it is PokemonDetailDestination }
-                        backStack.add(PokemonDetailDestination(entry.id, entry.name))
+                        scope.launch {
+                            navigator.navigateTo(
+                                pane = ListDetailPaneScaffoldRole.Detail,
+                                contentKey = PokemonDetailDestination(entry.id, entry.name),
+                            )
+                        }
                     },
                 )
             }
-
-            entry<PokemonDetailDestination>(
-                metadata = ListDetailSceneStrategy.detailPane(),
-            ) { destination ->
-                PokemonDetailScreen(
-                    id = destination.id,
-                    name = destination.name,
-                    onBack = { backStack.removeLastOrNull() },
-                )
+        },
+        detailPane = {
+            AnimatedPane {
+                val destination = navigator.currentDestination?.contentKey
+                if (destination != null) {
+                    PokemonDetailScreen(
+                        id = destination.id,
+                        name = destination.name,
+                        onBack = { scope.launch { navigator.navigateBack() } },
+                    )
+                } else {
+                    DetailPlaceholder()
+                }
             }
         },
     )
