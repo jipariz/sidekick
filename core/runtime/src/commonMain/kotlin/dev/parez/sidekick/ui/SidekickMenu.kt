@@ -36,7 +36,7 @@ import dev.parez.sidekick.plugin.PlatformInfo
 import dev.parez.sidekick.plugin.SidekickAppInfo
 
 @Composable
-internal fun SidekickMenu(state: SidekickState, appInfo: SidekickAppInfo?) {
+internal fun SidekickMenu(state: SidekickState, appInfo: SidekickAppInfo?, onClose: () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.surface,
@@ -59,7 +59,10 @@ internal fun SidekickMenu(state: SidekickState, appInfo: SidekickAppInfo?) {
                     modifier = Modifier.padding(start = 8.dp),
                 )
                 Spacer(modifier = Modifier.weight(1f))
-                IconButton(onClick = { state.close() }) {
+                IconButton(onClick = {
+                    state.reset()
+                    onClose()
+                }) {
                     Icon(Icons.Default.Close, contentDescription = "Close")
                 }
             }

@@ -1,6 +1,12 @@
 package dev.parez.sidekick.demo
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,6 +20,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.outlined.CatchingPokemon
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.layout.AnimatedPane
@@ -23,8 +30,10 @@ import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
@@ -32,7 +41,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import dev.parez.sidekick.SidekickShell
+import dev.parez.sidekick.Sidekick
 import dev.parez.sidekick.demo.di.LibraryKoinContext
 import dev.parez.sidekick.demo.navigation.PokemonDetailDestination
 import dev.parez.sidekick.demo.theme.AppTypography
@@ -91,11 +100,33 @@ fun DemoApp() {
         }
 
         MaterialTheme(colorScheme = colorScheme, typography = AppTypography) {
-            SidekickShell(plugins = plugins) {
+            var sidekickVisible by remember { mutableStateOf(false) }
+
+            Box(Modifier.fillMaxSize()) {
                 PokemonCatalog(
                     showNumbers = showNumbers,
                     gridColumns = gridColumns,
                 )
+
+                SmallFloatingActionButton(
+                    onClick = { sidekickVisible = true },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp),
+                ) {
+                    Icon(Icons.Filled.BugReport, contentDescription = "Open Sidekick")
+                }
+
+                AnimatedVisibility(
+                    visible = sidekickVisible,
+                    enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                    exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+                ) {
+                    Sidekick(
+                        plugins = plugins,
+                        onClose = { sidekickVisible = false },
+                    )
+                }
             }
         }
     }

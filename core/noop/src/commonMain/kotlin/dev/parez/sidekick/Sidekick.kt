@@ -6,9 +6,10 @@ import dev.parez.sidekick.plugin.SidekickColors
 import dev.parez.sidekick.plugin.SidekickPlugin
 
 @Composable
-fun SidekickShell(
+fun Sidekick(
     plugins: List<SidekickPlugin>,
+    onClose: () -> Unit,
     appInfo: SidekickAppInfo? = null,
+    state: SidekickState = rememberSidekickState(plugins),
     sidekickColors: SidekickColors? = null,
-    content: @Composable () -> Unit,
-) = content()
+) = Unit
