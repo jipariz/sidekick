@@ -1,6 +1,6 @@
 # Sidekick
 
-A Kotlin Multiplatform debug overlay SDK for Android, iOS, Desktop (JVM), and Web (JS/Wasm). Sidekick adds a floating bug-report button to your app that opens a panel with pluggable debug tools — network inspector, preferences editor, and more.
+A Kotlin Multiplatform debug overlay SDK for Android, iOS, Desktop (JVM), and Web (JS/Wasm). Sidekick adds a pluggable debug panel to your app — network inspector, log viewer, preferences editor, and custom screens. The client app controls the trigger (FAB, gesture, etc.); `Sidekick` is just a composable you show and hide.
 
 ---
 
@@ -13,7 +13,7 @@ A Kotlin Multiplatform debug overlay SDK for Android, iOS, Desktop (JVM), and We
   - [Log Monitor](#log-monitor)
   - [Preferences](#preferences)
   - [Custom Screens](#custom-screens)
-- [Custom Theming](#custom-theming)
+- [Theming](#theming)
 - [Creating a Custom Plugin](#creating-a-custom-plugin)
 - [Claude Code Skills](#claude-code-skills)
 - [Release Builds](#release-builds)
@@ -36,22 +36,21 @@ dependencies {
 }
 ```
 
-> **`core:noop`** compiles to a single `content()` call with zero overhead — Sidekick is completely absent from release builds.
+> **`core:noop`** replaces `Sidekick()` with an empty composable — zero overhead in release builds.
 
-For Desktop (JVM), add both explicitly since Gradle's `debugImplementation` is Android-only:
+For Desktop (JVM), add both explicitly since `debugImplementation` is Android-only:
 
 ```kotlin
-commonMain.dependencies {
-    // ...
-}
 jvmMain.dependencies {
     implementation(projects.core.runtime)
 }
 ```
 
-### Plugins
+### Android Context (automatic)
 
-Add the plugins you want to use:
+`core:plugin-api` ships a `SidekickInitializer` `ContentProvider` that auto-initializes the library context at app startup via manifest merger — **no `Application.onCreate()` call needed**.
+
+### Plugins
 
 ```kotlin
 commonMain.dependencies {
@@ -62,7 +61,6 @@ commonMain.dependencies {
     // Log monitor
     implementation(projects.plugins.logMonitor.plugin)
     implementation(projects.plugins.logMonitor.kermit)   // Kermit integration (optional)
-    implementation("co.touchlab:kermit:2.0.5")           // if using the Kermit bridge
 
     // Preferences
     implementation(projects.plugins.preferences.api)
@@ -74,8 +72,6 @@ commonMain.dependencies {
 
 ### KSP (for the Preferences code generator)
 
-The Preferences plugin includes a KSP processor that generates boilerplate from annotations. Apply the KSP plugin and register the processor:
-
 ```kotlin
 plugins {
     alias(libs.plugins.ksp)
@@ -84,7 +80,6 @@ plugins {
 kotlin {
     sourceSets {
         commonMain {
-            // point to the KSP output directory
             kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/metadata/commonMain/kotlin"))
         }
     }
@@ -94,7 +89,6 @@ dependencies {
     add("kspCommonMainMetadata", projects.plugins.preferences.ksp)
 }
 
-// All compile and KSP tasks must wait for the common-metadata KSP pass
 tasks.matching { task ->
     task.name != "kspCommonMainKotlinMetadata" &&
         (task.name.startsWith("compile") && task.name.contains("Kotlin") ||
@@ -103,7 +97,6 @@ tasks.matching { task ->
     dependsOn("kspCommonMainKotlinMetadata")
 }
 
-// Disable build caching for the KSP task (source dir registration is unreliable in cache)
 tasks.matching { it.name == "kspCommonMainKotlinMetadata" }.configureEach {
     outputs.cacheIf { false }
     val outDir = layout.buildDirectory.dir("generated/ksp/metadata/commonMain/kotlin")
@@ -115,7 +108,7 @@ tasks.matching { it.name == "kspCommonMainKotlinMetadata" }.configureEach {
 
 ## Quick Start
 
-Wrap your root composable with `SidekickShell` and pass your list of plugins:
+The client app owns the FAB and visibility state. `Sidekick` only renders the panel:
 
 ```kotlin
 @Composable
@@ -123,15 +116,33 @@ fun App() {
     val networkPlugin = remember { NetworkMonitorPlugin() }
     val plugins = remember(networkPlugin) { listOf(networkPlugin) }
 
+    var sidekickVisible by remember { mutableStateOf(false) }
+
     MaterialTheme {
-        SidekickShell(plugins = plugins) {
-            // your app content
+        Box(Modifier.fillMaxSize()) {
+            MyAppContent()
+
+            SmallFloatingActionButton(
+                onClick = { sidekickVisible = true },
+                modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+            ) {
+                Icon(Icons.Default.BugReport, contentDescription = "Open Sidekick")
+            }
+
+            AnimatedVisibility(
+                visible = sidekickVisible,
+                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+            ) {
+                Sidekick(
+                    plugins = plugins,
+                    onClose = { sidekickVisible = false },
+                )
+            }
         }
     }
 }
 ```
-
-A small bug-report FAB appears in the bottom-right corner. Tap it to open the Sidekick panel.
 
 ---
 
@@ -151,12 +162,12 @@ val httpClient = HttpClient {
 }
 ```
 
-Create the plugin and pass it to `SidekickShell`:
+Create the plugin and pass it to `Sidekick`:
 
 ```kotlin
 val networkPlugin = remember { NetworkMonitorPlugin() }
 
-SidekickShell(plugins = listOf(networkPlugin)) { ... }
+Sidekick(plugins = listOf(networkPlugin), onClose = { ... })
 ```
 
 #### Configuration
@@ -164,15 +175,11 @@ SidekickShell(plugins = listOf(networkPlugin)) { ... }
 ```kotlin
 val httpClient = HttpClient {
     install(NetworkMonitorKtor) {
-        // Maximum characters captured per request/response body
-        // Use ContentLength.Default (65 536), ContentLength.Full (unlimited), or any Int
         maxContentLength = ContentLength.Default
 
-        // Redact sensitive headers
         sanitizeHeader { name -> name.equals("Authorization", ignoreCase = true) }
         sanitizeHeader(placeholder = "<token>") { name -> name.equals("X-Api-Key", ignoreCase = true) }
 
-        // Exclude requests from being recorded
         filter { request -> request.url.host == "internal.metrics.local" }
     }
 }
@@ -184,8 +191,6 @@ val httpClient = HttpClient {
 | `ContentLength.Full` | `Int.MAX_VALUE` — no truncation |
 
 #### Retention
-
-Control how long calls are kept in the database:
 
 ```kotlin
 NetworkMonitorPlugin(retentionPeriod = RetentionPeriod.ONE_DAY)
@@ -200,15 +205,11 @@ NetworkMonitorPlugin(retentionPeriod = RetentionPeriod.ONE_DAY)
 
 #### UI
 
-The Network Monitor panel adapts to the available screen width:
-
 | Width | Layout |
 |---|---|
 | < 600 dp | Single pane — tap a request to navigate to its detail |
 | 600–840 dp | Two panes at 40/60 split |
 | ≥ 840 dp | Two panes — list fixed at 360 dp |
-
-Each request shows the HTTP method badge, host, path, status code (color-coded), and duration. The detail view has Request and Response tabs with copyable headers and pretty-printed JSON bodies.
 
 ---
 
@@ -229,12 +230,10 @@ The Log Monitor captures and displays application log messages. It works with an
 ```kotlin
 val logPlugin = remember { LogMonitorPlugin() }
 
-SidekickShell(plugins = listOf(logPlugin)) { ... }
+Sidekick(plugins = listOf(logPlugin), onClose = { ... })
 ```
 
 #### Integrating with Kermit
-
-The Kermit bridge forwards all Kermit log calls to the Log Monitor. Configure it once at app startup:
 
 ```kotlin
 val logPlugin = remember {
@@ -244,11 +243,7 @@ val logPlugin = remember {
 }
 ```
 
-All `Logger.d(...)`, `Logger.i(...)`, `Logger.e(...)` calls now appear in the Sidekick log panel automatically.
-
 #### Integrating with Other Logging SDKs
-
-Implement the `LogCollector` interface to bridge any logging library:
 
 ```kotlin
 fun interface LogCollector {
@@ -256,17 +251,7 @@ fun interface LogCollector {
 }
 ```
 
-`LogMonitorStore` itself implements `LogCollector`, so you can pass it directly to your SDK's log writer or interceptor. Alternatively, call `LogMonitorStore.record()` for more control:
-
-```kotlin
-LogMonitorStore.record(
-    level = LogLevel.INFO,
-    tag = "MyTag",
-    message = "Something happened",
-    throwable = null,
-    metadata = mapOf("key" to "value"),  // optional metadata
-)
-```
+`LogMonitorStore` itself implements `LogCollector`, so you can pass it directly to your SDK's log writer or call `LogMonitorStore.record()` for more control.
 
 #### Retention
 
@@ -285,18 +270,16 @@ Maximum stored entries: 1,000 (oldest are pruned automatically).
 
 #### UI
 
-The Log Monitor panel adapts to the available screen width:
-
 | Width | Layout |
 |---|---|
-| < 600 dp | Single pane -- tap a log entry to see its detail |
-| 600--840 dp | Two panes at 40/60 split |
-| >= 840 dp | Two panes -- list fixed at 360 dp |
+| < 600 dp | Single pane — tap a log entry to see its detail |
+| 600–840 dp | Two panes at 40/60 split |
+| ≥ 840 dp | Two panes — list fixed at 360 dp |
 
 **List view** features:
 - Color-coded level badges (V=gray, D=green, I=blue, W=amber, E=red, A=red)
-- **Level filter chips** -- toggle each log level on/off
-- **Search** -- filter by tag or message text
+- **Level filter chips** — toggle each log level on/off
+- **Search** — filter by tag or message text
 - Error count indicator
 
 **Detail view** shows:
@@ -312,8 +295,6 @@ The Log Monitor panel adapts to the available screen width:
 The Preferences plugin exposes typed app settings in the Sidekick panel. Use the KSP annotation processor to generate the required boilerplate automatically.
 
 #### Defining Preferences
-
-Annotate a class with `@SidekickPreferences` and its properties with `@Preference`:
 
 ```kotlin
 @SidekickPreferences(title = "App Settings")
@@ -340,23 +321,21 @@ Supported property types: `Boolean`, `String`, `Int`, `Long`, `Float`, `Double`.
 
 #### Generated Code
 
-KSP generates two classes from the annotated class:
+KSP generates two classes:
 
-**`AppPreferencesAccessor`** — reactive state for reading and writing preferences:
+**`AppPreferencesAccessor`** — reactive state:
 
 ```kotlin
-// Reading (from any coroutine scope or collectAsState in Compose)
 val darkMode: StateFlow<Boolean>
 val apiUrl: StateFlow<String>
 val timeout: StateFlow<Int>
 
-// Writing
 suspend fun setDarkMode(value: Boolean)
 suspend fun setApiUrl(value: String)
 suspend fun setTimeout(value: Int)
 ```
 
-**`AppPreferencesPlugin`** — the `SidekickPlugin` implementation, ready to pass to `SidekickShell`.
+**`AppPreferencesPlugin`** — the `SidekickPlugin` implementation, ready to pass to `Sidekick`.
 
 #### Usage
 
@@ -367,16 +346,13 @@ fun App() {
     val darkMode by prefsPlugin.accessor.darkMode.collectAsState()
 
     MaterialTheme(colorScheme = if (darkMode) darkColorScheme() else lightColorScheme()) {
-        SidekickShell(plugins = listOf(prefsPlugin)) {
-            // your app content
-        }
+        // ...
+        Sidekick(plugins = listOf(prefsPlugin), onClose = { ... })
     }
 }
 ```
 
 #### UI
-
-The Preferences panel adapts to screen width:
 
 | Width | Layout |
 |---|---|
@@ -384,11 +360,7 @@ The Preferences panel adapts to screen width:
 | 600–840 dp | 2-column card grid |
 | ≥ 840 dp | 3-column card grid |
 
-Each card shows the preference type badge (BOOL / STR / INT / etc.), label, and an inline editor. Boolean cards have a toggle switch; string and number cards have an `OutlinedTextField` with a Save button that enables only when the value is dirty.
-
 #### Manual Setup (without KSP)
-
-You can extend `PreferencesPlugin` directly if you prefer not to use code generation:
 
 ```kotlin
 class MyPreferencesPlugin : PreferencesPlugin(
@@ -414,17 +386,7 @@ class MyPreferencesPlugin : PreferencesPlugin(
 
 ### Custom Screens
 
-`CustomScreenPlugin` wraps any Composable as a first-class debug screen in the Sidekick overlay. Each instance appears as its own card in the plugin grid.
-
-#### Setup
-
-```kotlin
-commonMain.dependencies {
-    implementation(projects.plugins.customScreens.api)
-}
-```
-
-#### Usage
+`CustomScreenPlugin` wraps any Composable as a first-class debug screen in the Sidekick overlay.
 
 ```kotlin
 val featureFlagsScreen = remember {
@@ -433,98 +395,41 @@ val featureFlagsScreen = remember {
         title = "Feature Flags",
         icon  = Icons.Default.Flag,
     ) {
-        // any Composable — DI, ViewModels, CompositionLocals all work here
-        FeatureFlagsScreen()
+        FeatureFlagsScreen() // DI, ViewModels, CompositionLocals all work here
     }
 }
 
-SidekickShell(plugins = listOf(featureFlagsScreen)) {
-    MyAppContent()
-}
+Sidekick(plugins = listOf(featureFlagsScreen), onClose = { ... })
 ```
-
-Create as many instances as you need and pass them all to `SidekickShell`. Because `content` executes inside the host app's composition tree, DI frameworks (Koin, Hilt, custom `CompositionLocal`s) work without any extra wiring.
-
-#### Parameters
-
-| Parameter | Description |
-|---|---|
-| `id` | Unique identifier for this screen. Kebab-case or reverse-domain recommended (e.g. `"com.myapp.flags"`). |
-| `title` | Label shown in the plugin grid card and screen header. |
-| `icon` | Icon shown in the plugin grid card. |
-| `content` | Composable rendered when the user opens this screen. |
 
 ---
 
-## Custom Theming
+## Theming
 
-### Automatic Theme Inheritance
-
-By default, `SidekickShell` automatically picks up the host app's `MaterialTheme`:
-
-- **Host has a custom `MaterialTheme`** → Sidekick uses those colors.
-- **Host uses M3 defaults (or no `MaterialTheme`)** → Sidekick falls back to its own dark indigo scheme (`SidekickDefaultColorScheme`).
-
-The host app's content is rendered **outside** Sidekick's theme and is never affected by it.
+By default `Sidekick` applies its own Material 3 color scheme, following the system dark-mode setting:
 
 ```kotlin
-// Sidekick automatically uses your brand colors
+Sidekick(plugins = plugins, onClose = { ... }) // uses Sidekick's own theme
+```
+
+Pass `useSidekickTheme = false` to inherit the host app's ambient `MaterialTheme` instead:
+
+```kotlin
 MaterialTheme(colorScheme = myBrandColorScheme) {
-    SidekickShell(plugins = plugins) {
-        MyAppContent()
-    }
+    Sidekick(
+        plugins = plugins,
+        onClose = { sidekickVisible = false },
+        useSidekickTheme = false,
+    )
 }
 ```
 
-### Overriding HTTP Badge and Status Colors
+| `useSidekickTheme` | Result |
+|--------------------|--------|
+| `true` *(default)* | Sidekick's own light/dark Material 3 scheme |
+| `false` | Inherits the host app's ambient `MaterialTheme` |
 
-To customize the semantic colors used for HTTP method badges and status chips without changing the Material color scheme, pass a `SidekickColors` instance:
-
-```kotlin
-SidekickShell(
-    plugins = plugins,
-    sidekickColors = sidekickColors(
-        httpGet    = Color(0xFF1976D2),
-        httpPost   = Color(0xFF388E3C),
-        httpPut    = Color(0xFFF57C00),
-        httpDelete = Color(0xFFD32F2F),
-        httpPatch  = Color(0xFF7B1FA2),
-    ),
-) {
-    MyAppContent()
-}
-```
-
-All parameters have sensible defaults derived from the resolved `MaterialTheme`. Only override what you need.
-
-| Parameter | Used for |
-|---|---|
-| `httpGet` | GET method badge |
-| `httpPost` | POST method badge |
-| `httpPut` | PUT method badge |
-| `httpDelete` | DELETE method badge |
-| `httpPatch` | PATCH method badge |
-| `httpOther` | Any other method |
-| `onHttpBadge` | Text on method badges |
-| `statusSuccess` | 2xx status chips |
-| `statusRedirect` | 3xx status chips |
-| `statusClientError` | 4xx status chips |
-| `statusServerError` | 5xx status chips |
-| `statusPending` | In-flight request indicator |
-| `statusNetworkError` | Network error chip |
-| `onStatusChip` | Text on status chips |
-
-### Forcing a Specific Theme
-
-Wrap with `SidekickTheme` to bypass auto-detection entirely and force a specific color scheme:
-
-```kotlin
-SidekickTheme(colorScheme = myForcedColorScheme) {
-    SidekickShell(plugins = plugins) {
-        MyAppContent()
-    }
-}
-```
+HTTP badge and status chip colors are derived automatically from `MaterialTheme.colorScheme` — no extra configuration needed.
 
 ---
 
@@ -540,7 +445,6 @@ class LogsPlugin : SidekickPlugin {
 
     @Composable
     override fun Content() {
-        // Your plugin UI — full Compose, full Material 3
         LazyColumn(Modifier.fillMaxSize()) {
             items(LogBuffer.entries) { entry ->
                 ListItem(
@@ -553,112 +457,49 @@ class LogsPlugin : SidekickPlugin {
 }
 ```
 
-Then pass it to `SidekickShell` alongside any other plugins:
+Pass it to `Sidekick`:
 
 ```kotlin
-SidekickShell(plugins = listOf(networkPlugin, prefsPlugin, LogsPlugin())) {
-    MyAppContent()
-}
+Sidekick(plugins = listOf(networkPlugin, prefsPlugin, LogsPlugin()), onClose = { ... })
 ```
 
 ### Guidelines
 
-- **`id`** must be unique across all plugins. Use a reverse-domain prefix (e.g. `"com.myapp.logs"`).
-- **`Content()`** is called inside `SidekickTheme`, so `MaterialTheme.colorScheme` and `LocalSidekickColors.current` are available.
-- The `Content()` composable fills the full plugin panel area. Use `Modifier.fillMaxSize()` on the root.
+- **`id`** must be unique. Use a reverse-domain prefix (e.g. `"com.myapp.logs"`).
+- **`Content()`** runs inside the active `MaterialTheme` — `MaterialTheme.colorScheme` is available.
+- Use `Modifier.fillMaxSize()` on the root of `Content()`.
 - For reactive state, use `StateFlow` collected with `collectAsState()`.
-- For adaptive layouts, use `BoxWithConstraints` with breakpoints at 600 dp (medium) and 840 dp (expanded).
-
-### Accessing Sidekick Semantic Colors
-
-Use `LocalSidekickColors.current` inside your plugin content to access HTTP and status colors consistent with the rest of the Sidekick UI:
-
-```kotlin
-@Composable
-override fun Content() {
-    val colors = LocalSidekickColors.current
-    Text("OK", color = colors.statusSuccess)
-}
-```
 
 ---
 
 ## Claude Code Skills
 
-Sidekick ships two Claude Code skills that automate common tasks when working
-with the SDK. To use them, copy the skill folder into your project's
-`.claude/skills/` directory (create it if it doesn't exist).
-
----
-
 ### `/setup-sidekick` — Setup wizard & preferences migration
 
-**Skill folder:** `.claude/skills/setup-sidekick/`
+An interactive wizard that handles the full Sidekick onboarding flow:
 
-An interactive wizard that handles the full Sidekick onboarding flow for a
-consumer app:
-
-- Adds `core:runtime` / `core:noop` dependencies with the correct debug/release
-  split.
-- Prompts you to choose which plugins to enable (Network Monitor, Log Monitor,
-  Preferences, Custom Screens) and adds only the modules you need.
-- Wires `SidekickShell` around your root composable with `remember`-wrapped
-  plugin instances.
-- **Migrates an existing hand-written DataStore preferences class** to the
-  `@SidekickPreferences` annotation processor: removes boilerplate keys and
-  property getters, replaces them with `@Preference`-annotated vars, and
-  adds the KSP wiring to `build.gradle.kts`.
-
-**How to install:**
-
-```
-cp -r /path/to/sidekick/.claude/skills/setup-sidekick  your-app/.claude/skills/
-```
-
-**How to use** — in Claude Code, type:
+- Adds `core:runtime` / `core:noop` dependencies with the correct debug/release split.
+- Prompts you to choose plugins and adds only the modules you need.
+- Wires `Sidekick` into your root composable with FAB + `AnimatedVisibility`.
+- **Migrates an existing DataStore preferences class** to the `@SidekickPreferences` annotation processor.
 
 ```
 /setup-sidekick
 ```
 
-Or describe what you want:
-
-> "Add Sidekick to my app with the network monitor and preferences plugins."
-> "Migrate my AppPreferences DataStore class to Sidekick."
-
-The skill will read your `build.gradle.kts`, ask a few questions, and apply
-all changes in one pass.
-
-**What it does not migrate automatically:**
-
-| Pattern | Why | What to do |
-|---------|-----|------------|
-| Composite types (two `Long` keys → one domain object) | KSP can't model multi-key types | Keep manually and reconstruct in your ViewModel |
-| `getOrNullFlow` / `getBlockingOrNull` | KSP always emits a non-null `StateFlow` | Keep manually or use `null`-safe default + `.value` |
-| Enum stored via `.value` property (not `.name`) | KSP uses `Enum.valueOf(name)` — a custom string key breaks round-trip | Annotate the enum with `.name` storage or keep manually |
-
----
-
 ### `/create-plugin` — Scaffold a new plugin module
 
-**Skill folder:** `.claude/skills/create-plugin/`
-
-Creates a new `plugins/<name>/api` module from scratch: `build.gradle.kts`,
-the base `SidekickPlugin` class, and the `include` line in
-`settings.gradle.kts`.
+Creates a new `plugins/<name>/api` module: `build.gradle.kts`, base `SidekickPlugin` class, and `settings.gradle.kts` registration.
 
 ```
 /create-plugin my-feature-flags
 ```
 
-This skill is intended for use **inside the Sidekick repository** itself (or
-in a project that includes Sidekick as a composite build).
-
 ---
 
 ## Release Builds
 
-Replace `core:debug` with `core:noop` in release builds. The no-op implementation replaces `SidekickShell` with a composable that simply renders `content()` — no FAB, no panel, no overhead:
+Replace `core:runtime` with `core:noop` in release builds. The no-op `Sidekick()` does nothing — no panel, no overhead:
 
 ```kotlin
 // build.gradle.kts (Android)
@@ -667,11 +508,10 @@ dependencies {
     releaseImplementation(projects.core.noop)
 }
 
-// build.gradle.kts (non-Android targets — configure per source set)
+// Non-Android targets
 jvmMain.dependencies {
-    // swap this manually or via a build flag
-    implementation(projects.core.runtime)
+    implementation(projects.core.runtime) // swap to core:noop for production
 }
 ```
 
-No code changes required — `SidekickShell` has the same signature in both modules.
+No code changes required — `Sidekick()` has the same signature in both modules.

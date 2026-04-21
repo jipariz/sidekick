@@ -1,69 +1,54 @@
 # Theming
 
-## Automatic Theme Inheritance
+## Default Behavior
 
-By default, `SidekickShell` automatically picks up the host app's `MaterialTheme`:
-
-- **Host has a custom `MaterialTheme`** → Sidekick uses those colors.
-- **Host uses M3 defaults (or no `MaterialTheme`)** → Sidekick falls back to its own dark indigo scheme (`SidekickDefaultColorScheme`).
-
-The host app's content is rendered **outside** Sidekick's theme and is never affected by it.
+By default `Sidekick` applies its own Material 3 color scheme — a dark indigo palette in dark mode and a complementary light palette in light mode, automatically following the system dark-mode setting.
 
 ```kotlin
-// Sidekick automatically uses your brand colors
+// Uses Sidekick's own theme (default)
+Sidekick(plugins = plugins, onClose = { ... })
+```
+
+## Inheriting the Host App's Theme
+
+Pass `useSidekickTheme = false` to make Sidekick inherit the host app's ambient `MaterialTheme` instead:
+
+```kotlin
 MaterialTheme(colorScheme = myBrandColorScheme) {
-    SidekickShell(plugins = plugins) {
-        MyAppContent()
-    }
+    // ...
+    Sidekick(
+        plugins = plugins,
+        onClose = { sidekickVisible = false },
+        useSidekickTheme = false, // uses myBrandColorScheme
+    )
 }
 ```
 
-## Overriding HTTP Badge and Status Colors
+This is useful when your brand colors already look good in the debug panel and you want a consistent feel.
 
-To customize the semantic colors used for HTTP method badges and status chips without changing the Material color scheme, pass a `SidekickColors` instance:
+## Summary
 
-```kotlin
-SidekickShell(
-    plugins = plugins,
-    sidekickColors = sidekickColors(
-        httpGet    = Color(0xFF1976D2),
-        httpPost   = Color(0xFF388E3C),
-        httpPut    = Color(0xFFF57C00),
-        httpDelete = Color(0xFFD32F2F),
-        httpPatch  = Color(0xFF7B1FA2),
-    ),
-) {
-    MyAppContent()
-}
-```
+| `useSidekickTheme` | Result |
+|--------------------|--------|
+| `true` *(default)* | Sidekick's own light/dark Material 3 color scheme |
+| `false` | Inherits the host app's ambient `MaterialTheme` |
 
-All parameters have sensible defaults derived from the resolved `MaterialTheme`. Only override what you need.
+## HTTP Badge and Status Colors
 
-| Parameter | Used for |
-|-----------|----------|
-| `httpGet` | GET method badge |
-| `httpPost` | POST method badge |
-| `httpPut` | PUT method badge |
-| `httpDelete` | DELETE method badge |
-| `httpPatch` | PATCH method badge |
-| `httpOther` | Any other method |
-| `onHttpBadge` | Text on method badges |
-| `statusSuccess` | 2xx status chips |
-| `statusRedirect` | 3xx status chips |
-| `statusClientError` | 4xx status chips |
-| `statusServerError` | 5xx status chips |
-| `statusPending` | In-flight request indicator |
-| `statusNetworkError` | Network error chip |
-| `onStatusChip` | Text on status chips |
+The network-monitor plugin derives its HTTP method badge colors and status chip colors directly from `MaterialTheme.colorScheme`:
 
-## Forcing a Specific Theme
+| UI element | Color token |
+|------------|-------------|
+| GET badge | `primary` |
+| POST badge | `secondary` |
+| PUT badge | `tertiary` |
+| DELETE badge | `error` |
+| PATCH badge | `tertiaryContainer` |
+| Other method | `outline` |
+| 2xx status | `secondary` |
+| 3xx status | `primary` |
+| 4xx status | `tertiary` |
+| 5xx status | `error` |
+| Pending | `outlineVariant` |
 
-Wrap with `SidekickTheme` to bypass auto-detection entirely and force a specific color scheme:
-
-```kotlin
-SidekickTheme(colorScheme = myForcedColorScheme) {
-    SidekickShell(plugins = plugins) {
-        MyAppContent()
-    }
-}
-```
+These adapt automatically to whichever theme is active, whether that's Sidekick's built-in scheme or your app's own.

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Sidekick is a **Kotlin Multiplatform debug overlay SDK** built with **Compose Multiplatform**. It provides a floating debug panel (FAB + slide-up menu) that host apps embed during development. In release builds, a noop module strips the overlay entirely. The package namespace is `dev.parez.sidekick`.
+Sidekick is a **Kotlin Multiplatform debug overlay SDK** built with **Compose Multiplatform**. It provides a floating debug panel that host apps embed during development. The client app owns the FAB and visibility; Sidekick exposes only the `Sidekick()` composable that renders the menu. In release builds, a noop module strips the overlay entirely. The package namespace is `dev.parez.sidekick`.
 
 **Targets:** Android, iOS (arm64 + simulator), Desktop (JVM), JS browser, WasmJS.
 
@@ -13,9 +13,9 @@ Sidekick is a **Kotlin Multiplatform debug overlay SDK** built with **Compose Mu
 ```
 settings.gradle.kts
 ├── core/
-│   ├── plugin-api        — SidekickPlugin interface, SidekickColors, shared types
-│   ├── runtime           — Full overlay: SidekickShell (FAB + panel), SidekickState, navigation, theme
-│   └── noop              — Release stub: SidekickShell is a passthrough (zero overhead)
+│   ├── plugin-api        — SidekickPlugin interface, shared types, SidekickInitializer ContentProvider
+│   ├── runtime           — Full overlay: Sidekick composable, SidekickState, navigation, theme
+│   └── noop              — Release stub: Sidekick() is a no-op (zero overhead)
 ├── plugins/
 │   ├── preferences/
 │   │   ├── api           — DataStore-backed preferences UI (@AppPreferences annotation)
@@ -52,6 +52,9 @@ Use typesafe project accessors: `projects.core.runtime`, `projects.plugins.prefe
 # Run tests for a specific module
 ./gradlew :core:runtime:allTests
 ./gradlew :demo-app:jvmTest --tests "dev.parez.sidekick.SomeTest"
+
+# Publish to Maven Local
+./gradlew publishToMavenLocal --no-configuration-cache
 ```
 
 iOS: open `iosApp/` in Xcode or use an IDE run configuration.
@@ -59,29 +62,37 @@ iOS: open `iosApp/` in Xcode or use an IDE run configuration.
 ## Architecture
 
 ### Plugin System
-Plugins implement `SidekickPlugin` (from `:core:plugin-api`): `id`, `title`, `icon: ImageVector`, `@Composable fun Content()`. Host apps pass a `List<SidekickPlugin>` to `SidekickShell`. The shell renders a FAB; tapping it opens a panel listing available plugins.
+Plugins implement `SidekickPlugin` (from `:core:plugin-api`): `id`, `title`, `icon: ImageVector`, `@Composable fun Content()`. Host apps pass a `List<SidekickPlugin>` to `Sidekick()`. The composable renders the debug panel; the host app is responsible for showing/hiding it (FAB, gesture, etc.).
 
 ### Navigation
-Uses **Jetpack Navigation 3** (`androidx.navigation3`). Back stack is a `SnapshotStateList<NavKey>` in `SidekickState`. Nav keys are `@Serializable` data objects/classes. The demo-app uses `NavDisplay` with `ListDetailSceneStrategy` for adaptive list-detail layout.
+Uses **Material 3 Adaptive** (`ListDetailPaneScaffold`). Plugin list/detail navigation is state-based in `SidekickState` using `selectedPluginId: String?`. The demo-app uses `ListDetailPaneScaffold` + `rememberListDetailPaneScaffoldNavigator` for adaptive list-detail layout.
 
 ### Dependency Injection
-**Koin** is used in the demo-app. `KoinApplication` starts at the root composable. ViewModels are provided via `koin-compose-viewmodel` (`viewModelOf` / `viewModel { params -> ... }`).
+**Koin** is used in the demo-app via `KoinIsolatedContext` (isolated from the host app's Koin instance). ViewModels are provided via `koin-compose-viewmodel`.
 
 ### State Management
-Pure Compose state: `mutableStateOf` + `SnapshotStateList` in `SidekickState`. ViewModels use `androidx.lifecycle.viewmodel-compose`.
+Pure Compose state: `mutableStateOf` in `SidekickState`. ViewModels use `androidx.lifecycle.viewmodel-compose`.
+
+### Android Context Initialization
+`SidekickInitializer` is a `ContentProvider` in `:core:plugin-api` that auto-initializes `ApplicationContextHolder` at app startup — no manual setup required in consuming apps. `ApplicationContextHolder.isInitialized` guards against uninitialized access for consumers that don't go through the normal ContentProvider path.
 
 ### Debug vs Release
 - `debugImplementation(projects.core.runtime)` — full overlay
-- `releaseImplementation(projects.core.noop)` — passthrough, zero cost
+- `releaseImplementation(projects.core.noop)` — no-op, zero cost
 - JVM desktop: add `jvmMain.dependencies { implementation(projects.core.runtime) }` separately (`debugImplementation` is Android-only)
+
+### Theming
+`Sidekick()` accepts `useSidekickTheme: Boolean = true`:
+- `true` → applies the library's own light/dark Material 3 color scheme based on system dark-mode
+- `false` → inherits the host app's ambient `MaterialTheme` as-is
 
 ## Build-Logic Convention Plugin
 
-`sidekick.kmp.library` (`SidekickKmpLibraryPlugin` in `build-logic/`) auto-configures: `kotlin-multiplatform`, `com.android.library`, `compose`, `kotlin.plugin.compose`. Sets all KMP targets, Java 11, and injects Compose runtime/foundation/material3/ui into `commonMain`. Used by all `core/*` and `plugins/**` modules.
+`sidekick.kmp.library` (`SidekickKmpLibraryPlugin` in `build-logic/`) auto-configures: `kotlin-multiplatform`, `com.android.library`, `compose`, `kotlin.plugin.compose`, `maven-publish`. Sets all KMP targets, Java 11, `publishLibraryVariants("release", "debug")` for Android AAR publishing, and injects Compose runtime/foundation/material3/ui into `commonMain`. Used by all `core/*` and `plugins/**` modules.
 
 ## Dependency Management
 
-Dependencies are declared in `gradle/libs.versions.toml` (version catalog). Always use `libs.*` accessors in `build.gradle.kts` — never hardcode versions. Key versions: Kotlin 2.3.20, Compose Multiplatform 1.10.3, AGP 8.13.0, Navigation 3 1.1.0, Koin 4.1.1, SQLDelight 2.1.0, Ktor 3.1.3, Room 3 3.0.0-alpha03.
+Dependencies are declared in `gradle/libs.versions.toml` (version catalog). Always use `libs.*` accessors in `build.gradle.kts` — never hardcode versions. Key versions: Kotlin 2.3.20, Compose Multiplatform 1.10.3, AGP 8.13.0, M3 Adaptive 1.2.0, Koin 4.1.1, SQLDelight 2.1.0, Ktor 3.1.3, Room 3 3.0.0-alpha03.
 
 Gradle configuration cache and build caching are both enabled (`gradle.properties`). JVM heap: Gradle daemon 4 GB, Kotlin daemon 3 GB.
 
@@ -96,7 +107,7 @@ The preferences KSP processor (`:plugins:preferences:ksp`) is JVM-only. In consu
 
 | Library | Purpose | Module(s) |
 |---------|---------|-----------|
-| Navigation 3 | Type-safe nav with back stack | runtime, demo-app |
+| M3 Adaptive | List-detail navigation | runtime, network-monitor, log-monitor, demo-app |
 | Koin | DI | demo-app |
 | SQLDelight | HTTP traffic DB | network-monitor/api |
 | Ktor | HTTP client + interceptor | network-monitor/ktor, demo-app |
