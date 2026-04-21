@@ -18,10 +18,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -30,8 +32,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import dev.parez.sidekick.logs.LogEntry
 import dev.parez.sidekick.logs.LogLevel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun LogEntryListPane(
     entries: List<LogEntry>,
@@ -53,6 +58,7 @@ internal fun LogEntryListPane(
     onSelect: (LogEntry) -> Unit,
     onClear: () -> Unit,
     showChevron: Boolean = true,
+    onBack: () -> Unit,
 ) {
     var query by remember { mutableStateOf("") }
     var enabledLevels by remember { mutableStateOf(LogLevel.entries.toSet()) }
@@ -67,7 +73,28 @@ internal fun LogEntryListPane(
         }
     }
 
-    Column(Modifier.fillMaxSize()) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Logs Monitor",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        },
+    ) {
+    Column(Modifier
+        .padding(it)
+        .fillMaxSize()
+    ) {
         // -- Search bar -------------------------------------------------------
         Row(
             modifier = Modifier
@@ -189,6 +216,7 @@ internal fun LogEntryListPane(
                 }
             }
         }
+    }
     }
 }
 

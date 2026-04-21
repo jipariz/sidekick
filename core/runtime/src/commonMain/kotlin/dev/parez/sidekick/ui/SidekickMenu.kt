@@ -1,22 +1,21 @@
 package dev.parez.sidekick.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -25,73 +24,52 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.navigation3.runtime.entryProvider
-import androidx.navigation3.ui.NavDisplay
-import dev.parez.sidekick.PluginListKey
-import dev.parez.sidekick.PluginScreenKey
 import dev.parez.sidekick.SidekickState
 import dev.parez.sidekick.plugin.PlatformInfo
 import dev.parez.sidekick.plugin.SidekickAppInfo
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun SidekickMenu(state: SidekickState, appInfo: SidekickAppInfo?) {
+internal fun SidekickMenu(
+    state: SidekickState,
+    appInfo: SidekickAppInfo?,
+    title: String,
+    navigationIcon: @Composable () -> Unit,
+    actions: @Composable RowScope.() -> Unit
+) {
+    val activePlugin = state.activePlugin
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.surface,
     ) {
-        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
-            // ── Title row ─────────────────────────────────────────────────────
-            val activePlugin = state.activePlugin
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (activePlugin != null) {
-                    IconButton(onClick = { state.backToList() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
+        // ── Content — simple state-based routing with animated transitions ─
+        AnimatedContent(
+            targetState = activePlugin,
+            transitionSpec = {
+                if (targetState != null) {
+                    (slideInHorizontally { it } + fadeIn()) togetherWith
+                            (slideOutHorizontally { -it } + fadeOut())
+                } else {
+                    (slideInHorizontally { -it } + fadeIn()) togetherWith
+                            (slideOutHorizontally { it } + fadeOut())
                 }
-                Text(
-                    text = activePlugin?.title ?: "Sidekick",
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(start = 8.dp),
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                IconButton(onClick = { state.close() }) {
-                    Icon(Icons.Default.Close, contentDescription = "Close")
-                }
+            },
+        ) { plugin ->
+            if (plugin != null) {
+                SidekickPluginScreen(plugin, state)
+            } else {
+                SidekickPluginList(state, title, appInfo, navigationIcon, actions)
             }
-
-            // ── App info badge strip (only on plugin list, only when provided) ─
-            if (appInfo != null && activePlugin == null) {
-                AppInfoStrip(appInfo)
-            }
-
-            HorizontalDivider()
-
-            // ── Content — Navigation 3 ────────────────────────────────────────
-            NavDisplay(
-                backStack = state.backStack,
-                entryProvider = entryProvider {
-                    entry<PluginListKey> {
-                        SidekickPluginList(state)
-                    }
-                    entry<PluginScreenKey> { key ->
-                        val plugin = state.plugins.firstOrNull { it.id == key.pluginId }
-                        if (plugin != null) {
-                            SidekickPluginScreen(plugin)
-                        }
-                    }
-                },
-            )
         }
+
     }
 }
 
 // ── App info badge strip ──────────────────────────────────────────────────────
 
 @Composable
-private fun AppInfoStrip(appInfo: SidekickAppInfo) {
+fun AppInfoStrip(appInfo: SidekickAppInfo) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -108,20 +86,24 @@ private fun AppInfoStrip(appInfo: SidekickAppInfo) {
                 p.buildFlavor?.let { InfoBadge(it) }
                 InfoBadge(p.deviceModel)
             }
+
             is PlatformInfo.Ios -> {
                 VersionBadge(p.appVersion, p.buildCode)
                 p.buildType?.let { BuildTypeBadge(it) }
                 InfoBadge("iOS ${p.systemVersion}")
                 InfoBadge(p.deviceModel)
             }
+
             is PlatformInfo.Desktop -> {
                 InfoBadge(p.osName)
                 InfoBadge("JVM ${p.jvmVersion}")
                 InfoBadge("${p.availableProcessors} cores")
             }
+
             is PlatformInfo.Web -> {
                 InfoBadge(p.browserName ?: "Browser")
             }
+
             PlatformInfo.Unknown -> Unit
         }
 
@@ -151,8 +133,10 @@ private fun BuildTypeBadge(buildType: String) {
     val (container, content) = when (buildType.lowercase()) {
         "debug" -> MaterialTheme.colorScheme.errorContainer to
                 MaterialTheme.colorScheme.onErrorContainer
+
         "release" -> MaterialTheme.colorScheme.primaryContainer to
                 MaterialTheme.colorScheme.onPrimaryContainer
+
         else -> MaterialTheme.colorScheme.secondaryContainer to
                 MaterialTheme.colorScheme.onSecondaryContainer
     }

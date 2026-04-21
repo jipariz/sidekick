@@ -1,10 +1,11 @@
 package dev.parez.sidekick.demo.navigation
 
-import androidx.navigation3.runtime.NavKey
-import kotlinx.serialization.Serializable
+/**
+ * Represents the Pokémon list screen (the "list" pane).
+ */
+data object PokemonListDestination
 
-@Serializable
-data object PokemonListDestination : NavKey
-
-@Serializable
-data class PokemonDetailDestination(val id: Int, val name: String) : NavKey
+/**
+ * Represents the Pokémon detail screen (the "detail" pane).
+ */
+data class PokemonDetailDestination(val id: Int, val name: String)

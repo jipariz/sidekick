@@ -23,19 +23,24 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ToggleOff
 import androidx.compose.material.icons.filled.ToggleOn
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -72,31 +77,61 @@ private val ExpandedBreakpoint = 840.dp
  * - **600–840 dp (medium/tablet)** — 2-column card grid; all preferences visible at once.
  * - **≥ 840 dp (expanded/desktop/web)** — 3-column card grid; all preferences visible at once.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun PreferencesContent(
     definitions: List<PreferenceDefinition<*>>,
     valueFlows: Map<String, StateFlow<Any>>,
     onSet: suspend (key: String, value: Any) -> Unit,
+    onBack: () -> Unit,
 ) {
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        when {
-            maxWidth >= ExpandedBreakpoint -> GridLayout(
-                definitions = definitions,
-                valueFlows = valueFlows,
-                onSet = onSet,
-                columns = 3,
-            )
-            maxWidth >= CompactBreakpoint -> GridLayout(
-                definitions = definitions,
-                valueFlows = valueFlows,
-                onSet = onSet,
-                columns = 2,
-            )
-            else -> CompactLayout(
-                definitions = definitions,
-                valueFlows = valueFlows,
-                onSet = onSet,
-            )
+    Scaffold(
+        topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = "App Preferences",
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.padding(start = 8.dp),
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
+                    }
+                )
+        },
+    ) {
+        BoxWithConstraints(
+            modifier = Modifier
+                .padding(it)
+                .fillMaxSize()
+        ) {
+            when {
+                maxWidth >= ExpandedBreakpoint -> GridLayout(
+                    definitions = definitions,
+                    valueFlows = valueFlows,
+                    onSet = onSet,
+                    columns = 3,
+                )
+
+                maxWidth >= CompactBreakpoint -> GridLayout(
+                    definitions = definitions,
+                    valueFlows = valueFlows,
+                    onSet = onSet,
+                    columns = 2,
+                )
+
+                else -> CompactLayout(
+                    definitions = definitions,
+                    valueFlows = valueFlows,
+                    onSet = onSet,
+                )
+            }
         }
     }
 }

@@ -26,6 +26,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -47,7 +48,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.parez.sidekick.network.CallStatus
 import dev.parez.sidekick.network.NetworkCall
-import dev.parez.sidekick.plugin.LocalSidekickColors
 
 /**
  * Detail pane for the Network Monitor. Works in both single-pane (compact) and
@@ -67,45 +67,53 @@ internal fun NetworkCallDetailPane(
 ) {
     var selectedTab by remember(call.id) { mutableIntStateOf(0) }
 
-    Column(Modifier.fillMaxSize()) {
-        // ── TopAppBar ─────────────────────────────────────────────────────────
-        TopAppBar(
-            title = {
-                Column {
-                    Text(
-                        text = urlHost(call.url),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontFamily = FontFamily.Monospace,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    val path = urlPath(call.url)
-                    if (path.isNotEmpty()) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Column {
                         Text(
-                            text = path,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            text = urlHost(call.url),
+                            style = MaterialTheme.typography.titleSmall,
                             fontFamily = FontFamily.Monospace,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
+                        val path = urlPath(call.url)
+                        if (path.isNotEmpty()) {
+                            Text(
+                                text = path,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontFamily = FontFamily.Monospace,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
-                }
-            },
-            navigationIcon = {
-                if (showBackButton) {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                },
+                navigationIcon = {
+                    if (showBackButton) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
                     }
-                }
-            },
-            actions = {
-                MethodBadge(call.method, modifier = Modifier.padding(end = 12.dp))
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            ),
-        )
+                },
+                actions = {
+                    MethodBadge(call.method, modifier = Modifier.padding(end = 12.dp))
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                ),
+            )
+        }
+    ) {
+    Column(Modifier
+        .padding(it)
+        .fillMaxSize()
+    ) {
+        // ── TopAppBar ─────────────────────────────────────────────────────────
+
 
         // ── Status summary strip ──────────────────────────────────────────────
         StatusSummaryStrip(call)
@@ -130,13 +138,13 @@ internal fun NetworkCallDetailPane(
             1 -> ResponseTab(call)
         }
     }
+        }
 }
 
 // ── Status summary strip ──────────────────────────────────────────────────────
 
 @Composable
 private fun StatusSummaryStrip(call: NetworkCall) {
-    val sidekickColors = LocalSidekickColors.current
     Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
         Row(
             modifier = Modifier
@@ -150,13 +158,13 @@ private fun StatusSummaryStrip(call: NetworkCall) {
                     Icon(
                         Icons.Default.Schedule,
                         contentDescription = null,
-                        tint = sidekickColors.statusPending,
+                        tint = MaterialTheme.colorScheme.outlineVariant,
                         modifier = Modifier.size(16.dp),
                     )
                     Text(
                         "Pending…",
                         style = MaterialTheme.typography.labelMedium,
-                        color = sidekickColors.statusPending,
+                        color = MaterialTheme.colorScheme.outlineVariant,
                     )
                 }
                 CallStatus.ERROR -> {
@@ -185,10 +193,10 @@ private fun StatusSummaryStrip(call: NetworkCall) {
                 CallStatus.COMPLETE -> {
                     val code = call.responseCode ?: 0
                     val statusColor = when {
-                        code < 300 -> sidekickColors.statusSuccess
-                        code < 400 -> sidekickColors.statusRedirect
-                        code < 500 -> sidekickColors.statusClientError
-                        else       -> sidekickColors.statusServerError
+                        code < 300 -> MaterialTheme.colorScheme.secondary
+                        code < 400 -> MaterialTheme.colorScheme.primary
+                        code < 500 -> MaterialTheme.colorScheme.tertiary
+                        else       -> MaterialTheme.colorScheme.error
                     }
                     Text(
                         text = "$code",

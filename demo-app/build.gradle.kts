@@ -56,10 +56,10 @@ kotlin {
                 implementation(libs.koin.compose)
                 implementation(libs.koin.compose.viewmodel)
                 implementation(libs.androidx.lifecycle.viewmodelCompose)
-                implementation(libs.kotlinx.navigation3.runtime)
-                implementation(libs.kotlinx.navigation3.ui)
-                implementation(libs.jetbrains.material3.adaptiveNavigation3)
-                implementation(libs.jetbrains.lifecycle.viewmodelNavigation3)
+                implementation(libs.compose.adaptive)
+                implementation(libs.compose.adaptive.layout)
+                implementation(libs.compose.adaptive.navigation)
+                implementation(libs.compose.material3.adaptive.navigation.suite)
             }
         }
         androidMain.dependencies {

@@ -18,11 +18,12 @@ abstract class PreferencesPlugin(
     override val icon = Icons.Default.Settings
 
     @Composable
-    override fun Content() {
+    override fun Content(navigateBackToList: () -> Unit) {
         PreferencesContent(
             definitions = definitions,
             valueFlows = valueFlows,
             onSet = onSet,
+            onBack = navigateBackToList
         )
     }
 }

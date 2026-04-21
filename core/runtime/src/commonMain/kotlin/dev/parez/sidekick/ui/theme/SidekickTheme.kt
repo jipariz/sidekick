@@ -1,23 +1,18 @@
 package dev.parez.sidekick.ui.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
-import dev.parez.sidekick.plugin.LocalSidekickColors
-import dev.parez.sidekick.plugin.SidekickColors
-import dev.parez.sidekick.plugin.sidekickColors
 
 /**
- * Default Material 3 color scheme for the Sidekick overlay.
- * Mirrors the "Sidekick Material Adaptive" Stitch design system (indigo / teal / amber, dark).
- * Used as a fallback when the host app has not applied a custom MaterialTheme.
+ * Default dark Material 3 color scheme for the Sidekick overlay.
+ * Used when [useSidekickTheme] is `true` and the system is in dark mode.
  */
-val SidekickDefaultColorScheme: ColorScheme = darkColorScheme(
+val SidekickDarkColorScheme: ColorScheme = darkColorScheme(
     primary = Color(0xFFBAC3FF),
     onPrimary = Color(0xFF15267B),
     primaryContainer = Color(0xFF5C6BC0),
@@ -53,74 +48,61 @@ val SidekickDefaultColorScheme: ColorScheme = darkColorScheme(
 )
 
 /**
- * Signals that a [SidekickTheme] has been explicitly applied in this subtree.
- * Prevents [SidekickShell] from overriding an intentional theme with the fallback.
+ * Light variant of the Sidekick library color scheme.
+ * Used when [useSidekickTheme] is `true` and the system is in light mode.
  */
-internal val LocalSidekickThemeActive = compositionLocalOf { false }
+val SidekickLightColorScheme: ColorScheme = lightColorScheme(
+    primary = Color(0xFF4A5798),
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFFDDE1FF),
+    onPrimaryContainer = Color(0xFF001258),
+    secondary = Color(0xFF006B60),
+    onSecondary = Color(0xFFFFFFFF),
+    secondaryContainer = Color(0xFF9EF2E4),
+    onSecondaryContainer = Color(0xFF00201C),
+    tertiary = Color(0xFF7D5700),
+    onTertiary = Color(0xFFFFFFFF),
+    tertiaryContainer = Color(0xFFFFDEA0),
+    onTertiaryContainer = Color(0xFF271900),
+    error = Color(0xFFBA1A1A),
+    onError = Color(0xFFFFFFFF),
+    errorContainer = Color(0xFFFFDAD6),
+    onErrorContainer = Color(0xFF410002),
+    background = Color(0xFFFBF8FF),
+    onBackground = Color(0xFF1B1B21),
+    surface = Color(0xFFFBF8FF),
+    onSurface = Color(0xFF1B1B21),
+    surfaceVariant = Color(0xFFE2E1EC),
+    onSurfaceVariant = Color(0xFF45464F),
+    outline = Color(0xFF767680),
+    outlineVariant = Color(0xFFC6C5D0),
+    surfaceContainer = Color(0xFFF0EDF5),
+    surfaceContainerHigh = Color(0xFFEAE7EF),
+    surfaceContainerHighest = Color(0xFFE4E1EA),
+    surfaceContainerLow = Color(0xFFF6F2FA),
+    surfaceContainerLowest = Color(0xFFFFFFFF),
+    inverseSurface = Color(0xFF303036),
+    inverseOnSurface = Color(0xFFF3EFF7),
+    inversePrimary = Color(0xFFBAC3FF),
+)
 
 /**
- * Explicit Sidekick theme wrapper. Use this when you want Sidekick's own design applied
- * to a scope, regardless of the host app's MaterialTheme:
+ * Sidekick library theme.
  *
- * ```kotlin
- * // Force Sidekick's dark design for the whole shell
- * SidekickTheme {
- *     SidekickShell(plugins) { MyApp() }
- * }
- *
- * // Or use the host's scheme but override only HTTP badge colors
- * SidekickTheme(
- *     colorScheme = MaterialTheme.colorScheme,
- *     sidekickColors = sidekickColors(httpDelete = Color.Red),
- * ) { ... }
- * ```
- *
- * When used inside [SidekickShell], the [SidekickShell]'s auto-detection is bypassed and
- * this theme wins.
- *
- * @param colorScheme    Explicit Material 3 color scheme. Defaults to [SidekickDefaultColorScheme].
- * @param sidekickColors Sidekick semantic tokens. When null, auto-derived from [colorScheme].
+ * When [useSidekickTheme] is `true` (default), applies the library's own
+ * [SidekickLightColorScheme] / [SidekickDarkColorScheme] based on the system dark-mode setting.
+ * When `false`, the host application's ambient [MaterialTheme] is inherited as-is.
  */
 @Composable
-fun SidekickTheme(
-    colorScheme: ColorScheme = SidekickDefaultColorScheme,
-    sidekickColors: SidekickColors? = null,
+internal fun SidekickTheme(
+    useSidekickTheme: Boolean = true,
     content: @Composable () -> Unit,
 ) {
-    MaterialTheme(colorScheme = colorScheme) {
-        val resolvedColors = sidekickColors ?: sidekickColors()
-        CompositionLocalProvider(
-            LocalSidekickColors provides resolvedColors,
-            LocalSidekickThemeActive provides true,
-        ) {
-            content()
+    when {
+        useSidekickTheme -> {
+            val colorScheme = if (isSystemInDarkTheme()) SidekickDarkColorScheme else SidekickLightColorScheme
+            MaterialTheme(colorScheme = colorScheme, content = content)
         }
+        else -> content()
     }
-}
-
-// ─── Internal helpers ────────────────────────────────────────────────────────
-
-/**
- * The primary/secondary/tertiary triple from Material 3's unmodified [lightColorScheme].
- * Comparing against these three values is sufficient to detect an uncustomised default.
- */
-private val m3DefaultLight = lightColorScheme()
-
-/**
- * The primary/secondary/tertiary triple from Material 3's unmodified [darkColorScheme].
- */
-private val m3DefaultDark = darkColorScheme()
-
-/**
- * Returns true if this [ColorScheme] looks like one of the unmodified Material 3 defaults
- * (light or dark). Checking primary + secondary + tertiary together makes false positives
- * practically impossible in real apps.
- */
-internal fun ColorScheme.isM3Default(): Boolean {
-    return (primary == m3DefaultLight.primary
-            && secondary == m3DefaultLight.secondary
-            && tertiary == m3DefaultLight.tertiary)
-        || (primary == m3DefaultDark.primary
-            && secondary == m3DefaultDark.secondary
-            && tertiary == m3DefaultDark.tertiary)
 }

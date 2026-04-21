@@ -16,18 +16,22 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,7 +45,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.parez.sidekick.network.CallStatus
 import dev.parez.sidekick.network.NetworkCall
-import dev.parez.sidekick.plugin.LocalSidekickColors
 
 /**
  * List pane for the Network Monitor. Used in both single-pane (compact) and
@@ -50,6 +53,7 @@ import dev.parez.sidekick.plugin.LocalSidekickColors
  * @param selected    The currently selected call; used to highlight the active row in two-pane mode.
  * @param showChevron Whether to show a trailing chevron (only meaningful in compact/single-pane).
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun NetworkCallListPane(
     calls: List<NetworkCall>,
@@ -57,6 +61,7 @@ internal fun NetworkCallListPane(
     onSelect: (NetworkCall) -> Unit,
     onClear: () -> Unit,
     showChevron: Boolean = true,
+    onBack: () -> Unit,
 ) {
     var query by remember { mutableStateOf("") }
     val filtered = remember(calls, query) {
@@ -68,98 +73,120 @@ internal fun NetworkCallListPane(
     }
     val activeCount = remember(calls) { calls.count { it.status == CallStatus.PENDING } }
 
-    Column(Modifier.fillMaxSize()) {
-        // ── Search bar ────────────────────────────────────────────────────────
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                modifier = Modifier.weight(1f),
-                placeholder = {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
                     Text(
-                        "Search URL or method…",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = "Network Monitor",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(start = 8.dp),
                     )
                 },
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Search,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                },
-                singleLine = true,
-                textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                ),
-                shape = MaterialTheme.shapes.small,
+                navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                }
             )
-            Spacer(Modifier.width(4.dp))
-            IconButton(onClick = onClear) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "Clear all",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-
-        // ── Stats row ─────────────────────────────────────────────────────────
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        },
+    ) {
+        Column(Modifier
+            .padding(it)
+            .fillMaxSize()
         ) {
-            Text(
-                text = "${calls.size} request${if (calls.size != 1) "s" else ""}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            if (activeCount > 0) {
-                Icon(
-                    Icons.Default.Wifi,
-                    contentDescription = null,
-                    tint = LocalSidekickColors.current.statusPending,
-                    modifier = Modifier.size(12.dp),
-                )
-                Text(
-                    text = "$activeCount active",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = LocalSidekickColors.current.statusPending,
-                )
-            }
-        }
-
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
-        // ── Content ───────────────────────────────────────────────────────────
-        if (filtered.isEmpty()) {
-            NetworkCallEmptyState(isFiltered = query.isNotBlank())
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 8.dp),
+            // ── Search bar ────────────────────────────────────────────────────────
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                items(filtered, key = { it.id }) { call ->
-                    NetworkCallRow(
-                        call = call,
-                        isSelected = selected?.id == call.id,
-                        showChevron = showChevron,
-                        onClick = { onSelect(call) },
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    modifier = Modifier.weight(1f),
+                    placeholder = {
+                        Text(
+                            "Search URL or method…",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    },
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                    ),
+                    shape = MaterialTheme.shapes.small,
+                )
+                Spacer(Modifier.width(4.dp))
+                IconButton(onClick = onClear) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Clear all",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                        modifier = Modifier.padding(start = 56.dp),
+                }
+            }
+
+            // ── Stats row ─────────────────────────────────────────────────────────
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "${calls.size} request${if (calls.size != 1) "s" else ""}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (activeCount > 0) {
+                    Icon(
+                        Icons.Default.Wifi,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.outlineVariant,
+                        modifier = Modifier.size(12.dp),
                     )
+                    Text(
+                        text = "$activeCount active",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                    )
+                }
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            // ── Content ───────────────────────────────────────────────────────────
+            if (filtered.isEmpty()) {
+                NetworkCallEmptyState(isFiltered = query.isNotBlank())
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 8.dp),
+                ) {
+                    items(filtered, key = { it.id }) { call ->
+                        NetworkCallRow(
+                            call = call,
+                            isSelected = selected?.id == call.id,
+                            showChevron = showChevron,
+                            onClick = { onSelect(call) },
+                        )
+                        HorizontalDivider(
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.padding(start = 56.dp),
+                        )
+                    }
                 }
             }
         }
@@ -269,14 +296,14 @@ private fun NetworkCallRow(
 
 @Composable
 internal fun MethodBadge(method: String, modifier: Modifier = Modifier) {
-    val colors = LocalSidekickColors.current
+    val cs = MaterialTheme.colorScheme
     val bg = when (method.uppercase()) {
-        "GET"    -> colors.httpGet
-        "POST"   -> colors.httpPost
-        "PUT"    -> colors.httpPut
-        "DELETE" -> colors.httpDelete
-        "PATCH"  -> colors.httpPatch
-        else     -> colors.httpOther
+        "GET"    -> cs.primary
+        "POST"   -> cs.secondary
+        "PUT"    -> cs.tertiary
+        "DELETE" -> cs.error
+        "PATCH"  -> cs.tertiaryContainer
+        else     -> cs.outline
     }
     Surface(
         color = bg,
@@ -287,7 +314,7 @@ internal fun MethodBadge(method: String, modifier: Modifier = Modifier) {
             text = method.uppercase().take(6),
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
             style = MaterialTheme.typography.labelSmall,
-            color = colors.onHttpBadge,
+            color = cs.onPrimary,
             fontFamily = FontFamily.Monospace,
         )
     }
@@ -297,18 +324,18 @@ internal fun MethodBadge(method: String, modifier: Modifier = Modifier) {
 
 @Composable
 internal fun StatusChip(call: NetworkCall) {
-    val colors = LocalSidekickColors.current
+    val cs = MaterialTheme.colorScheme
     val (text, bg) = when (call.status) {
-        CallStatus.PENDING  -> "●  PENDING" to colors.statusPending
-        CallStatus.ERROR    -> "ERR"         to colors.statusNetworkError
+        CallStatus.PENDING  -> "●  PENDING" to cs.outlineVariant
+        CallStatus.ERROR    -> "ERR"         to cs.error
         CallStatus.COMPLETE -> {
             val code = call.responseCode ?: 0
             val label = "$code ${statusText(code)}".trim()
             val c = when {
-                code < 300 -> colors.statusSuccess
-                code < 400 -> colors.statusRedirect
-                code < 500 -> colors.statusClientError
-                else       -> colors.statusServerError
+                code < 300 -> cs.secondary
+                code < 400 -> cs.primary
+                code < 500 -> cs.tertiary
+                else       -> cs.error
             }
             label to c
         }
@@ -318,7 +345,7 @@ internal fun StatusChip(call: NetworkCall) {
             text = text,
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
             style = MaterialTheme.typography.labelSmall,
-            color = colors.onStatusChip,
+            color = cs.onSecondary,
             fontFamily = FontFamily.Monospace,
         )
     }

@@ -2,8 +2,11 @@ import com.android.build.gradle.LibraryExtension
 import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.getByType
+import org.gradle.kotlin.dsl.withType
 import org.jetbrains.compose.ComposeExtension
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -15,6 +18,7 @@ class SidekickKmpLibraryPlugin : Plugin<Project> {
         pluginManager.apply("com.android.library")
         pluginManager.apply("org.jetbrains.compose")
         pluginManager.apply("org.jetbrains.kotlin.plugin.compose")
+        pluginManager.apply("maven-publish")
 
         extensions.configure<LibraryExtension> {
             compileSdk = 36
@@ -34,6 +38,7 @@ class SidekickKmpLibraryPlugin : Plugin<Project> {
                 compilerOptions {
                     jvmTarget.set(JvmTarget.JVM_11)
                 }
+                publishLibraryVariants("release", "debug")
             }
             iosArm64()
             iosSimulatorArm64()
@@ -51,6 +56,22 @@ class SidekickKmpLibraryPlugin : Plugin<Project> {
                 implementation(compose.foundation)
                 implementation(compose.material3)
                 implementation(compose.ui)
+            }
+        }
+
+        afterEvaluate {
+            val desiredArtifactId = extensions.extraProperties.takeIf {
+                it.has("sidekick.artifactId")
+            }?.get("sidekick.artifactId") as? String ?: return@afterEvaluate
+
+            val sidekickVersion = findProperty("sidekick.version") as String
+
+            extensions.configure<PublishingExtension> {
+                publications.withType<MavenPublication>().configureEach {
+                    groupId = "dev.parez.sidekick"
+                    version = sidekickVersion
+                    artifactId = artifactId.replaceFirst(project.name, desiredArtifactId)
+                }
             }
         }
     }
