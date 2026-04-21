@@ -7,7 +7,6 @@ import dev.parez.sidekick.network.db.NetworkCall as DbNetworkCall
 import dev.parez.sidekick.network.db.NetworkMonitorDatabase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
@@ -24,9 +23,7 @@ import kotlin.time.Duration.Companion.hours
 private const val MAX_CALLS = 500L
 private const val MAX_BODY_LENGTH = 65_536
 
-object NetworkMonitorStore {
-
-    private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+class NetworkMonitorStore(private val scope: CoroutineScope) {
 
     // SQLDelight-backed storage (android, ios, jvm, js)
     private val _database = MutableStateFlow<NetworkMonitorDatabase?>(null)

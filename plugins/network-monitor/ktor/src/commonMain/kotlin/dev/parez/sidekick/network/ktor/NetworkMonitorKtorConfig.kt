@@ -2,9 +2,11 @@ package dev.parez.sidekick.network.ktor
 
 import dev.parez.sidekick.network.NetworkMonitorStore
 import dev.parez.sidekick.network.RetentionPeriod
+import dev.parez.sidekick.network.di.NetworkMonitorKoinContext
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.utils.io.KtorDsl
 import kotlin.time.Duration
+
 
 /**
  * The maximum length of the content that will be logged.
@@ -33,7 +35,7 @@ public class NetworkMonitorKtorConfig {
     public var retentionPeriod: Duration = RetentionPeriod.ONE_HOUR
 
     /** The store to write captured calls into. Override for testing. */
-    public var store: NetworkMonitorStore = NetworkMonitorStore
+    public var store: NetworkMonitorStore = NetworkMonitorKoinContext.getDefaultStore()
 
     /**
      * Exclude requests matching [predicate] from being recorded.

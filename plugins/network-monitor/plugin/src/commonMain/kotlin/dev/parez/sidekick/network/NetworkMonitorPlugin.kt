@@ -3,25 +3,24 @@ package dev.parez.sidekick.network
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.NetworkCheck
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.parez.sidekick.network.di.NetworkMonitorKoinContext
+import dev.parez.sidekick.network.di.networkMonitorViewModelModule
 import dev.parez.sidekick.network.ui.NetworkMonitorContent
 import dev.parez.sidekick.plugin.SidekickPlugin
 import kotlin.time.Duration
-import kotlinx.coroutines.launch
+import org.koin.compose.KoinIsolatedContext
+import org.koin.compose.viewmodel.koinViewModel
 
 class NetworkMonitorPlugin(
-    private val store: NetworkMonitorStore = NetworkMonitorStore,
     retentionPeriod: Duration = RetentionPeriod.ONE_HOUR,
 ) : SidekickPlugin {
 
     init {
-        store.init(retentionPeriod)
+        NetworkMonitorKoinContext.loadViewModelModule(networkMonitorViewModelModule)
+        NetworkMonitorKoinContext.koin.get<NetworkMonitorStore>().init(retentionPeriod)
     }
 
     override val id: String = "network-monitor"
@@ -30,16 +29,17 @@ class NetworkMonitorPlugin(
 
     @Composable
     override fun Content(navigateBackToList: () -> Unit) {
-        val calls by store.calls.collectAsState(emptyList())
-        var selected by remember { mutableStateOf<NetworkCall?>(null) }
-        val scope = rememberCoroutineScope()
+        KoinIsolatedContext(context = NetworkMonitorKoinContext.koinApp) {
+            val viewModel: NetworkMonitorViewModel = koinViewModel()
+            val calls by viewModel.calls.collectAsStateWithLifecycle()
 
-        NetworkMonitorContent(
-            calls = calls,
-            selected = selected,
-            onSelect = { selected = it },
-            onClear = { scope.launch { store.clear() } },
-            onBack = navigateBackToList,
-        )
+            NetworkMonitorContent(
+                calls = calls,
+                selected = viewModel.selected,
+                onSelect = viewModel::select,
+                onClear = viewModel::clear,
+                onBack = navigateBackToList,
+            )
+        }
     }
 }
