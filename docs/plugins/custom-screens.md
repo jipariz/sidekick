@@ -24,12 +24,13 @@ val featureFlagsScreen = remember {
     }
 }
 
-SidekickShell(plugins = listOf(featureFlagsScreen)) {
-    MyAppContent()
-}
+Sidekick(
+    plugins = listOf(featureFlagsScreen),
+    onClose = { sidekickVisible = false },
+)
 ```
 
-Create as many instances as you need and pass them all to `SidekickShell`. Because `content` executes inside the host app's composition tree, DI frameworks (Koin, Hilt, custom `CompositionLocal`s) work without any extra wiring.
+Create as many instances as you need and pass them all to `Sidekick`. Because `content` executes inside the host app's composition tree, DI frameworks (Koin, Hilt, custom `CompositionLocal`s) work without any extra wiring.
 
 ## Parameters
 

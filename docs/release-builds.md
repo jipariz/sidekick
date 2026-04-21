@@ -1,6 +1,6 @@
 # Release Builds
 
-Replace `core:runtime` with `core:noop` in release builds. The no-op implementation replaces `SidekickShell` with a composable that simply renders `content()` — no FAB, no panel, no overhead:
+Replace `core:runtime` with `core:noop` in release builds. The no-op implementation replaces `Sidekick()` with an empty composable that does nothing — no panel, no overlay, no overhead:
 
 ```kotlin
 // build.gradle.kts (Android)
@@ -19,4 +19,4 @@ jvmMain.dependencies {
 }
 ```
 
-No code changes required — `SidekickShell` has the same signature in both modules.
+No code changes required — `Sidekick()` has the same signature in both modules.

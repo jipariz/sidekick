@@ -21,12 +21,15 @@ val httpClient = HttpClient {
 }
 ```
 
-Create the plugin and pass it to `SidekickShell`:
+Create the plugin and pass it to `Sidekick`:
 
 ```kotlin
 val networkPlugin = remember { NetworkMonitorPlugin() }
 
-SidekickShell(plugins = listOf(networkPlugin)) { ... }
+Sidekick(
+    plugins = listOf(networkPlugin),
+    onClose = { sidekickVisible = false },
+)
 ```
 
 ## Configuration
@@ -82,3 +85,5 @@ The Network Monitor panel adapts to the available screen width:
 | ≥ 840 dp | Two panes — list fixed at 360 dp |
 
 Each request shows the HTTP method badge, host, path, status code (color-coded), and duration. The detail view has **Request** and **Response** tabs with copyable headers and pretty-printed JSON bodies.
+
+Badge and chip colors are derived from the active `MaterialTheme.colorScheme`. See [Theming](../theming.md#http-badge-and-status-colors) for the full mapping.

@@ -15,7 +15,7 @@ dependencies {
 ```
 
 !!! info "`core:noop`"
-    The no-op module replaces `SidekickShell` with a passthrough composable that simply calls `content()`. Zero overhead — Sidekick is completely absent from release builds.
+    The no-op module replaces `Sidekick()` with an empty composable that does nothing. Zero overhead — Sidekick is completely absent from release builds.
 
 For **Desktop (JVM)**, add both explicitly since Gradle's `debugImplementation` is Android-only:
 
@@ -46,6 +46,12 @@ commonMain.dependencies {
     implementation(projects.plugins.customScreens.api)
 }
 ```
+
+## Android Context
+
+On Android, `core:plugin-api` ships a `SidekickInitializer` `ContentProvider` that auto-initializes the library context at app startup. **No manual setup is required** — the `ContentProvider` is merged into the app manifest automatically.
+
+If you need to supply build metadata (build type, flavor) explicitly, you can still call `ApplicationContextHolder.initialize(context)` yourself in `Application.onCreate()`, but it is optional.
 
 ## KSP (Preferences code generator)
 
