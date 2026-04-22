@@ -54,8 +54,6 @@ tasks.configureEach {
 tasks.configureEach {
     if (name == "kspCommonMainKotlinMetadata") {
         outputs.cacheIf { false }
-        val outDir = layout.buildDirectory.dir("generated/ksp/metadata/commonMain/kotlin")
-        outputs.upToDateWhen { outDir.get().asFile.exists() }
     }
 }
 ```

@@ -24,12 +24,24 @@ class SidekickPreferencesPlugin : Plugin<Project> {
         // so plugin order in the consumer's plugins block doesn't matter.
         target.plugins.withId("org.jetbrains.kotlin.multiplatform") {
             val kmp = target.extensions.getByType(KotlinMultiplatformExtension::class.java)
-            val outDir = target.layout.buildDirectory.dir("generated/ksp/metadata/commonMain/kotlin")
+            val kspOutDir = target.layout.buildDirectory.dir("generated/ksp/metadata/commonMain/kotlin")
+            // Stable directory: not declared as a KSP task output, so Gradle never cleans it
+            // between incremental builds even when kspCommonMainKotlinMetadata re-runs and KSP
+            // skips generation (incremental mode, no annotation changes). This prevents the
+            // "Unresolved reference" failure that occurs when the KSP output dir is wiped but
+            // KSP generates nothing because sources haven't changed.
+            val stableDir = target.layout.buildDirectory.dir("generated/sidekick-preferences/commonMain/kotlin")
+
+            val syncKspOutputs = target.tasks.register("syncSidekickPreferencesKsp", org.gradle.api.tasks.Sync::class.java) { sync ->
+                sync.from(kspOutDir)
+                sync.into(stableDir)
+                sync.dependsOn("kspCommonMainKotlinMetadata")
+            }
 
             // Explicit parameter required — lambda-with-receiver for Action<T> is only
             // available in .kts files via the kotlin-dsl plugin.
             kmp.sourceSets.named("commonMain").configure { commonMain ->
-                commonMain.kotlin.srcDir(outDir)
+                commonMain.kotlin.srcDir(stableDir)
             }
 
             // afterEvaluate lets the consumer configure the extension before we read it.
@@ -43,15 +55,15 @@ class SidekickPreferencesPlugin : Plugin<Project> {
             // tasks.matching { }.configureEach breaks it.
             target.tasks.configureEach { task ->
                 if (task.name != "kspCommonMainKotlinMetadata" &&
+                    task.name != "syncSidekickPreferencesKsp" &&
                     ((task.name.startsWith("compile") && task.name.contains("Kotlin")) || task.name.startsWith("ksp"))
                 ) {
-                    task.dependsOn("kspCommonMainKotlinMetadata")
+                    task.dependsOn(syncKspOutputs)
                 }
             }
             target.tasks.configureEach { task ->
                 if (task.name == "kspCommonMainKotlinMetadata") {
                     task.outputs.cacheIf { false }
-                    task.outputs.upToDateWhen { outDir.get().asFile.exists() }
                 }
             }
         }

@@ -149,6 +149,7 @@ fun DemoApp() {
                                 exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
                             ) {
                                 Sidekick(
+                                    useSidekickTheme = false,
                                     plugins = plugins,
                                     actions = {
                                         IconButton(
