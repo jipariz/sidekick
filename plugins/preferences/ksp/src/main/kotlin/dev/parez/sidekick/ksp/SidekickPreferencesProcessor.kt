@@ -42,6 +42,10 @@ class SidekickPreferencesProcessor(
                 .replace(Regex("([A-Z])"), " $1")
                 .trim()
 
+        val storeName = (annotation.arguments.firstOrNull { it.name?.asString() == "storeName" }
+            ?.value as? String)
+            ?.takeIf { it.isNotEmpty() }
+
         val properties = classDecl.getAllProperties()
             .filter { prop ->
                 prop.annotations.any { it.shortName.asString() == "Preference" }
@@ -94,9 +98,9 @@ class SidekickPreferencesProcessor(
         val packageName = classDecl.packageName.asString()
         val className = classDecl.simpleName.asString()
 
-        logger.info("Generating Sidekick classes for $className (title=$title)")
+        logger.info("Generating Sidekick classes for $className (title=$title, storeName=${storeName ?: "<derived>"})")
 
-        AccessorGenerator(codeGenerator, logger).generate(packageName, className, title, properties)
+        AccessorGenerator(codeGenerator, logger).generate(packageName, className, title, properties, storeName)
         PluginGenerator(codeGenerator, logger).generate(packageName, className, title, properties)
     }
 }

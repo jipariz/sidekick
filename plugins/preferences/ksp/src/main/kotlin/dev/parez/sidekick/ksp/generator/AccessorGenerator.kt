@@ -24,9 +24,10 @@ class AccessorGenerator(
         className: String,
         title: String,
         properties: List<PreferenceProperty>,
+        explicitStoreName: String? = null,
     ) {
         val accessorName = "${className}Accessor"
-        val storeName = title.lowercase().replace(" ", "_")
+        val storeName = explicitStoreName ?: title.lowercase().replace(" ", "_")
 
         val storeType = ClassName("dev.parez.sidekick.preferences", "PreferenceStore")
         val stateFlowClass = ClassName("kotlinx.coroutines.flow", "StateFlow")

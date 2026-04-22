@@ -2,7 +2,10 @@ package dev.parez.sidekick.preferences
 
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.SOURCE)
-annotation class SidekickPreferences(val title: String = "")
+annotation class SidekickPreferences(
+    val title: String = "",
+    val storeName: String = "",
+)
 
 @Target(AnnotationTarget.PROPERTY)
 @Retention(AnnotationRetention.SOURCE)

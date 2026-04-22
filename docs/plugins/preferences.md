@@ -43,18 +43,20 @@ dependencies {
     add("kspCommonMainMetadata", projects.plugins.preferences.ksp)
 }
 
-tasks.matching { task ->
-    task.name != "kspCommonMainKotlinMetadata" &&
-        (task.name.startsWith("compile") && task.name.contains("Kotlin") ||
-            task.name.startsWith("ksp"))
-}.configureEach {
-    dependsOn("kspCommonMainKotlinMetadata")
+// tasks.matching is incompatible with Gradle's configuration cache — use configureEach + if instead
+tasks.configureEach {
+    if (name != "kspCommonMainKotlinMetadata" &&
+        ((name.startsWith("compile") && name.contains("Kotlin")) || name.startsWith("ksp"))
+    ) {
+        dependsOn("kspCommonMainKotlinMetadata")
+    }
 }
-
-tasks.matching { it.name == "kspCommonMainKotlinMetadata" }.configureEach {
-    outputs.cacheIf { false }
-    val outDir = layout.buildDirectory.dir("generated/ksp/metadata/commonMain/kotlin")
-    outputs.upToDateWhen { outDir.get().asFile.exists() }
+tasks.configureEach {
+    if (name == "kspCommonMainKotlinMetadata") {
+        outputs.cacheIf { false }
+        val outDir = layout.buildDirectory.dir("generated/ksp/metadata/commonMain/kotlin")
+        outputs.upToDateWhen { outDir.get().asFile.exists() }
+    }
 }
 ```
 
@@ -65,7 +67,10 @@ tasks.matching { it.name == "kspCommonMainKotlinMetadata" }.configureEach {
 Annotate a class with `@SidekickPreferences` and its properties with `@Preference`:
 
 ```kotlin
-@SidekickPreferences(title = "App Settings")
+@SidekickPreferences(
+    title = "App Settings",   // panel heading
+    storeName = "",           // DataStore file name; defaults to title lowercased with spaces → underscores
+)
 class AppPreferences {
     @Preference(label = "Dark Mode", defaultValue = "false")
     var darkMode: Boolean = false
@@ -216,8 +221,15 @@ val prefsPlugin = remember { AppPreferencesPlugin() }
 Sidekick(plugins = listOf(prefsPlugin), onClose = { ... })
 ```
 
-!!! warning "DataStore file name"
-    The generated accessor uses the annotated class name (lowercased) as the DataStore file name — e.g. `AppPreferences` → `app_preferences`. If your existing DataStore file has a different name, your users will lose their stored values on the next app launch. To preserve data, either keep using Option B, or manually rename the DataStore file as part of migration.
+!!! tip "Preserving existing DataStore data"
+    The generated accessor derives the DataStore file name from `title` (lowercased, spaces → underscores). If your existing DataStore used a different file name, pass `storeName` explicitly to match it:
+
+    ```kotlin
+    @SidekickPreferences(title = "App Settings", storeName = "app_preferences")
+    class AppPreferences { ... }
+    ```
+
+    This tells the generated accessor to open `app_preferences.preferences_pb` — the exact same file your old store was writing to. Without this, stored values are lost on the next app launch.
 
 ---
 
