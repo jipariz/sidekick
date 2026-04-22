@@ -80,3 +80,9 @@ fun App() {
 ---
 
 → **[Full documentation](docs/index.md)**
+
+---
+
+## Credits
+
+The demo app uses data from [PokéAPI](https://pokeapi.co) — a free, open RESTful Pokémon API. See [pokeapi.co/about](https://pokeapi.co/about) for details.

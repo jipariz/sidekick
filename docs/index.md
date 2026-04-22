@@ -52,3 +52,9 @@ A small FAB appears in the bottom-right corner. Tap it to open the Sidekick pane
 ---
 
 Ready to add Sidekick to your project? Start with [Installation](installation.md).
+
+---
+
+## Credits
+
+The demo app uses data from [PokéAPI](https://pokeapi.co) — a free, open RESTful Pokémon API. See [pokeapi.co/about](https://pokeapi.co/about) for license and usage details.
