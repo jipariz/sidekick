@@ -10,11 +10,13 @@ kotlin {
             implementation(libs.sqldelight.coroutines)
             implementation(libs.sqldelight.asyncExtensions)
             implementation(libs.sqldelight.primitiveAdapters)
+            api(libs.koin.core)
         }
         androidMain.dependencies {
             // ApplicationContextHolder lives in core:plugin-api androidMain
             implementation(projects.core.pluginApi)
             implementation(libs.sqldelight.driver.android)
+            implementation(libs.koin.android)
         }
         iosMain.dependencies {
             implementation(libs.sqldelight.driver.native)

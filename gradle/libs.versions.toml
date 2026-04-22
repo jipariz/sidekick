@@ -62,6 +62,7 @@ ktor-serialization-kotlinxJson    = { module = "io.ktor:ktor-serialization-kotli
 coil-compose                      = { module = "io.coil-kt.coil3:coil-compose",                          version.ref = "coil" }
 coil-network-ktor                 = { module = "io.coil-kt.coil3:coil-network-ktor3",                    version.ref = "coil" }
 koin-core                             = { group = "io.insert-koin", name = "koin-core", version.ref = "koin" }
+koin-android                          = { group = "io.insert-koin", name = "koin-android", version.ref = "koin" }
 koin-compose                          = { group = "io.insert-koin", name = "koin-compose", version.ref = "koin" }
 koin-compose-viewmodel                = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
 room3-runtime                     = { module = "androidx.room3:room3-runtime",                            version.ref = "room3" }

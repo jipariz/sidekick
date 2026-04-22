@@ -444,7 +444,7 @@ class LogsPlugin : SidekickPlugin {
     override val icon: ImageVector = Icons.Default.Article
 
     @Composable
-    override fun Content() {
+    override fun Content(navigateBackToList: () -> Unit) {
         LazyColumn(Modifier.fillMaxSize()) {
             items(LogBuffer.entries) { entry ->
                 ListItem(
@@ -469,6 +469,100 @@ Sidekick(plugins = listOf(networkPlugin, prefsPlugin, LogsPlugin()), onClose = {
 - **`Content()`** runs inside the active `MaterialTheme` — `MaterialTheme.colorScheme` is available.
 - Use `Modifier.fillMaxSize()` on the root of `Content()`.
 - For reactive state, use `StateFlow` collected with `collectAsState()`.
+
+### Plugins with Singletons and ViewModels (Koin)
+
+For plugins that need managed singletons (e.g. a database, a coroutine scope) or lifecycle-aware ViewModels, use an **isolated Koin context** — the same pattern used by `NetworkMonitorPlugin`.
+
+Each plugin owns its own `koinApplication {}` instance so its DI graph never conflicts with the host app's Koin setup.
+
+#### 1 — Add dependencies
+
+```kotlin
+// plugins/<name>/api/build.gradle.kts
+commonMain.dependencies {
+    api(libs.koin.core)           // exposes KoinContext to sibling modules
+}
+androidMain.dependencies {
+    implementation(libs.koin.android)
+}
+
+// plugins/<name>/plugin/build.gradle.kts
+commonMain.dependencies {
+    implementation(libs.koin.core)
+    implementation(libs.koin.compose)
+    implementation(libs.koin.compose.viewmodel)
+    implementation(libs.androidx.lifecycle.viewmodelCompose)
+    implementation(libs.androidx.lifecycle.runtimeCompose)
+}
+androidMain.dependencies {
+    implementation(libs.koin.android)
+}
+```
+
+#### 2 — Create the isolated Koin context (in the `api` module)
+
+```kotlin
+// plugins/<name>/api/.../di/<Name>KoinContext.kt
+object <Name>KoinContext {
+    val koinApp: KoinApplication = koinApplication {
+        modules(<name>CoreModule)
+    }
+    val koin get() = koinApp.koin
+
+    private var viewModelModuleLoaded = false
+
+    fun getDefaultStore(): <Name>Store = koin.get()
+
+    fun loadViewModelModule(module: Module) {
+        if (!viewModelModuleLoaded) {
+            viewModelModuleLoaded = true
+            koinApp.koin.loadModules(listOf(module))
+        }
+    }
+}
+
+internal val <name>CoreModule = module {
+    single { CoroutineScope(Dispatchers.Default + SupervisorJob()) }
+    singleOf(::<Name>Store)
+}
+```
+
+#### 3 — Add a ViewModel and its Koin module (in the `plugin` module)
+
+```kotlin
+// plugins/<name>/plugin/.../di/<Name>Module.kt
+internal val <name>ViewModelModule = module {
+    viewModelOf(::<Name>ViewModel)
+}
+
+// plugins/<name>/plugin/.../<Name>ViewModel.kt
+internal class <Name>ViewModel(private val store: <Name>Store) : ViewModel() {
+    val items = store.items.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    fun clear() { viewModelScope.launch { store.clear() } }
+}
+```
+
+#### 4 — Wire it in the plugin
+
+```kotlin
+class <Name>Plugin : SidekickPlugin {
+    init {
+        <Name>KoinContext.loadViewModelModule(<name>ViewModelModule)
+    }
+
+    @Composable
+    override fun Content(navigateBackToList: () -> Unit) {
+        KoinIsolatedContext(context = <Name>KoinContext.koinApp) {
+            val viewModel: <Name>ViewModel = koinViewModel()
+            val items by viewModel.items.collectAsStateWithLifecycle()
+            <Name>Content(items = items, onClear = viewModel::clear, onBack = navigateBackToList)
+        }
+    }
+}
+```
+
+The `/create-plugin` Claude Code skill scaffolds all of this automatically.
 
 ---
 

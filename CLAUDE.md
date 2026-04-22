@@ -68,7 +68,17 @@ Plugins implement `SidekickPlugin` (from `:core:plugin-api`): `id`, `title`, `ic
 Uses **Material 3 Adaptive** (`ListDetailPaneScaffold`). Plugin list/detail navigation is state-based in `SidekickState` using `selectedPluginId: String?`. The demo-app uses `ListDetailPaneScaffold` + `rememberListDetailPaneScaffoldNavigator` for adaptive list-detail layout.
 
 ### Dependency Injection
-**Koin** is used in the demo-app via `KoinIsolatedContext` (isolated from the host app's Koin instance). ViewModels are provided via `koin-compose-viewmodel`.
+**Koin** is used at two levels:
+
+1. **Plugin modules** — each stateful plugin owns an isolated `koinApplication {}` singleton (e.g. `NetworkMonitorKoinContext` in `:plugins:network-monitor:api`). The context is never shared with the host app. Pattern:
+   - The `api` module registers a `CoroutineScope` + the data store as `single {}` in a core Koin module.
+   - The `plugin` module calls `<Name>KoinContext.loadViewModelModule(module)` once on plugin instantiation to register its ViewModel.
+   - `Content()` wraps its composable tree in `KoinIsolatedContext(context = <Name>KoinContext.koinApp)` so `koinViewModel()` resolves from the plugin's private graph.
+   - Other sibling modules (e.g. `network-monitor:ktor`) access the shared singleton via a `getDefaultStore()` helper on the context object — avoiding a direct Koin dependency in those modules.
+
+2. **demo-app** — uses `KoinIsolatedContext` with its own `AppModule` (Pokémon repository, ViewModels). Isolated from any host-app Koin instance.
+
+ViewModels are provided via `koin-compose-viewmodel`.
 
 ### State Management
 Pure Compose state: `mutableStateOf` in `SidekickState`. ViewModels use `androidx.lifecycle.viewmodel-compose`.
@@ -108,7 +118,7 @@ The preferences KSP processor (`:plugins:preferences:ksp`) is JVM-only. In consu
 | Library | Purpose | Module(s) |
 |---------|---------|-----------|
 | M3 Adaptive | List-detail navigation | runtime, network-monitor, log-monitor, demo-app |
-| Koin | DI | demo-app |
+| Koin | DI (isolated plugin contexts + demo-app) | network-monitor/api, network-monitor/plugin, demo-app |
 | SQLDelight | HTTP traffic DB | network-monitor/api |
 | Ktor | HTTP client + interceptor | network-monitor/ktor, demo-app |
 | DataStore | Preferences persistence | preferences/api |
