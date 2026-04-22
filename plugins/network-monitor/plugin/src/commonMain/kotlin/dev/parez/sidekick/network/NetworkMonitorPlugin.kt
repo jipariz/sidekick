@@ -9,18 +9,20 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.parez.sidekick.network.di.NetworkMonitorKoinContext
 import dev.parez.sidekick.network.di.networkMonitorViewModelModule
 import dev.parez.sidekick.network.ui.NetworkMonitorContent
+import dev.parez.sidekick.plugin.LocalSidekickBackNavigator
 import dev.parez.sidekick.plugin.SidekickPlugin
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
 import org.koin.compose.KoinIsolatedContext
 import org.koin.compose.viewmodel.koinViewModel
 
 class NetworkMonitorPlugin(
-    retentionPeriod: Duration = RetentionPeriod.ONE_HOUR,
+    retentionPeriod: Duration = 1.hours,
 ) : SidekickPlugin {
 
     init {
         NetworkMonitorKoinContext.loadViewModelModule(networkMonitorViewModelModule)
-        NetworkMonitorKoinContext.koin.get<NetworkMonitorStore>().init(retentionPeriod)
+        NetworkMonitorKoinContext.getDefaultStore().init(retentionPeriod)
     }
 
     override val id: String = "network-monitor"
@@ -28,7 +30,8 @@ class NetworkMonitorPlugin(
     override val icon: ImageVector = Icons.Default.NetworkCheck
 
     @Composable
-    override fun Content(navigateBackToList: () -> Unit) {
+    override fun Content() {
+        val navigateBack = LocalSidekickBackNavigator.current
         KoinIsolatedContext(context = NetworkMonitorKoinContext.koinApp) {
             val viewModel: NetworkMonitorViewModel = koinViewModel()
             val calls by viewModel.calls.collectAsStateWithLifecycle()
@@ -38,7 +41,7 @@ class NetworkMonitorPlugin(
                 selected = viewModel.selected,
                 onSelect = viewModel::select,
                 onClear = viewModel::clear,
-                onBack = navigateBackToList,
+                onBack = navigateBack,
             )
         }
     }

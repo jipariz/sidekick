@@ -81,6 +81,8 @@ public val NetworkMonitorKtor: ClientPlugin<NetworkMonitorKtorConfig> =
             // the body text AND still return intact bytes for downstream use
             // (e.g. ContentNegotiation deserialisation). Binary responses are
             // passed through unchanged to avoid unnecessary memory pressure.
+            // truncate() caps what is stored; isTextBased() already prevents
+            // buffering binary payloads (images, audio, protobuf, etc.).
             val contentType = call.response.contentType()
             if (contentType == null || contentType.isTextBased()) {
                 val savedCall = call.save()

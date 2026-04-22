@@ -11,6 +11,7 @@ import org.jetbrains.compose.ComposeExtension
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.gradle.api.artifacts.VersionCatalogsExtension
 
 class SidekickKmpLibraryPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
@@ -20,10 +21,14 @@ class SidekickKmpLibraryPlugin : Plugin<Project> {
         pluginManager.apply("org.jetbrains.kotlin.plugin.compose")
         pluginManager.apply("maven-publish")
 
+        val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
+        val compileSdkVersion = libs.findVersion("android-compileSdk").get().requiredVersion.toInt()
+        val minSdkVersion = libs.findVersion("android-minSdk").get().requiredVersion.toInt()
+
         extensions.configure<LibraryExtension> {
-            compileSdk = 36
+            compileSdk = compileSdkVersion
             defaultConfig {
-                minSdk = 24
+                minSdk = minSdkVersion
             }
             compileOptions {
                 sourceCompatibility = JavaVersion.VERSION_11
@@ -41,6 +46,7 @@ class SidekickKmpLibraryPlugin : Plugin<Project> {
                 publishLibraryVariants("release", "debug")
             }
             iosArm64()
+            iosX64()
             iosSimulatorArm64()
             jvm()
             js {

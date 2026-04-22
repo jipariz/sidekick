@@ -3,6 +3,7 @@ package dev.parez.sidekick.preferences
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
+import dev.parez.sidekick.plugin.LocalSidekickBackNavigator
 import dev.parez.sidekick.plugin.SidekickPlugin
 import dev.parez.sidekick.preferences.ui.PreferencesContent
 import kotlinx.coroutines.flow.StateFlow
@@ -18,12 +19,13 @@ abstract class PreferencesPlugin(
     override val icon = Icons.Default.Settings
 
     @Composable
-    override fun Content(navigateBackToList: () -> Unit) {
+    override fun Content() {
+        val navigateBack = LocalSidekickBackNavigator.current
         PreferencesContent(
             definitions = definitions,
             valueFlows = valueFlows,
             onSet = onSet,
-            onBack = navigateBackToList
+            onBack = navigateBack,
         )
     }
 }

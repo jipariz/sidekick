@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import dev.parez.sidekick.plugin.LocalSidekickBackNavigator
 import dev.parez.sidekick.plugin.SidekickPlugin
 
 /**
@@ -42,7 +43,8 @@ class CustomScreenPlugin(
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    override fun Content(navigateBackToList: () -> Unit) {
+    override fun Content() {
+        val navigateBack = LocalSidekickBackNavigator.current
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -54,13 +56,12 @@ class CustomScreenPlugin(
                         )
                     },
                     navigationIcon = {
-                        IconButton(onClick = navigateBackToList) {
+                        IconButton(onClick = navigateBack) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back"
                             )
                         }
-
                     }
                 )
             }

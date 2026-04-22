@@ -11,13 +11,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import dev.parez.sidekick.logs.ui.LogMonitorContent
+import dev.parez.sidekick.plugin.LocalSidekickBackNavigator
 import dev.parez.sidekick.plugin.SidekickPlugin
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
 import kotlinx.coroutines.launch
 
 class LogMonitorPlugin(
     val store: LogMonitorStore = LogMonitorStore,
-    retentionPeriod: Duration = RetentionPeriod.ONE_HOUR,
+    retentionPeriod: Duration = 1.hours,
 ) : SidekickPlugin {
 
     init {
@@ -29,7 +31,8 @@ class LogMonitorPlugin(
     override val icon: ImageVector = Icons.AutoMirrored.Default.List
 
     @Composable
-    override fun Content(navigateBackToList: () -> Unit) {
+    override fun Content() {
+        val navigateBack = LocalSidekickBackNavigator.current
         val entries by store.entries.collectAsState(emptyList())
         var selected by remember { mutableStateOf<LogEntry?>(null) }
         val scope = rememberCoroutineScope()
@@ -39,7 +42,7 @@ class LogMonitorPlugin(
             selected = selected,
             onSelect = { selected = it },
             onClear = { scope.launch { store.clear() } },
-            onBack = navigateBackToList,
+            onBack = navigateBack,
         )
     }
 }

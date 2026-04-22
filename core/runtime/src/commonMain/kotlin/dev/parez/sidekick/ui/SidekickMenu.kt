@@ -69,7 +69,7 @@ internal fun SidekickMenu(
 // ── App info badge strip ──────────────────────────────────────────────────────
 
 @Composable
-fun AppInfoStrip(appInfo: SidekickAppInfo) {
+internal fun AppInfoStrip(appInfo: SidekickAppInfo) {
     Row(
         modifier = Modifier
             .fillMaxWidth()

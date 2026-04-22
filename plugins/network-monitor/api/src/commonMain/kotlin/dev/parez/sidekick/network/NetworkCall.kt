@@ -1,5 +1,8 @@
 package dev.parez.sidekick.network
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class NetworkCall(
     val id: String,
     val url: String,

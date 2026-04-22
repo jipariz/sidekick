@@ -1,6 +1,7 @@
 package dev.parez.sidekick.plugin
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 
 /**
@@ -12,6 +13,7 @@ import androidx.compose.runtime.remember
  *
  * Obtain via [SidekickAppInfo.detect] (auto-detects the current platform) or construct manually.
  */
+@Immutable
 data class SidekickAppInfo(
     /** Platform-specific metadata. Defaults to [PlatformInfo.Unknown]. */
     val platform: PlatformInfo = PlatformInfo.Unknown,
@@ -79,8 +81,10 @@ fun rememberSidekickAppInfo(): SidekickAppInfo = remember { SidekickAppInfo.dete
  * App-level fields (name, version, build type) are included in [Android] and [Ios] because
  * those platforms can auto-detect them. [Desktop] and [Web] expose only runtime/OS info.
  */
+@Immutable
 sealed interface PlatformInfo {
 
+    @Immutable
     data class Android(
         /** Application label from the package manager. */
         val appName: String,
@@ -100,6 +104,7 @@ sealed interface PlatformInfo {
         val buildFlavor: String? = null,
     ) : PlatformInfo
 
+    @Immutable
     data class Ios(
         /** App display name from `CFBundleDisplayName` / `CFBundleName`. */
         val appName: String?,
@@ -118,6 +123,7 @@ sealed interface PlatformInfo {
         val deviceModel: String,
     ) : PlatformInfo
 
+    @Immutable
     data class Desktop(
         /** OS name from `System.getProperty("os.name")` (e.g. "Mac OS X"). */
         val osName: String,
@@ -129,6 +135,7 @@ sealed interface PlatformInfo {
         val availableProcessors: Int,
     ) : PlatformInfo
 
+    @Immutable
     data class Web(
         /** Full browser user-agent string from `navigator.userAgent`. */
         val userAgent: String,

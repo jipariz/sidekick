@@ -1,11 +1,11 @@
 package dev.parez.sidekick.network.ktor
 
 import dev.parez.sidekick.network.NetworkMonitorStore
-import dev.parez.sidekick.network.RetentionPeriod
 import dev.parez.sidekick.network.di.NetworkMonitorKoinContext
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.utils.io.KtorDsl
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
 
 
 /**
@@ -28,11 +28,8 @@ public class NetworkMonitorKtorConfig {
     /** Maximum number of characters captured from a request/response body. */
     public var maxContentLength: Int = ContentLength.Default
 
-    /**
-     * Calls older than this duration are purged on next [NetworkMonitorStore.init].
-     * Use constants from [RetentionPeriod].
-     */
-    public var retentionPeriod: Duration = RetentionPeriod.ONE_HOUR
+    /** Calls older than this duration are purged on next [NetworkMonitorStore.init]. */
+    public var retentionPeriod: Duration = 1.hours
 
     /** The store to write captured calls into. Override for testing. */
     public var store: NetworkMonitorStore = NetworkMonitorKoinContext.getDefaultStore()

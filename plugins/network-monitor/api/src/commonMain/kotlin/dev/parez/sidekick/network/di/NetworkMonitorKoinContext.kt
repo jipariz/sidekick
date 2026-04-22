@@ -4,6 +4,7 @@ import dev.parez.sidekick.network.NetworkMonitorStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.koin.core.KoinApplication
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.singleOf
@@ -36,11 +37,9 @@ public object NetworkMonitorKoinContext {
         modules(networkMonitorCoreModule)
     }
 
-    public val koin get() = koinApp.koin
+    internal val koin get() = koinApp.koin
 
-    @Volatile
-    private var viewModelModuleLoaded = false
-    private val lock = Any()
+    private val viewModelModuleLoaded = MutableStateFlow(false)
 
     /**
      * Returns the singleton [NetworkMonitorStore] from this isolated Koin context.
@@ -54,13 +53,8 @@ public object NetworkMonitorKoinContext {
      * into this context exactly once. Subsequent calls are no-ops.
      */
     public fun loadViewModelModule(module: Module) {
-        if (!viewModelModuleLoaded) {
-            synchronized(lock) {
-                if (!viewModelModuleLoaded) {
-                    viewModelModuleLoaded = true
-                    koinApp.koin.loadModules(listOf(module))
-                }
-            }
+        if (viewModelModuleLoaded.compareAndSet(expect = false, update = true)) {
+            koinApp.koin.loadModules(listOf(module))
         }
     }
 }

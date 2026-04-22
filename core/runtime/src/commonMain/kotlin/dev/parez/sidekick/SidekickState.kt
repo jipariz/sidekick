@@ -1,6 +1,7 @@
 package dev.parez.sidekick
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -9,6 +10,7 @@ import dev.parez.sidekick.plugin.SidekickPlugin
 
 // ── State ────────────────────────────────────────────────────────────────────
 
+@Stable
 class SidekickState(val plugins: List<SidekickPlugin>) {
     internal var selectedPluginId: String? by mutableStateOf(null)
 
@@ -30,6 +32,18 @@ class SidekickState(val plugins: List<SidekickPlugin>) {
     }
 }
 
+/**
+ * Creates and remembers a [SidekickState] for the given [plugins].
+ *
+ * **Important:** [plugins] must be a stable list — i.e. the same instance across
+ * recompositions. Passing a new `listOf(...)` literal on every recomposition will
+ * cause [SidekickState] (and its navigation state) to be recreated on every frame.
+ * Wrap the list in [androidx.compose.runtime.remember] at the call site:
+ * ```kotlin
+ * val plugins = remember { listOf(networkPlugin, logPlugin) }
+ * val state = rememberSidekickState(plugins)
+ * ```
+ */
 @Composable
 fun rememberSidekickState(plugins: List<SidekickPlugin>): SidekickState =
     remember(plugins) { SidekickState(plugins) }

@@ -7,5 +7,5 @@ interface SidekickPlugin {
     val id: String
     val title: String
     val icon: ImageVector
-    @Composable fun Content(navigateBackToList: () -> Unit)
+    @Composable fun Content()
 }

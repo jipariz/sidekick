@@ -51,11 +51,10 @@ import dev.parez.sidekick.demo.theme.colorSchemeFor
 import dev.parez.sidekick.demo.ui.PokemonDetailScreen
 import dev.parez.sidekick.demo.ui.PokemonListScreen
 import dev.parez.sidekick.logs.LogMonitorPlugin
-import dev.parez.sidekick.logs.RetentionPeriod as LogRetentionPeriod
 import dev.parez.sidekick.screens.CustomScreenPlugin
 import dev.parez.sidekick.logs.kermit.LogMonitorLogWriter
 import dev.parez.sidekick.network.NetworkMonitorPlugin
-import dev.parez.sidekick.network.RetentionPeriod
+import kotlin.time.Duration.Companion.hours
 import co.touchlab.kermit.Logger
 import co.touchlab.kermit.platformLogWriter
 import org.koin.compose.KoinIsolatedContext
@@ -66,9 +65,9 @@ import org.koin.compose.KoinIsolatedContext
 fun DemoApp() {
     KoinIsolatedContext(context = LibraryKoinContext.koinApp) {
         val prefsPlugin = remember { AppPreferencesPlugin() }
-        val networkPlugin = remember { NetworkMonitorPlugin(retentionPeriod = RetentionPeriod.ONE_HOUR) }
+        val networkPlugin = remember { NetworkMonitorPlugin(retentionPeriod = 1.hours) }
         val logPlugin = remember {
-            LogMonitorPlugin(retentionPeriod = LogRetentionPeriod.ONE_HOUR).also { plugin ->
+            LogMonitorPlugin(retentionPeriod = 1.hours).also { plugin ->
                 Logger.setLogWriters(platformLogWriter(), LogMonitorLogWriter(plugin.store))
             }
         }

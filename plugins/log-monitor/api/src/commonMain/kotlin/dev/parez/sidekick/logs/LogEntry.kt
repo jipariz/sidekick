@@ -1,5 +1,8 @@
 package dev.parez.sidekick.logs
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class LogEntry(
     val id: String,
     val timestamp: Long,

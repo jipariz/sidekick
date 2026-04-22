@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 
 private const val MAX_ENTRIES = 1000L
@@ -35,7 +34,11 @@ object LogMonitorStore : LogCollector {
     // In-memory fallback when SQLDelight is unavailable (wasmJs)
     private val _inMemory = MutableStateFlow<List<LogEntry>?>(null)
 
-    fun init(retentionPeriod: Duration = RetentionPeriod.ONE_HOUR) {
+    private val initialized = MutableStateFlow(false)
+
+    fun init(retentionPeriod: Duration = 1.hours) {
+        if (!initialized.compareAndSet(expect = false, update = true)) return
+
         scope.launch {
             val driver = createLogMonitorDriver()
             if (driver != null) {
@@ -151,9 +154,3 @@ object LogMonitorStore : LogCollector {
         if (length > MAX_MESSAGE_LENGTH) take(MAX_MESSAGE_LENGTH) + "…" else this
 }
 
-object RetentionPeriod {
-    val ONE_HOUR: Duration = 1.hours
-    val ONE_DAY: Duration  = 24.hours
-    val ONE_WEEK: Duration = 7.days
-    val FOREVER: Duration  = Duration.INFINITE
-}

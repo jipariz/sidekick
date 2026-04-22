@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 
 private const val MAX_CALLS = 500L
@@ -31,9 +30,10 @@ class NetworkMonitorStore(private val scope: CoroutineScope) {
     // In-memory fallback when SQLDelight is unavailable (wasmJs)
     private val _inMemory = MutableStateFlow<List<NetworkCall>?>(null)
 
-    fun init(retentionPeriod: Duration = RetentionPeriod.ONE_HOUR) {
-        // Guard against multiple init calls
-        if (_database.value != null || _inMemory.value != null) return
+    private val initialized = MutableStateFlow(false)
+
+    fun init(retentionPeriod: Duration = 1.hours) {
+        if (!initialized.compareAndSet(expect = false, update = true)) return
 
         scope.launch {
             val driver = createNetworkMonitorDriver()
@@ -179,9 +179,3 @@ class NetworkMonitorStore(private val scope: CoroutineScope) {
     private fun String.truncate() = if (length > MAX_BODY_LENGTH) take(MAX_BODY_LENGTH) + "…" else this
 }
 
-object RetentionPeriod {
-    val ONE_HOUR: Duration = 1.hours
-    val ONE_DAY: Duration  = 24.hours
-    val ONE_WEEK: Duration = 7.days
-    val FOREVER: Duration  = Duration.INFINITE
-}
