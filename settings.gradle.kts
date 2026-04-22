@@ -3,6 +3,7 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
     includeBuild("build-logic")
+    includeBuild("plugins/preferences/gradle-plugin")
     repositories {
         google {
             mavenContent {
@@ -38,7 +39,6 @@ include(":core:runtime")
 include(":core:noop")
 include(":plugins:preferences:api")
 include(":plugins:preferences:ksp")
-include(":plugins:preferences:gradle-plugin")
 include(":plugins:network-monitor:api")
 include(":plugins:network-monitor:plugin")
 include(":plugins:network-monitor:ktor")

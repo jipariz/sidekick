@@ -6,9 +6,14 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-    alias(libs.plugins.ksp)
+    id("dev.parez.sidekick.preferences")
     alias(libs.plugins.kotlinxSerialization)
     alias(libs.plugins.room3)
+}
+
+// Use the local project as the KSP processor instead of the published Maven artifact.
+sidekickPreferences {
+    addProcessor = false
 }
 
 kotlin {
@@ -30,7 +35,6 @@ kotlin {
 
     sourceSets {
         commonMain {
-            kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/metadata/commonMain/kotlin"))
             dependencies {
                 implementation(compose.runtime)
                 implementation(compose.foundation)
@@ -114,26 +118,6 @@ dependencies {
 
 room3 {
     schemaDirectory("$projectDir/schemas")
-}
-
-// All Kotlin compilation and KSP tasks must wait for the common metadata KSP pass.
-// Uses configureEach (lazy) instead of matching + configureEach to stay compatible
-// with Gradle's configuration cache.
-tasks.configureEach {
-    if (name != "kspCommonMainKotlinMetadata" &&
-        ((name.startsWith("compile") && name.contains("Kotlin")) || name.startsWith("ksp"))
-    ) {
-        dependsOn("kspCommonMainKotlinMetadata")
-    }
-}
-// The KSP common-main task's outputs are declared as a source-set srcDir, which the
-// Gradle build cache doesn't restore reliably.  Disable caching and always re-check.
-tasks.configureEach {
-    if (name == "kspCommonMainKotlinMetadata") {
-        outputs.cacheIf { false }
-        val outDir = layout.buildDirectory.dir("generated/ksp/metadata/commonMain/kotlin")
-        outputs.upToDateWhen { outDir.get().asFile.exists() }
-    }
 }
 
 android {
