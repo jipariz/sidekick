@@ -27,6 +27,7 @@ compose-adaptive = "1.2.0"
 material3AdaptiveNavigationSuite = "1.9.0"
 room3 = "3.0.0-alpha03"
 sqlite = "2.7.0-alpha03"
+reveal = "4.1.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -74,6 +75,9 @@ compose-adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive
 compose-adaptive-navigation = { module = "org.jetbrains.compose.material3.adaptive:adaptive-navigation", version.ref = "compose-adaptive" }
 compose-adaptive-layout = { module = "org.jetbrains.compose.material3.adaptive:adaptive-layout", version.ref = "compose-adaptive" }
 compose-material3-adaptive-navigation-suite = { module = "org.jetbrains.compose.material3:material3-adaptive-navigation-suite", version.ref = "material3AdaptiveNavigationSuite" }
+reveal-core = { module = "com.svenjacobs.reveal:reveal-core", version.ref = "reveal" }
+reveal-shapes = { module = "com.svenjacobs.reveal:reveal-shapes", version.ref = "reveal" }
+
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

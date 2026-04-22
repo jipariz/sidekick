@@ -60,6 +60,8 @@ kotlin {
                 implementation(libs.compose.adaptive.layout)
                 implementation(libs.compose.adaptive.navigation)
                 implementation(libs.compose.material3.adaptive.navigation.suite)
+                implementation(libs.reveal.core)
+                implementation(libs.reveal.shapes)
             }
         }
         androidMain.dependencies {
