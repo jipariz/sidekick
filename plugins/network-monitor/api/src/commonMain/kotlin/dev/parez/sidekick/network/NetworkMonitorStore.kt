@@ -32,6 +32,9 @@ class NetworkMonitorStore(private val scope: CoroutineScope) {
     private val _inMemory = MutableStateFlow<List<NetworkCall>?>(null)
 
     fun init(retentionPeriod: Duration = RetentionPeriod.ONE_HOUR) {
+        // Guard against multiple init calls
+        if (_database.value != null || _inMemory.value != null) return
+
         scope.launch {
             val driver = createNetworkMonitorDriver()
             if (driver != null) {

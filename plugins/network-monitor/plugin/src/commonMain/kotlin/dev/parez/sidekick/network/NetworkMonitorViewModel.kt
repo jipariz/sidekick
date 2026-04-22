@@ -28,6 +28,9 @@ internal class NetworkMonitorViewModel(
     }
 
     fun clear() {
-        viewModelScope.launch { store.clear() }
+        viewModelScope.launch {
+            store.clear()
+            selected = null
+        }
     }
 }

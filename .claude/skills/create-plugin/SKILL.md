@@ -186,7 +186,9 @@ object <Pascal>KoinContext {
     }
     val koin get() = koinApp.koin
 
+    @Volatile
     private var viewModelModuleLoaded = false
+    private val lock = Any()
 
     /** Returns the singleton [<Pascal>Store]. Used as the default in config classes
      *  so sibling modules don't need a direct Koin dependency. */
@@ -195,8 +197,12 @@ object <Pascal>KoinContext {
     /** Loads the ViewModel module from `<kebab>:plugin` exactly once. */
     fun loadViewModelModule(module: Module) {
         if (!viewModelModuleLoaded) {
-            viewModelModuleLoaded = true
-            koinApp.koin.loadModules(listOf(module))
+            synchronized(lock) {
+                if (!viewModelModuleLoaded) {
+                    viewModelModuleLoaded = true
+                    koinApp.koin.loadModules(listOf(module))
+                }
+            }
         }
     }
 }
@@ -271,7 +277,36 @@ internal class <Pascal>ViewModel(
 }
 ```
 
-### 7. Create the Koin module for the ViewModel
+### 7. Create the Content composable
+
+Path: `plugins/<kebab>/plugin/src/commonMain/kotlin/dev/parez/sidekick/<package-segment>/<Pascal>Content.kt`
+
+```kotlin
+package dev.parez.sidekick.<package-segment>
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+
+@Composable
+internal fun <Pascal>Content(
+    items: List<String>,
+    onClear: () -> Unit,
+    onBack: () -> Unit,
+) {
+    Column(modifier = Modifier.padding(16.dp)) {
+        Button(onClick = onBack) { Text("Back") }
+        Button(onClick = onClear) { Text("Clear") }
+        items.forEach { item -> Text(item) }
+    }
+}
+```
+
+### 8. Create the Koin module for the ViewModel
 
 Path: `plugins/<kebab>/plugin/src/commonMain/kotlin/dev/parez/sidekick/<package-segment>/di/<Pascal>Module.kt`
 
@@ -287,7 +322,7 @@ internal val <camel>ViewModelModule = module {
 }
 ```
 
-### 8. Create the plugin class
+### 9. Create the plugin class
 
 Path: `plugins/<kebab>/plugin/src/commonMain/kotlin/dev/parez/sidekick/<package-segment>/<Pascal>Plugin.kt`
 
@@ -333,18 +368,18 @@ class <Pascal>Plugin : SidekickPlugin {
 }
 ```
 
-### 9. Register both modules in `settings.gradle.kts`
+### 10. Register both modules in `settings.gradle.kts`
 
 ```
 include(":plugins:<kebab>:api")
 include(":plugins:<kebab>:plugin")
 ```
 
-### 10. Verify
+### 11. Verify
 
 Run `./gradlew projects` and confirm both modules appear.
 
-### 11. Report to the user
+### 12. Report to the user
 
 Tell the user:
 - Which files were created (`api` + `plugin` modules)

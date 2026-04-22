@@ -38,7 +38,9 @@ public object NetworkMonitorKoinContext {
 
     public val koin get() = koinApp.koin
 
+    @Volatile
     private var viewModelModuleLoaded = false
+    private val lock = Any()
 
     /**
      * Returns the singleton [NetworkMonitorStore] from this isolated Koin context.
@@ -53,8 +55,12 @@ public object NetworkMonitorKoinContext {
      */
     public fun loadViewModelModule(module: Module) {
         if (!viewModelModuleLoaded) {
-            viewModelModuleLoaded = true
-            koinApp.koin.loadModules(listOf(module))
+            synchronized(lock) {
+                if (!viewModelModuleLoaded) {
+                    viewModelModuleLoaded = true
+                    koinApp.koin.loadModules(listOf(module))
+                }
+            }
         }
     }
 }
