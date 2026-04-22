@@ -31,7 +31,7 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun PokemonCatalog(
     showNumbers: Boolean,
-    gridColumns: Int,
+    shinySprites: Boolean,
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<PokemonDetailDestination>()
     val scope = rememberCoroutineScope()
@@ -42,8 +42,8 @@ internal fun PokemonCatalog(
         listPane = {
             AnimatedPane {
                 PokemonListScreen(
-                    columns = gridColumns,
                     showNumbers = showNumbers,
+                    shinySprites = shinySprites,
                     onSelect = { entry ->
                         scope.launch {
                             navigator.navigateTo(
@@ -63,6 +63,7 @@ internal fun PokemonCatalog(
                         id = destination.id,
                         name = destination.name,
                         onBack = { scope.launch { navigator.navigateBack() } },
+                        shinySprites = shinySprites,
                     )
                 } else {
                     DetailPlaceholder()

@@ -58,11 +58,15 @@ data class NamedResource(val name: String)
 
 // ── URL helpers ───────────────────────────────────────────────────────────────
 
-fun spriteUrlFor(id: Int): String =
-    "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/$id.png"
+fun spriteUrlFor(id: Int, shiny: Boolean = false): String {
+    val path = if (shiny) "pokemon/shiny/$id.png" else "pokemon/$id.png"
+    return "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/$path"
+}
 
-fun artworkUrlFor(id: Int): String =
-    "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/$id.png"
+fun artworkUrlFor(id: Int, shiny: Boolean = false): String {
+    val path = if (shiny) "official-artwork/shiny/$id.png" else "official-artwork/$id.png"
+    return "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/$path"
+}
 
 // ── Display helpers ───────────────────────────────────────────────────────────
 

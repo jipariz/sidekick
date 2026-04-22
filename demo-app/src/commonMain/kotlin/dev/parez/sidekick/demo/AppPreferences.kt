@@ -7,7 +7,7 @@ enum class ColorTheme {
     DYNAMIC, DEFAULT, FIRE, WATER, GRASS, ELECTRIC, PSYCHIC
 }
 
-@SidekickPreferences(title = "App")
+@SidekickPreferences(title = "Preferences")
 class AppPreferences {
     @Preference(label = "Dark Mode", defaultValue = "false")
     var darkMode: Boolean = false
@@ -18,6 +18,6 @@ class AppPreferences {
     @Preference(label = "Show Pokédex Numbers", defaultValue = "true")
     var showNumbers: Boolean = true
 
-    @Preference(label = "Grid Columns", description = "1 or 2", defaultValue = "2")
-    var gridColumns: Int = 2
+    @Preference(label = "Shiny Sprites", defaultValue = "false")
+    var shinySprites: Boolean = false
 }

@@ -67,7 +67,7 @@ fun DemoApp() {
         val darkMode by prefsPlugin.accessor.darkMode.collectAsState()
         val colorTheme by prefsPlugin.accessor.colorTheme.collectAsState()
         val showNumbers by prefsPlugin.accessor.showNumbers.collectAsState()
-        val gridColumns by prefsPlugin.accessor.gridColumns.collectAsState()
+        val shinySprites by prefsPlugin.accessor.shinySprites.collectAsState()
 
         val colorScheme = colorSchemeFor(theme = colorTheme, dark = darkMode)
 
@@ -140,7 +140,7 @@ fun DemoApp() {
                         Box(Modifier.fillMaxSize()) {
                             PokemonCatalog(
                                 showNumbers = showNumbers,
-                                gridColumns = gridColumns,
+                                shinySprites = shinySprites,
                             )
 
                             AnimatedVisibility(

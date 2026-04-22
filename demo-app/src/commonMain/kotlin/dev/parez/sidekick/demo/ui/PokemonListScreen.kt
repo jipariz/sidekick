@@ -47,14 +47,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import dev.parez.sidekick.demo.PokemonListEntry
+import dev.parez.sidekick.demo.spriteUrlFor
 import dev.parez.sidekick.demo.toDisplayName
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PokemonListScreen(
-    columns: Int,
     showNumbers: Boolean,
+    shinySprites: Boolean,
     onSelect: (PokemonListEntry) -> Unit,
     viewModel: PokemonListViewModel = koinViewModel(),
 ) {
@@ -80,8 +81,8 @@ fun PokemonListScreen(
             )
             is ListUiState.Content -> ContentState(
                 state = state,
-                columns = columns,
                 showNumbers = showNumbers,
+                shinySprites = shinySprites,
                 onSelect = onSelect,
                 onQueryChanged = viewModel::onSearchQueryChanged,
                 onLoadMore = viewModel::loadNextPage,
@@ -95,8 +96,8 @@ fun PokemonListScreen(
 @Composable
 private fun ContentState(
     state: ListUiState.Content,
-    columns: Int,
     showNumbers: Boolean,
+    shinySprites: Boolean,
     onSelect: (PokemonListEntry) -> Unit,
     onQueryChanged: (String) -> Unit,
     onLoadMore: () -> Unit,
@@ -128,7 +129,7 @@ private fun ContentState(
 
         // ── Grid ──────────────────────────────────────────────────────────
         LazyVerticalGrid(
-            columns = GridCells.Fixed(columns.coerceIn(1, 3)),
+            columns = GridCells.Adaptive(minSize = 150.dp),
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -138,6 +139,7 @@ private fun ContentState(
                 PokemonCard(
                     entry = entry,
                     showNumber = showNumbers,
+                    shinySprites = shinySprites,
                     onClick = { onSelect(entry) },
                 )
             }
@@ -183,6 +185,7 @@ private fun ContentState(
 private fun PokemonCard(
     entry: PokemonListEntry,
     showNumber: Boolean,
+    shinySprites: Boolean,
     onClick: () -> Unit,
 ) {
     Card(
@@ -200,7 +203,7 @@ private fun PokemonCard(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             AsyncImage(
-                model = entry.spriteUrl,
+                model = spriteUrlFor(entry.id, shiny = shinySprites),
                 contentDescription = entry.name,
                 modifier = Modifier
                     .fillMaxWidth()

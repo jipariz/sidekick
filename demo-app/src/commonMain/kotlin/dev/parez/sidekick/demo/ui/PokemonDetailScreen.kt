@@ -55,6 +55,7 @@ fun PokemonDetailScreen(
     id: Int,
     name: String,
     onBack: () -> Unit,
+    shinySprites: Boolean = false,
     viewModel: PokemonDetailViewModel = koinViewModel(key = "pokemon-detail-$id") { parametersOf(id) },
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -109,6 +110,7 @@ fun PokemonDetailScreen(
             }
             is DetailUiState.Content -> DetailContent(
                 detail = state.detail,
+                shinySprites = shinySprites,
                 modifier = Modifier.padding(padding),
             )
         }
@@ -117,7 +119,7 @@ fun PokemonDetailScreen(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun DetailContent(detail: PokemonDetail, modifier: Modifier = Modifier) {
+private fun DetailContent(detail: PokemonDetail, shinySprites: Boolean, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -129,7 +131,7 @@ private fun DetailContent(detail: PokemonDetail, modifier: Modifier = Modifier) 
             modifier = Modifier.fillMaxWidth(),
         ) {
             AsyncImage(
-                model = artworkUrlFor(detail.id),
+                model = artworkUrlFor(detail.id, shiny = shinySprites),
                 contentDescription = detail.name,
                 modifier = Modifier
                     .size(220.dp)
