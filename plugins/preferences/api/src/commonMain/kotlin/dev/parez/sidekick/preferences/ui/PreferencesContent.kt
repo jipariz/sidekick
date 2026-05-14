@@ -41,7 +41,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,6 +48,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
@@ -69,6 +69,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun PreferencesContent(
+    title: String,
     definitions: List<PreferenceDefinition<*>>,
     valueFlows: Map<String, StateFlow<Any>>,
     onSet: suspend (key: String, value: Any) -> Unit,
@@ -79,7 +80,7 @@ internal fun PreferencesContent(
             TopAppBar(
                 title = {
                     Text(
-                        text = "App Preferences",
+                        text = title,
                         style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier.padding(start = 8.dp),
                     )
@@ -126,7 +127,7 @@ private fun StaggeredLayout(
     ) {
         items(definitions, key = { it.key }) { def ->
             val flow = valueFlows[def.key] ?: return@items
-            val value by flow.collectAsState()
+            val value by flow.collectAsStateWithLifecycle()
             PreferenceCard(
                 def = def,
                 value = value,
@@ -229,7 +230,6 @@ private fun PreferenceCardEditor(
             currentValue = (value as? Enum<*>)?.name ?: value.toString(),
             onChange = onChange,
         )
-        else          -> ReadOnlyEditor(value = value.toString())
     }
 }
 
@@ -282,22 +282,6 @@ private fun NumberEditor(value: String, onSave: (String) -> Unit) {
     }
 }
 
-@Composable
-private fun ReadOnlyEditor(value: String) {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerLowest,
-        shape = MaterialTheme.shapes.small,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(12.dp),
-        )
-    }
-}
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun EnumEditor(options: List<String>, currentValue: String, onChange: (Any) -> Unit) {
@@ -344,16 +328,6 @@ private fun TypeBadge(def: PreferenceDefinition<*>, modifier: Modifier = Modifie
     }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-private fun parseNumber(def: PreferenceDefinition<*>, text: String): Any? = when (def) {
-    is IntPref    -> text.toIntOrNull()
-    is LongPref   -> text.toLongOrNull()
-    is FloatPref  -> text.toFloatOrNull()
-    is DoublePref -> text.toDoubleOrNull()
-    else          -> null
-}
-
 // ── Empty state ───────────────────────────────────────────────────────────────
 
 @Composable
@@ -377,7 +351,7 @@ private fun PreferencesEmptyState() {
                 textAlign = TextAlign.Center,
             )
             Text(
-                text = "Add @SidekickPreference annotations to expose settings here",
+                text = "Add @SidekickPreferences annotations to expose settings here",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
                 textAlign = TextAlign.Center,

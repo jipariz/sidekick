@@ -54,7 +54,13 @@ kotlin {
                 implementation(libs.ktor.serialization.kotlinxJson)
                 implementation(libs.coil.compose)
                 implementation(libs.coil.network.ktor)
-                implementation(projects.core.runtime)
+                // compileOnly: provides the Sidekick() / SidekickShell() / SidekickState
+                // type stubs to commonMain. Per-platform source sets add the runtime jar
+                // via implementation below; Android picks runtime (debug) or noop
+                // (release) via the variant swap further down. Without `compileOnly`,
+                // runtime ends up on Android release's runtime classpath next to noop
+                // and AGP fails the build (`checkReleaseDuplicateClasses` / dex merger).
+                compileOnly(projects.core.runtime)
                 implementation(libs.room3.runtime)
                 implementation(libs.koin.core)
                 implementation(libs.koin.compose)
@@ -79,6 +85,7 @@ kotlin {
             implementation(libs.kotlinx.coroutinesSwing)
             implementation(libs.ktor.client.cio)
             implementation(libs.sqlite.bundled)
+            implementation(projects.core.runtime)
         }
         jsMain {
             kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/js/jsMain/kotlin"))
@@ -92,6 +99,7 @@ kotlin {
             implementation(
                 npm("sqlite-wasm-worker", layout.projectDirectory.dir("sqlite-worker").asFile)
             )
+            implementation(projects.core.runtime)
         }
         wasmJsMain {
             kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/wasmJs/wasmJsMain/kotlin"))
@@ -102,6 +110,7 @@ kotlin {
             implementation(
                 npm("sqlite-wasm-worker", layout.projectDirectory.dir("sqlite-worker").asFile)
             )
+            implementation(projects.core.runtime)
         }
     }
 }

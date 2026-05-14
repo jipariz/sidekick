@@ -13,6 +13,7 @@ dependencies {
     compileOnly(libs.plugins.androidLibrary.toDep())
     compileOnly(libs.plugins.composeMultiplatform.toDep())
     compileOnly(libs.plugins.composeCompiler.toDep())
+    compileOnly(libs.plugins.vanniktechMavenPublish.toDep())
 }
 
 gradlePlugin {

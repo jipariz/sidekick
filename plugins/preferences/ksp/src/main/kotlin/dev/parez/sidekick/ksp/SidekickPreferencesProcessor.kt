@@ -20,6 +20,9 @@ class SidekickPreferencesProcessor(
 
     private val annotationName = "dev.parez.sidekick.preferences.SidekickPreferences"
 
+    /** Primitive types the KSP code generator can map to a `PreferenceDefinition`. Enums are handled separately. */
+    private val supportedPrimitiveTypes = setOf("Boolean", "String", "Int", "Long", "Float", "Double")
+
     override fun process(resolver: Resolver): List<KSAnnotated> {
         val symbols = resolver.getSymbolsWithAnnotation(annotationName)
         val unprocessed = symbols.filter { !it.validate() }.toList()
@@ -46,10 +49,37 @@ class SidekickPreferencesProcessor(
             ?.value as? String)
             ?.takeIf { it.isNotEmpty() }
 
-        val properties = classDecl.getAllProperties()
+        val annotatedProps = classDecl.getAllProperties()
             .filter { prop ->
                 prop.annotations.any { it.shortName.asString() == "Preference" }
             }
+            .toList()
+
+        // ── Type validation ──────────────────────────────────────────────────
+        // Fail loudly on unsupported property types instead of silently
+        // generating a StateFlow<String> that mis-stores the user's value.
+        var hasErrors = false
+        annotatedProps.forEach { prop ->
+            val resolvedType = prop.type.resolve()
+            val typeDecl = resolvedType.declaration
+            val typeName = typeDecl.simpleName.asString()
+            val isEnum = typeDecl is KSClassDeclaration &&
+                typeDecl.classKind == ClassKind.ENUM_CLASS
+            if (!isEnum && typeName !in supportedPrimitiveTypes) {
+                logger.error(
+                    "Unsupported @Preference type `$typeName` on " +
+                        "${classDecl.qualifiedName?.asString()}.${prop.simpleName.asString()}. " +
+                        "Supported types: Boolean, String, Int, Long, Float, Double, " +
+                        "or any enum class. Keep this property out of the @SidekickPreferences " +
+                        "class and wire it manually if you need a custom mapping.",
+                    prop,
+                )
+                hasErrors = true
+            }
+        }
+        if (hasErrors) return
+
+        val properties = annotatedProps
             .map { prop ->
                 val prefAnnotation = prop.annotations.first {
                     it.shortName.asString() == "Preference"
@@ -93,7 +123,6 @@ class SidekickPreferencesProcessor(
                     description = description,
                 )
             }
-            .toList()
 
         val packageName = classDecl.packageName.asString()
         val className = classDecl.simpleName.asString()

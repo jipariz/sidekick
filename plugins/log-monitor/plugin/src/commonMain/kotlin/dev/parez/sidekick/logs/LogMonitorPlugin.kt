@@ -3,13 +3,13 @@ package dev.parez.sidekick.logs
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.parez.sidekick.logs.ui.LogMonitorContent
 import dev.parez.sidekick.plugin.LocalSidekickBackNavigator
 import dev.parez.sidekick.plugin.SidekickPlugin
@@ -33,7 +33,7 @@ class LogMonitorPlugin(
     @Composable
     override fun Content() {
         val navigateBack = LocalSidekickBackNavigator.current
-        val entries by store.entries.collectAsState(emptyList())
+        val entries by store.entries.collectAsStateWithLifecycle(emptyList())
         var selected by remember { mutableStateOf<LogEntry?>(null) }
         val scope = rememberCoroutineScope()
 

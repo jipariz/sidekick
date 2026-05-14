@@ -91,6 +91,9 @@ val SidekickLightColorScheme: ColorScheme = lightColorScheme(
  *
  * When [useSidekickTheme] is `true` (default), applies the library's own
  * [SidekickLightColorScheme] / [SidekickDarkColorScheme] based on the system dark-mode setting.
+ * Host typography and shapes are preserved so a custom font / corner-radius
+ * configuration carries through into the overlay.
+ *
  * When `false`, the host application's ambient [MaterialTheme] is inherited as-is.
  */
 @Composable
@@ -101,7 +104,12 @@ internal fun SidekickTheme(
     when {
         useSidekickTheme -> {
             val colorScheme = if (isSystemInDarkTheme()) SidekickDarkColorScheme else SidekickLightColorScheme
-            MaterialTheme(colorScheme = colorScheme, content = content)
+            MaterialTheme(
+                colorScheme = colorScheme,
+                typography = MaterialTheme.typography,
+                shapes = MaterialTheme.shapes,
+                content = content,
+            )
         }
         else -> content()
     }

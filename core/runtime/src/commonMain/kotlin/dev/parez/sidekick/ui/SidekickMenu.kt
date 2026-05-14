@@ -37,15 +37,15 @@ internal fun SidekickMenu(
     navigationIcon: @Composable () -> Unit,
     actions: @Composable RowScope.() -> Unit
 ) {
-    val activePlugin = state.activePlugin
-
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.surface,
     ) {
-        // ── Content — simple state-based routing with animated transitions ─
+        // ── Content — simple state-based routing with animated transitions.
+        // Key on plugin id (stable String) rather than the plugin object so a
+        // plugin instance swap that preserves the id doesn't retrigger.
         AnimatedContent(
-            targetState = activePlugin,
+            targetState = state.activePlugin?.id,
             transitionSpec = {
                 if (targetState != null) {
                     (slideInHorizontally { it } + fadeIn()) togetherWith
@@ -55,14 +55,14 @@ internal fun SidekickMenu(
                             (slideOutHorizontally { it } + fadeOut())
                 }
             },
-        ) { plugin ->
+        ) { pluginId ->
+            val plugin = pluginId?.let { id -> state.plugins.firstOrNull { it.id == id } }
             if (plugin != null) {
                 SidekickPluginScreen(plugin, state)
             } else {
                 SidekickPluginList(state, title, appInfo, navigationIcon, actions)
             }
         }
-
     }
 }
 
