@@ -2,12 +2,12 @@
 name: setup-sidekick
 description: >
   Interactive setup wizard for adding Sidekick to a consumer app. Handles
-  fresh installation (core dependencies, SidekickShell wiring), plugin
-  selection (network-monitor, log-monitor, preferences, custom-screens),
-  and migration of an existing DataStore-based preferences class to the
-  Preferences plugin with KSP code generation. Trigger with: "set up
-  Sidekick", "add Sidekick", "install Sidekick", "migrate preferences to
-  Sidekick", or just "/setup-sidekick".
+  fresh installation (core dependencies, Sidekick composable wiring with FAB
+  visibility toggle), plugin selection (network-monitor, log-monitor,
+  preferences, custom-screens), and migration of an existing DataStore-based
+  preferences class to the Preferences plugin with KSP code generation.
+  Trigger with: "set up Sidekick", "add Sidekick", "install Sidekick",
+  "migrate preferences to Sidekick", or just "/setup-sidekick".
 argument-hint: "[path/to/app/build.gradle.kts]"
 allowed-tools: Read Write Edit Bash Glob Grep AskUserQuestion
 ---
@@ -16,6 +16,10 @@ allowed-tools: Read Write Edit Bash Glob Grep AskUserQuestion
 
 You are setting up Sidekick in a consumer project. Work through the phases
 below in order. Adapt to what you find — skip steps that are already done.
+
+The host owns visibility: Sidekick exposes a `Sidekick(plugins = …)` composable
+that renders the debug panel; the host wraps it in a FAB + `AnimatedVisibility`
+pair. There is no `SidekickShell` wrapper. Do not invent one.
 
 ---
 
@@ -27,17 +31,25 @@ Otherwise, search for `build.gradle.kts` files that look like app modules
 
 Read the file and extract:
 
-- **Targets declared** — `androidTarget`, `jvm()`, `js`, `wasmJs`, iOS
-- **Existing Sidekick dependencies** — any `projects.core.*` or `projects.plugins.*`
-- **KSP plugin** — is `alias(libs.plugins.ksp)` already applied?
+- **Build type** — is this a Sidekick mono-repo sub-module (consume via
+  `projects.core.runtime`) or an external KMP project that depends on Sidekick
+  via Maven coordinates (`dev.parez.sidekick:runtime:<version>`)? Default to
+  Maven coordinates unless the project is inside the Sidekick repo (look for a
+  sibling `core/runtime/` directory at the repo root) — most consumers are
+  external.
+- **Targets declared** — `androidTarget`, `jvm()`, `js`, `wasmJs`, iOS.
+- **Existing Sidekick dependencies** — any `dev.parez.sidekick:*` or `projects.core.*`.
+- **KSP plugin** — is `alias(libs.plugins.ksp)` (or `id("com.google.devtools.ksp")`) already applied?
+- **`mavenLocal()` / Maven Central availability** — check the root `settings.gradle.kts` for the `dependencyResolutionManagement.repositories` block. If neither contains Maven Central nor `mavenLocal`, Sidekick artifacts will not resolve.
 - **Root composable file** — search for a `@Composable fun` that contains
   `MaterialTheme` or is the app entry point (commonly `App.kt`, `DemoApp.kt`,
-  `MainActivity.kt`, or similar). Read it to understand the current shape.
+  `MainActivity.kt`). Read it to understand the current shape.
+- **Existing FAB / debug UI** — if the host already has a FAB, plan to add a second one or reuse it with a long-press / shake gesture (the host decides).
 
 Also search `commonMain` sources for a class that:
 - Has `DataStore<Preferences>` as a constructor parameter, **or**
 - Uses `dataStore.getFlow(...)`, `dataStore.getBlocking(...)`, `dataStore.updateValue(...)`, **or**
-- Is already annotated with `@SidekickPreferences`
+- Is already annotated with `@SidekickPreferences`.
 
 Record the file path and class name if found.
 
@@ -68,127 +80,212 @@ Ask two questions in a single prompt:
 
 ## Phase 3 — Apply changes
 
-### 3a. Core dependency
+### 3a. Repository wiring
 
-If `core:runtime` / `core:noop` are not already present:
+Sidekick is consumed from Maven Local (for local dev) or Maven Central (once
+published). Verify the consumer's root `settings.gradle.kts` has these
+repositories registered. Add what's missing:
 
 ```kotlin
-// In the top-level dependencies block (Android builds)
+// settings.gradle.kts
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+        mavenLocal() // remove once Sidekick is on Maven Central
+    }
+}
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        mavenLocal()  // remove once Sidekick is on Maven Central
+    }
+}
+```
+
+Sidekick is published to group `dev.parez.sidekick`. The current snapshot
+version is `0.1.0-SNAPSHOT`. **Add to `gradle/libs.versions.toml`:**
+
+```toml
+[versions]
+sidekick = "0.1.0-SNAPSHOT"
+
+[libraries]
+sidekick-runtime                = { module = "dev.parez.sidekick:runtime",                version.ref = "sidekick" }
+sidekick-noop                   = { module = "dev.parez.sidekick:noop",                   version.ref = "sidekick" }
+sidekick-preferences            = { module = "dev.parez.sidekick:preferences",            version.ref = "sidekick" }
+sidekick-preferences-ksp        = { module = "dev.parez.sidekick:preferences-ksp",        version.ref = "sidekick" }
+sidekick-network-monitor-plugin = { module = "dev.parez.sidekick:network-monitor-plugin", version.ref = "sidekick" }
+sidekick-network-monitor-ktor   = { module = "dev.parez.sidekick:network-monitor-ktor",   version.ref = "sidekick" }
+sidekick-log-monitor-plugin     = { module = "dev.parez.sidekick:log-monitor-plugin",     version.ref = "sidekick" }
+sidekick-log-monitor-kermit     = { module = "dev.parez.sidekick:log-monitor-kermit",     version.ref = "sidekick" }
+sidekick-custom-screens         = { module = "dev.parez.sidekick:custom-screens",         version.ref = "sidekick" }
+
+[plugins]
+sidekick-preferences = { id = "dev.parez.sidekick.preferences", version.ref = "sidekick" }
+```
+
+> **In-repo consumers only:** instead of the Maven coordinates above, you may
+> use typesafe project accessors (`projects.core.runtime`, `projects.plugins.preferences.api`, etc.) — but only when the consuming module is part of the
+> Sidekick mono-repo's `settings.gradle.kts`.
+
+### 3b. Core dependency (debug/release swap)
+
+The runtime overlay is in `dev.parez.sidekick:runtime`; the release stub is
+`dev.parez.sidekick:noop`. Both expose an identical `Sidekick(plugins = …)`
+symbol, so `commonMain` code compiles against either.
+
+**On Android-only projects:**
+```kotlin
 dependencies {
-    debugImplementation(projects.core.runtime)
-    releaseImplementation(projects.core.noop)
+    debugImplementation(libs.sidekick.runtime)
+    releaseImplementation(libs.sidekick.noop)
 }
 ```
 
-If the project has a **JVM target** and no Android target, add to `jvmMain.dependencies` instead:
+**On KMP projects with multiple targets (composeApp-style):**
 
 ```kotlin
-jvmMain.dependencies {
-    implementation(projects.core.runtime)
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            // Pull the full overlay in commonMain so every non-Android target
+            // (JVM, iOS, Wasm, JS) gets the real implementation. Android
+            // overrides this in its own variant block below.
+            implementation(libs.sidekick.runtime)
+        }
+    }
+}
+
+dependencies {
+    // Android variant-specific: full overlay in debug, no-op stub in release.
+    // The Sidekick() call site in commonMain compiles against the same
+    // signature regardless of which artifact wins on Android.
+    debugImplementation(libs.sidekick.runtime)
+    releaseImplementation(libs.sidekick.noop)
 }
 ```
 
-If both Android and JVM targets exist, add both blocks.
+If the project is **JVM-only / desktop-only** (no Android), use `jvmMain.dependencies` and accept that the runtime ships in release JVM builds too — there's no separate JVM release variant.
 
-### 3b. Plugin dependencies
+### 3c. Plugin dependencies
 
-Add to `commonMain.dependencies {}` inside the `kotlin {}` block:
+Add to `commonMain.dependencies {}`:
 
 #### Network Monitor
 
 ```kotlin
-implementation(projects.plugins.networkMonitor.plugin)
+implementation(libs.sidekick.network.monitor.plugin)
+implementation(libs.sidekick.network.monitor.ktor)   // if you want the Ktor HttpClient interceptor
 ```
 
-If the user wants Ktor integration:
-
+Also add per-platform Ktor client engines if not already present:
 ```kotlin
-implementation(projects.plugins.networkMonitor.ktor)
+androidMain.dependencies { implementation(libs.ktor.client.okhttp) }
+jvmMain.dependencies     { implementation(libs.ktor.client.cio) }
+jsMain.dependencies      { implementation(libs.ktor.client.js) }
+wasmJsMain.dependencies  { implementation(libs.ktor.client.js) }
+// iOS pulls ktor-client-darwin automatically via ktor-client-core's defaults.
 ```
 
 #### Log Monitor
 
 ```kotlin
-implementation(projects.plugins.logMonitor.plugin)
-```
-
-If the user wants Kermit integration:
-
-```kotlin
-implementation(projects.plugins.logMonitor.kermit)
+implementation(libs.sidekick.log.monitor.plugin)
+implementation(libs.sidekick.log.monitor.kermit)   // if your app uses Kermit
+implementation(libs.kermit)                         // if not already present
 ```
 
 #### Preferences
 
 ```kotlin
-implementation(projects.plugins.preferences.api)
+implementation(libs.sidekick.preferences)
 ```
 
-Then add the KSP processor (see §3c).
+Then apply the Gradle plugin (see §3d).
 
 #### Custom Screens
 
 ```kotlin
-implementation(projects.plugins.customScreens.api)
+implementation(libs.sidekick.custom.screens)
 ```
 
-### 3c. KSP setup (Preferences plugin only)
+#### Icons — required transitively
 
-**Only if Preferences was selected and KSP is not already configured.**
-
-1. Add the KSP plugin to the `plugins {}` block:
-
-```kotlin
-alias(libs.plugins.ksp)
-```
-
-2. Wire generated sources in `commonMain`:
+Sidekick plugins surface `Icons.Default.NetworkCheck`, `Icons.Default.Settings`,
+`Icons.AutoMirrored.Default.List`, etc. through their public API. These icons
+live in the **extended** Material icons artifact, not the foundation icons.
+Add it to `commonMain`:
 
 ```kotlin
-commonMain {
-    kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/metadata/commonMain/kotlin"))
+commonMain.dependencies {
+    implementation(compose.materialIconsExtended)
 }
 ```
 
-3. Register the processor in the `dependencies {}` block:
+Without this, every consumer-side `Icons.Default.…` import (and Sidekick's
+own plugin grid rendering on some platforms) fails to compile.
+
+### 3d. Preferences Gradle plugin (only if Preferences was selected)
+
+The `dev.parez.sidekick.preferences` Gradle plugin handles all KSP wiring for
+the preferences code generator — `commonMain.kotlin.srcDir`, processor dependency, configuration-cache-safe task ordering, and the stable-directory sync that prevents incremental-build "Unresolved reference" failures.
+
+#### Apply the plugin
+
+Add to `composeApp/build.gradle.kts` (or your app module's `build.gradle.kts`):
 
 ```kotlin
-add("kspCommonMainMetadata", projects.plugins.preferences.ksp)
+plugins {
+    // … your existing plugins …
+    alias(libs.plugins.ksp)                       // Required: the Sidekick plugin
+                                                  // does not yet pull KSP transitively.
+    alias(libs.plugins.sidekick.preferences)
+}
 ```
 
-4. Add task wiring **after** the `kotlin {}` block. Use `configureEach` (not
-   `matching + configureEach`) so it stays compatible with the configuration cache:
+#### JS / Wasm targets — extra srcDir wiring
+
+The Gradle plugin currently only wires the `commonMain` generated-source
+directory. For projects with JS and / or Wasm targets, also add:
 
 ```kotlin
-tasks.configureEach {
-    if (name != "kspCommonMainKotlinMetadata" &&
-        ((name.startsWith("compile") && name.contains("Kotlin")) || name.startsWith("ksp"))
-    ) {
-        dependsOn("kspCommonMainKotlinMetadata")
+kotlin {
+    sourceSets {
+        jsMain {
+            kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/js/jsMain/kotlin"))
+        }
+        wasmJsMain {
+            kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/wasmJs/wasmJsMain/kotlin"))
+        }
     }
 }
-tasks.configureEach {
-    if (name == "kspCommonMainKotlinMetadata") {
-        outputs.cacheIf { false }
-        val outDir = layout.buildDirectory.dir("generated/ksp/metadata/commonMain/kotlin")
-        outputs.upToDateWhen { outDir.get().asFile.exists() }
-    }
-}
 ```
 
-If the project has **JS or WasmJS targets**, also add their generated source
-directories:
+> This step will become unnecessary once the Gradle plugin handles JS/Wasm directly. Track in the Sidekick repo's audit recommendations.
+
+#### Local-dev override
+
+If the consumer's project includes the Sidekick mono-repo as a composite
+build (`includeBuild("path/to/sidekick/plugins/preferences/gradle-plugin")`)
+and wants to use the local KSP processor instead of the Maven artifact, set:
 
 ```kotlin
-jsMain {
-    kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/js/jsMain/kotlin"))
+sidekickPreferences {
+    addProcessor = false
 }
-wasmJsMain {
-    kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/wasmJs/wasmJsMain/kotlin"))
+
+dependencies {
+    add("kspCommonMainMetadata", projects.plugins.preferences.ksp)
 }
 ```
 
-### 3d. Preferences class migration
+For ordinary external consumers, omit this block — `addProcessor = true` is
+the default and pulls the published `preferences-ksp` artifact automatically.
+
+### 3e. Preferences class migration
 
 **Only if the user confirmed migration in Phase 2.**
 
@@ -204,9 +301,11 @@ corresponding `@Preference`-annotated `var` property in the new class.
 
 Flag these and tell the user they must be kept outside the annotated class:
 
-- Composite types (e.g. a `ForecastDateRange` built from two `Long` keys)
-- Nullable flows (`getOrNullFlow`, `getBlockingOrNull`)
-- Custom mapped types (e.g. `Flow<Instant>` derived from a `Long`)
+- Composite types (e.g. a `ForecastDateRange` built from two `Long` keys).
+- Nullable flows (`getOrNullFlow`, `getBlockingOrNull`).
+- Custom mapped types (e.g. `Flow<Instant>` derived from a `Long`).
+- Enums whose values are stored via a manual `.value` string (not `.name`) —
+  KSP uses `Enum.valueOf(name)` and would lose round-trip fidelity.
 
 #### Transformation
 
@@ -265,60 +364,119 @@ val prefsPlugin = remember { AppPreferencesPlugin() }
 val darkMode by prefsPlugin.accessor.darkMode.collectAsState()
 ```
 
-### 3e. Wire SidekickShell
+### 3f. Wire `Sidekick()` into the root composable
 
 Find the root composable (identified in Phase 1). Read it, then edit it to:
 
-1. Instantiate selected plugins with `remember { ... }`:
+1. **Instantiate selected plugins with `remember { … }`.** Plugins are
+   stateful (in-memory stores, retention sweepers, Koin contexts) — they
+   must be remembered or you'll spin up a fresh one each recomposition.
+
+   ```kotlin
+   // Preferences (KSP-generated)
+   val prefsPlugin = remember { AppPreferencesPlugin() }
+
+   // Network Monitor
+   val networkPlugin = remember { NetworkMonitorPlugin() }
+
+   // Log Monitor + Kermit bridge
+   val logPlugin = remember {
+       LogMonitorPlugin().also { plugin ->
+           Logger.setLogWriters(platformLogWriter(), LogMonitorLogWriter(plugin.store))
+       }
+   }
+
+   // Custom screen example
+   val myDebugScreen = remember {
+       CustomScreenPlugin(
+           id = "com.myapp.debug",
+           title = "Debug",
+           icon = Icons.Default.BugReport,
+       ) {
+           // your Composable — host DI works here (Koin/Hilt/etc.)
+       }
+   }
+   ```
+
+   The correct imports for the bridge:
+   ```kotlin
+   import co.touchlab.kermit.Logger
+   import co.touchlab.kermit.platformLogWriter
+   import dev.parez.sidekick.logs.LogMonitorPlugin
+   import dev.parez.sidekick.logs.kermit.LogMonitorLogWriter   // note .kermit segment
+   import dev.parez.sidekick.network.NetworkMonitorPlugin
+   ```
+
+2. **Collect from the preferences accessor before `MaterialTheme`** if any
+   preference drives theming:
+   ```kotlin
+   val darkMode by prefsPlugin.accessor.darkMode.collectAsState()
+   ```
+
+3. **Build the plugin list with `remember(...)`** so its identity is stable
+   across recompositions:
+   ```kotlin
+   val plugins = remember(prefsPlugin, networkPlugin, logPlugin, myDebugScreen) {
+       listOf(prefsPlugin, networkPlugin, logPlugin, myDebugScreen)
+   }
+   ```
+
+4. **Add a FAB + `AnimatedVisibility` + `Sidekick(...)` overlay.** The host
+   owns visibility — `Sidekick()` only renders the panel content.
+
+   ```kotlin
+   MaterialTheme(/* host's existing color scheme */) {
+       var sidekickVisible by remember { mutableStateOf(false) }
+
+       Scaffold(
+           floatingActionButton = {
+               if (!sidekickVisible) {
+                   FloatingActionButton(onClick = { sidekickVisible = true }) {
+                       Icon(Icons.Default.BugReport, contentDescription = "Open Sidekick")
+                   }
+               }
+           },
+       ) { padding ->
+           Box(Modifier.fillMaxSize().padding(padding)) {
+               // ── existing app content ──
+               YourExistingScreen(...)
+
+               AnimatedVisibility(visible = sidekickVisible) {
+                   Sidekick(
+                       plugins = plugins,
+                       useSidekickTheme = false, // inherit the host's MaterialTheme
+                       actions = {
+                           IconButton(onClick = { sidekickVisible = false }) {
+                               Icon(Icons.Default.Close, contentDescription = "Close Sidekick")
+                           }
+                       },
+                   )
+               }
+           }
+       }
+   }
+   ```
+
+Do **not** introduce a new outer wrapper composable — keep `Sidekick()`
+inside the host's `MaterialTheme` so theming is inherited automatically when
+`useSidekickTheme = false`. There is no `SidekickShell`; do not invent one.
+
+### 3g. Install `NetworkMonitorKtor` on the HttpClient (Network Monitor + Ktor only)
+
+The Ktor integration is a `ClientPlugin` you install on the `HttpClient`
+instance the consumer is already using:
 
 ```kotlin
-// Network Monitor
-val networkPlugin = remember { NetworkMonitorPlugin() }
+import dev.parez.sidekick.network.ktor.NetworkMonitorKtor
 
-// Network Monitor with Ktor — also install on your HttpClient:
-// httpClient.install(NetworkMonitorKtor)
-
-// Log Monitor
-val logPlugin = remember {
-    LogMonitorPlugin(retentionPeriod = RetentionPeriod.ONE_HOUR).also { plugin ->
-        // Kermit bridge (if selected):
-        Logger.setLogWriters(platformLogWriter(), LogMonitorLogWriter(plugin.store))
-    }
-}
-
-// Preferences (KSP-generated)
-val prefsPlugin = remember { AppPreferencesPlugin() }
-
-// Custom Screen example
-val myDebugScreen = remember {
-    CustomScreenPlugin(
-        id = "com.myapp.debug",
-        title = "Debug",
-        icon = Icons.Default.BugReport,
-    ) {
-        // your Composable — DI works here
-    }
+val httpClient = HttpClient {
+    install(NetworkMonitorKtor)
+    // … your existing config …
 }
 ```
 
-2. Collect from the preferences accessor where needed (observe before `MaterialTheme`):
-
-```kotlin
-val darkMode by prefsPlugin.accessor.darkMode.collectAsState()
-```
-
-3. Wrap the app content with `SidekickShell`:
-
-```kotlin
-val plugins = remember(...) { listOf(/* selected plugins */) }
-
-SidekickShell(plugins = plugins) {
-    // existing app content
-}
-```
-
-Do **not** move the existing `MaterialTheme` call — keep `SidekickShell`
-inside it so the overlay inherits the app's color scheme automatically.
+The plugin reads the default `NetworkMonitorStore` from the plugin's isolated
+Koin context — no manual store wiring needed in the common case.
 
 ---
 
@@ -327,26 +485,38 @@ inside it so the overlay inherits the app's color scheme automatically.
 Tell the user:
 
 1. Which files were modified and what was changed in each.
-2. Any properties that were **not migrated** (unsupported types) and why.
+2. Any preference properties that were **not migrated** (unsupported types) and why.
 3. Any manual steps remaining:
-   - Installing `NetworkMonitorKtor` on the `HttpClient` (if network-monitor selected).
+   - Installing `NetworkMonitorKtor` on the `HttpClient` (if network-monitor selected and the Ktor client lives outside the file you edited).
    - Wiring the Kermit log writer if they use a non-Kermit logger.
    - Handling any unsupported preference properties kept outside the class.
-   - Syncing Gradle and verifying the build (`./gradlew :app:assembleDebug` or `./gradlew :app:run`).
+   - Syncing Gradle and verifying the build:
+     ```bash
+     ./gradlew :composeApp:assembleDebug
+     ./gradlew :composeApp:jvmJar
+     ./gradlew :composeApp:wasmJsBrowserProductionWebpack
+     ./gradlew :composeApp:compileKotlinIosSimulatorArm64
+     ```
 
 ---
 
 ## Rules
 
 - Read every file before editing it.
-- Do **not** remove DataStore or KSP dependencies that were already present
-  for other purposes (e.g. Room uses KSP too).
+- Do **not** remove KSP dependencies that were already present for other
+  purposes (e.g. Room uses KSP too).
 - Do **not** touch release build types or signing config.
 - Do **not** add `kspAndroid` / `kspJvm` / `kspJs` / `kspWasmJs` for the
-  Preferences processor — only `kspCommonMainMetadata` is correct.
-- Do **not** overwrite existing plugin registrations in `SidekickShell`.
+  Preferences processor — only `kspCommonMainMetadata` is correct. The
+  Gradle plugin handles this; do not bypass it.
+- Do **not** overwrite existing plugin registrations in the existing plugin
+  list passed to `Sidekick(...)`.
+- Do **not** invent or reference `SidekickShell` — the real API is
+  `Sidekick(plugins = …)` and the host owns the FAB / visibility.
 - Do **not** migrate enum types whose values are stored via a manual `.value`
   string property (not `.name`) — these require a custom mapping that KSP
   cannot infer.
 - If `@SidekickPreferences` is already present on the class, skip migration
   and tell the user KSP is already set up.
+- Prefer Maven coordinates (`libs.sidekick.*`) over `projects.*` accessors
+  unless the consuming module is inside the Sidekick mono-repo.

@@ -12,7 +12,7 @@ An interactive wizard that handles the full Sidekick onboarding flow for a consu
 
 - Adds `core:runtime` / `core:noop` dependencies with the correct debug/release split.
 - Prompts you to choose which plugins to enable (Network Monitor, Log Monitor, Preferences, Custom Screens) and adds only the modules you need.
-- Wires `SidekickShell` around your root composable with `remember`-wrapped plugin instances.
+- Wires the `Sidekick(plugins = …)` composable into your root composable with `remember`-wrapped plugin instances, and adds a FAB to toggle visibility.
 - **Migrates an existing hand-written DataStore preferences class** to the `@SidekickPreferences` annotation processor: removes boilerplate keys and property getters, replaces them with `@Preference`-annotated vars, adds the KSP wiring to `build.gradle.kts`, and **preserves your existing DataStore file name** by setting `storeName` automatically so no stored values are lost.
 
 ### How to install

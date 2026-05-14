@@ -1,0 +1,63 @@
+name: Publish to Maven Central
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Skip the actual upload — only assemble + sign'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: maven-central
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Publish main build to Maven Central
+        if: ${{ !inputs.dry_run }}
+        run: ./gradlew publishToMavenCentral --no-configuration-cache
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_IN_MEMORY_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_IN_MEMORY_KEY_PASSWORD }}
+
+      - name: Publish preferences gradle-plugin (included build) to Maven Central
+        if: ${{ !inputs.dry_run }}
+        working-directory: plugins/preferences/gradle-plugin
+        run: ../../../gradlew publish --no-configuration-cache
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_IN_MEMORY_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_IN_MEMORY_KEY_PASSWORD }}
+
+      - name: Dry-run — assemble + sign only, no upload
+        if: ${{ inputs.dry_run }}
+        run: ./gradlew publishToMavenLocal --no-configuration-cache
+        env:
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_IN_MEMORY_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_IN_MEMORY_KEY_PASSWORD }}
+
+      - name: Reminder — promote release in Central Portal
+        if: ${{ !inputs.dry_run }}
+        run: |
+          echo "::notice::Upload finished. Open https://central.sonatype.com → Deployments → review → Publish to promote from staging to Central."

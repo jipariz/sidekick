@@ -9,7 +9,7 @@ import dev.parez.sidekick.preferences.ui.PreferencesContent
 import kotlinx.coroutines.flow.StateFlow
 
 abstract class PreferencesPlugin(
-    private val pluginTitle: String,
+    pluginTitle: String,
     val definitions: List<PreferenceDefinition<*>>,
     val valueFlows: Map<String, StateFlow<Any>>,
     val onSet: suspend (key: String, value: Any) -> Unit,
@@ -22,6 +22,7 @@ abstract class PreferencesPlugin(
     override fun Content() {
         val navigateBack = LocalSidekickBackNavigator.current
         PreferencesContent(
+            title = title,
             definitions = definitions,
             valueFlows = valueFlows,
             onSet = onSet,

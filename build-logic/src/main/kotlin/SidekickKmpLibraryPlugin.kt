@@ -1,12 +1,10 @@
 import com.android.build.gradle.LibraryExtension
+import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.publish.PublishingExtension
-import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.getByType
-import org.gradle.kotlin.dsl.withType
 import org.jetbrains.compose.ComposeExtension
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -19,7 +17,9 @@ class SidekickKmpLibraryPlugin : Plugin<Project> {
         pluginManager.apply("com.android.library")
         pluginManager.apply("org.jetbrains.compose")
         pluginManager.apply("org.jetbrains.kotlin.plugin.compose")
-        pluginManager.apply("maven-publish")
+        // vanniktech.maven.publish brings in `maven-publish` + `signing` and adds
+        // a tighter coordinates/POM DSL plus a one-shot Central upload task.
+        pluginManager.apply("com.vanniktech.maven.publish")
 
         val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
         val compileSdkVersion = libs.findVersion("android-compileSdk").get().requiredVersion.toInt()
@@ -65,20 +65,24 @@ class SidekickKmpLibraryPlugin : Plugin<Project> {
             }
         }
 
-        afterEvaluate {
-            val desiredArtifactId = extensions.extraProperties.takeIf {
-                it.has("sidekick.artifactId")
-            }?.get("sidekick.artifactId") as? String ?: return@afterEvaluate
+        val sidekickVersion = findProperty("sidekick.version") as String
 
-            val sidekickVersion = findProperty("sidekick.version") as String
+        extensions.configure<MavenPublishBaseExtension> {
+            // Coordinates: groupId is fixed, artifactId comes from the per-module
+            // override set in the root build.gradle.kts ext("sidekick.artifactId"),
+            // falling back to the Gradle project name.
+            val resolvedArtifactId = (extensions.extraProperties
+                .takeIf { it.has("sidekick.artifactId") }
+                ?.get("sidekick.artifactId") as? String)
+                ?: project.name
+            coordinates(
+                groupId = "dev.parez.sidekick",
+                artifactId = resolvedArtifactId,
+                version = sidekickVersion,
+            )
 
-            extensions.configure<PublishingExtension> {
-                publications.withType<MavenPublication>().configureEach {
-                    groupId = "dev.parez.sidekick"
-                    version = sidekickVersion
-                    artifactId = artifactId.replaceFirst(project.name, desiredArtifactId)
-                }
-            }
+            // POM metadata + Central Portal target + conditional signing.
+            configureSidekickPublication(project)
         }
     }
 }

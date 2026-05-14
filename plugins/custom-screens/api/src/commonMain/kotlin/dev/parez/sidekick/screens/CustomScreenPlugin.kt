@@ -23,7 +23,7 @@ import dev.parez.sidekick.plugin.SidekickPlugin
  * in the Sidekick overlay.
  *
  * Each instance appears as its own card in the plugin grid. Create as many
- * instances as needed and pass them all to [dev.parez.sidekick.SidekickShell].
+ * instances as needed and pass them all to [dev.parez.sidekick.Sidekick].
  *
  * Any DI framework (Koin, Hilt, custom [androidx.compose.runtime.CompositionLocal]s, …)
  * works inside [content] because it executes inside the host app's composition tree —

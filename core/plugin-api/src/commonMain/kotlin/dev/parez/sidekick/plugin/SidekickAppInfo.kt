@@ -31,13 +31,13 @@ data class SidekickAppInfo(
  * All auto-detected platform fields are preserved unchanged.
  *
  * ```kotlin
- * SidekickShell(
+ * Sidekick(
  *     plugins = plugins,
  *     appInfo = SidekickAppInfo.detect().withExtras(
  *         "Environment" to "staging",
  *         "Region" to "EU-West",
  *     ),
- * ) { ... }
+ * )
  * ```
  */
 fun SidekickAppInfo.withExtras(vararg pairs: Pair<String, String>): SidekickAppInfo =
@@ -62,13 +62,13 @@ fun SidekickAppInfo.withExtras(vararg pairs: Pair<String, String>): SidekickAppI
  *     ?.copy(buildType = BuildConfig.BUILD_TYPE)
  *     ?.let { SidekickAppInfo(platform = it) }
  * ```
- * To disable the header entirely, pass `appInfo = null` to [dev.parez.sidekick.SidekickShell].
+ * To disable the header entirely, pass `appInfo = null` to [dev.parez.sidekick.Sidekick].
  */
 expect fun SidekickAppInfo.Companion.detect(): SidekickAppInfo
 
 /**
  * Returns a [SidekickAppInfo] that is auto-detected once and remembered across recompositions.
- * Used as the default value for [dev.parez.sidekick.SidekickShell].
+ * Used as the default value for [dev.parez.sidekick.Sidekick].
  */
 @Composable
 fun rememberSidekickAppInfo(): SidekickAppInfo = remember { SidekickAppInfo.detect() }
