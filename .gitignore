@@ -19,3 +19,7 @@ captures
 **/xcshareddata/WorkspaceSettings.xcsettings
 # MkDocs build output
 site/
+# Audit working directory (architecture review + scaffolded wizard project)
+audit/
+# Claude Code dynamic-loop lock file
+.claude/scheduled_tasks.lock

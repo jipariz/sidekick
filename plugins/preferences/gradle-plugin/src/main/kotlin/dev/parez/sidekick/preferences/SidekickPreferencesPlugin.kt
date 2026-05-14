@@ -44,6 +44,20 @@ class SidekickPreferencesPlugin : Plugin<Project> {
                 commonMain.kotlin.srcDir(stableDir)
             }
 
+            // Per-target KSP outputs for JS / WasmJS. KSP emits to
+            // build/generated/ksp/<target>/<sourceSet>/kotlin during per-target
+            // KSP tasks (when added); these directories need to be on the
+            // source set's kotlin srcDirs so the compiler sees the generated
+            // code even if KSP produces nothing this build. configureEach is
+            // lazy: it fires whichever order the consumer registers the targets.
+            val perTargetDirs = mapOf(
+                "jsMain" to target.layout.buildDirectory.dir("generated/ksp/js/jsMain/kotlin"),
+                "wasmJsMain" to target.layout.buildDirectory.dir("generated/ksp/wasmJs/wasmJsMain/kotlin"),
+            )
+            kmp.sourceSets.matching { it.name in perTargetDirs.keys }.configureEach { sourceSet ->
+                sourceSet.kotlin.srcDir(perTargetDirs.getValue(sourceSet.name))
+            }
+
             // afterEvaluate lets the consumer configure the extension before we read it.
             target.afterEvaluate {
                 if (extension.addProcessor) {

@@ -5,19 +5,27 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.backhandler.BackHandler
 import dev.parez.sidekick.SidekickState
 import dev.parez.sidekick.plugin.LocalSidekickBackNavigator
 import dev.parez.sidekick.plugin.SidekickLifecycleAware
 import dev.parez.sidekick.plugin.SidekickPlugin
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 internal fun SidekickPluginScreen(plugin: SidekickPlugin, state: SidekickState) {
     DisposableEffect(plugin) {
         (plugin as? SidekickLifecycleAware)?.onAttach()
         onDispose { (plugin as? SidekickLifecycleAware)?.onDetach() }
     }
-    CompositionLocalProvider(LocalSidekickBackNavigator provides { state.backToList() }) {
+    val backNavigator = remember(state) { { state.backToList() } }
+    // System / gesture back returns to the plugin list on Android; no-op on
+    // other targets, which is fine — they have their own back affordances.
+    BackHandler(onBack = backNavigator)
+    CompositionLocalProvider(LocalSidekickBackNavigator provides backNavigator) {
         Box(modifier = Modifier.fillMaxSize()) {
             plugin.Content()
         }

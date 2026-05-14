@@ -6,11 +6,14 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(projects.core.pluginApi)
-            implementation(compose.materialIconsExtended)
+            // api so that consumers — which call Sidekick(...) and typically use
+            // Icons.Default.* in their own FAB / debug UI — transitively get
+            // the extended icons artifact without declaring it themselves.
+            api(compose.materialIconsExtended)
             implementation(libs.kotlinx.coroutinesCore)
-            implementation(libs.compose.adaptive)
-            implementation(libs.compose.adaptive.layout)
-            implementation(libs.compose.adaptive.navigation)
+            // KMP BackHandler — wires Android system/gesture back into the
+            // overlay's plugin-detail screen; a true no-op on other targets.
+            implementation(libs.compose.ui.backhandler)
         }
     }
 }

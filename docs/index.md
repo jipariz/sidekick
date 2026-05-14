@@ -38,16 +38,36 @@ Sidekick adds a floating button to your app during development that opens a pane
 @Composable
 fun App() {
     val networkPlugin = remember { NetworkMonitorPlugin() }
+    val plugins = remember { listOf(networkPlugin) }
 
     MaterialTheme {
-        SidekickShell(plugins = listOf(networkPlugin)) {
-            // your app content
+        var sidekickVisible by remember { mutableStateOf(false) }
+        Scaffold(
+            floatingActionButton = {
+                FloatingActionButton(onClick = { sidekickVisible = true }) {
+                    Icon(Icons.Default.BugReport, contentDescription = "Open Sidekick")
+                }
+            },
+        ) {
+            Box(Modifier.fillMaxSize().padding(it)) {
+                // your app content
+                AnimatedVisibility(visible = sidekickVisible) {
+                    Sidekick(
+                        plugins = plugins,
+                        actions = {
+                            IconButton(onClick = { sidekickVisible = false }) {
+                                Icon(Icons.Default.Close, contentDescription = "Close Sidekick")
+                            }
+                        },
+                    )
+                }
+            }
         }
     }
 }
 ```
 
-A small FAB appears in the bottom-right corner. Tap it to open the Sidekick panel.
+A FAB appears in the bottom-right corner. Tap it to open the Sidekick panel.
 
 ---
 
