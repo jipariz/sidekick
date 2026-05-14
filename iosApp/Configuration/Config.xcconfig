@@ -5,3 +5,8 @@ PRODUCT_BUNDLE_IDENTIFIER=dev.parez.sidekick.Sidekick$(TEAM_ID)
 
 CURRENT_PROJECT_VERSION=1
 MARKETING_VERSION=1.0
+
+// SQLDelight's native iOS driver calls libsqlite3 directly; the system
+// library has to be linked into the final app executable (Kotlin
+// frameworks defer these symbols to the consumer).
+OTHER_LDFLAGS = $(inherited) -lsqlite3
