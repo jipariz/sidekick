@@ -1,4 +1,5 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
@@ -32,6 +33,28 @@ kotlin {
         browser()
         binaries.executable()
     }
+    listOf(iosX64(), iosArm64(), iosSimulatorArm64()).forEach { iosTarget ->
+        iosTarget.binaries.framework {
+            baseName = "ComposeApp"
+            isStatic = true
+        }
+    }
+
+    // Room 3.0.0-alpha03 does not yet publish iOS variants. Carve out a
+    // `nonIosMain` intermediate source set that all non-iOS leaves inherit
+    // from, and put the Pokemon Room cache there; iOS gets an in-memory
+    // fallback (see demo-app/src/iosMain/kotlin/.../db/InMemoryPokemonCache.kt).
+    @OptIn(ExperimentalKotlinGradlePluginApi::class)
+    applyDefaultHierarchyTemplate {
+        common {
+            group("nonIos") {
+                withAndroidTarget()
+                withJvm()
+                withJs()
+                withWasmJs()
+            }
+        }
+    }
 
     sourceSets {
         commonMain {
@@ -55,7 +78,6 @@ kotlin {
                 implementation(libs.coil.compose)
                 implementation(libs.coil.network.ktor)
                 implementation(projects.core.runtime)
-                implementation(libs.room3.runtime)
                 implementation(libs.koin.core)
                 implementation(libs.koin.compose)
                 implementation(libs.koin.compose.viewmodel)
@@ -66,6 +88,12 @@ kotlin {
                 implementation(libs.compose.material3.adaptive.navigation.suite)
                 implementation(libs.reveal.core)
                 implementation(libs.reveal.shapes)
+            }
+        }
+        val nonIosMain by getting {
+            dependencies {
+                // Room 3 alpha03 — only the targets in the nonIos group resolve.
+                implementation(libs.room3.runtime)
             }
         }
         androidMain.dependencies {
@@ -103,6 +131,9 @@ kotlin {
                 npm("sqlite-wasm-worker", layout.projectDirectory.dir("sqlite-worker").asFile)
             )
         }
+        iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
+        }
     }
 }
 
@@ -110,6 +141,7 @@ dependencies {
     debugImplementation(projects.core.runtime)
     releaseImplementation(projects.core.noop)
     add("kspCommonMainMetadata", projects.plugins.preferences.ksp)
+    // Room 3 KSP — only on the targets Room supports.
     add("kspAndroid", libs.room3.compiler)
     add("kspJvm", libs.room3.compiler)
     add("kspJs", libs.room3.compiler)
