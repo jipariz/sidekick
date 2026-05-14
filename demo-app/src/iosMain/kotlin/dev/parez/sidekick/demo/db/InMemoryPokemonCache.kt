@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 
 /**
  * In-memory [PokemonCache] used on iOS targets, where Room 3 (`androidx.room3:room3-runtime`)
@@ -28,6 +29,6 @@ class InMemoryPokemonCache : PokemonCache {
     }
 
     override suspend fun saveDetail(detail: PokemonDetail) {
-        detailsById.value = detailsById.value + (detail.id to detail)
+        detailsById.update { it + (detail.id to detail) }
     }
 }
