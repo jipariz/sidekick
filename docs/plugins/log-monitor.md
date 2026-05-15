@@ -35,21 +35,24 @@ View your app's logs without ADB or platform-specific consoles. Level filters, f
 ```kotlin
 // build.gradle.kts
 dependencies {
-    debugImplementation(projects.core.runtime)
-    releaseImplementation(projects.core.noop)
+    debugImplementation("dev.parez.sidekick:runtime:0.1.0")
+    releaseImplementation("dev.parez.sidekick:noop:0.1.0")
 }
 
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(projects.plugins.logMonitor.plugin)
-            implementation(projects.plugins.logMonitor.kermit) // optional — Kermit bridge
+            implementation(platform("dev.parez.sidekick:bom:0.1.0"))
+            implementation("dev.parez.sidekick:log-monitor-plugin")
+            implementation("dev.parez.sidekick:log-monitor-kermit") // optional — Kermit bridge
         }
     }
 }
 ```
 
-Omit `logMonitor.kermit` if you're not using Kermit; see [Advanced › Custom logging library](#custom-logging-library).
+Omit `log-monitor-kermit` if you're not using Kermit; see [Advanced › Custom logging library](#custom-logging-library).
+
+For multi-module apps where the calling code is in a KMP library, see [Installation › Multi-module KMP app](../installation.md#multi-module-kmp-app) for the `compileOnly` / per-target split.
 
 ### 2. Wire into Sidekick
 
@@ -99,6 +102,33 @@ val logPlugin = remember {
 ```
 
 All `Logger.d(...)`, `Logger.i(...)`, `Logger.e(...)` calls now appear in the Sidekick log panel automatically.
+
+#### Alternative: configure a custom `Logger` instance
+
+If you already build a Kermit `Logger` in DI with `mutableLoggerConfigInit(...)` — typical when you have multiple writers (Crashlytics, an in-app DB, etc.) — add `LogMonitorLogWriter()` to the same writer list:
+
+```kotlin
+val config = mutableLoggerConfigInit(
+    platformLogWriter(),
+    DatabaseLogWriter(...),
+    CrashlyticsLogWriter(),
+    LogMonitorLogWriter(),
+)
+val logger = Logger(config = config, tag = "MyApp")
+```
+
+#### Conditional bridge in release builds
+
+`:log-monitor-kermit` and `:log-monitor-plugin` are declared as `implementation`, so they ship in release builds alongside `:noop`. `Sidekick()` won't render the panel in release, but `LogMonitorLogWriter()` still records every Kermit call into the in-memory store. Gate the writer on build type:
+
+```kotlin
+val writers = buildList {
+    add(platformLogWriter())
+    add(CrashlyticsLogWriter())
+    if (!appProperties.isRelease) add(LogMonitorLogWriter())
+}
+Logger(config = mutableLoggerConfigInit(*writers.toTypedArray()), tag = "MyApp")
+```
 
 ## Configuration
 

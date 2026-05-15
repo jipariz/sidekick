@@ -30,14 +30,14 @@ Build your own first-class Sidekick plugin by implementing the `SidekickPlugin` 
 
 ### 1. Add dependency
 
-Your plugin module should compile against `:core:plugin-api`:
+Your plugin module should compile against `plugin-api`:
 
 ```kotlin
 // your-plugin/build.gradle.kts
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(projects.core.pluginApi)
+            implementation("dev.parez.sidekick:plugin-api:0.1.0")
         }
     }
 }

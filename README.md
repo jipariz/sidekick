@@ -17,9 +17,7 @@
   <img alt="License: Apache 2.0" src="https://img.shields.io/badge/license-Apache_2.0-blue">
   <img alt="Kotlin 2.3.20"       src="https://img.shields.io/badge/Kotlin-2.3.20-7F52FF?logo=kotlin&logoColor=white">
   <img alt="Compose Multiplatform 1.10.3" src="https://img.shields.io/badge/Compose_Multiplatform-1.10.3-4285F4">
-  <!-- Uncomment once published to Maven Central:
-  <img alt="Maven Central" src="https://img.shields.io/maven-central/v/dev.parez.sidekick/sidekick-bom">
-  -->
+  <img alt="Maven Central" src="https://img.shields.io/maven-central/v/dev.parez.sidekick/bom">
 </p>
 
 <p align="center">
@@ -58,17 +56,21 @@
 ```kotlin
 // build.gradle.kts
 dependencies {
-    debugImplementation(projects.core.runtime)
-    releaseImplementation(projects.core.noop)  // no-op in release — zero cost
+    debugImplementation("dev.parez.sidekick:runtime:0.1.0")
+    releaseImplementation("dev.parez.sidekick:noop:0.1.0")  // no-op in release — zero cost
 }
 
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(projects.plugins.networkMonitor.plugin)
-            implementation(projects.plugins.networkMonitor.ktor)
-            implementation(projects.plugins.logMonitor.plugin)
-            implementation(projects.plugins.preferences.api)
+            // BOM aligns versions; individual plugin lines drop the version.
+            implementation(platform("dev.parez.sidekick:bom:0.1.0"))
+            implementation("dev.parez.sidekick:network-monitor-plugin")
+            implementation("dev.parez.sidekick:network-monitor-ktor")
+            implementation("dev.parez.sidekick:log-monitor-plugin")
+            implementation("dev.parez.sidekick:log-monitor-kermit")
+            implementation("dev.parez.sidekick:preferences")
+            implementation("dev.parez.sidekick:custom-screens")
         }
     }
 }
@@ -77,9 +79,9 @@ kotlin {
 <details>
 <summary><strong>Per-platform notes & KSP setup</strong></summary>
 
-- **Desktop (JVM)** — `debugImplementation` is Android-only; add `jvmMain.dependencies { implementation(projects.core.runtime) }` and swap to `:core:noop` for production builds yourself.
-- **KSP for Preferences** — apply the KSP plugin, register `projects.plugins.preferences.ksp` on the `kspCommonMainMetadata` configuration, wire the generated-sources directory. Full snippet in [docs/installation.md](docs/installation.md).
-- **Android `ContentProvider`** — `:core:plugin-api` ships a `SidekickInitializer` that auto-initializes the library context. No manual call required.
+- **Desktop (JVM)** — `debugImplementation` is Android-only; add `jvmMain.dependencies { implementation("dev.parez.sidekick:runtime:0.1.0") }` and swap to `dev.parez.sidekick:noop` for production builds yourself.
+- **KSP for Preferences** — easiest path: apply the `dev.parez.sidekick.preferences` Gradle plugin, which wires the KSP processor, the generated-sources directory, and the task dependencies for you. Full snippet (and a manual alternative) in [docs/installation.md](docs/installation.md).
+- **Android `ContentProvider`** — `dev.parez.sidekick:plugin-api` ships a `SidekickInitializer` that auto-initializes the library context. No manual call required.
 
 </details>
 

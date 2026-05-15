@@ -36,21 +36,24 @@ Capture every HTTP request and response your app makes, with searchable list, me
 ```kotlin
 // build.gradle.kts
 dependencies {
-    debugImplementation(projects.core.runtime)
-    releaseImplementation(projects.core.noop)
+    debugImplementation("dev.parez.sidekick:runtime:0.1.0")
+    releaseImplementation("dev.parez.sidekick:noop:0.1.0")
 }
 
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(projects.plugins.networkMonitor.plugin)
-            implementation(projects.plugins.networkMonitor.ktor) // Ktor integration
+            implementation(platform("dev.parez.sidekick:bom:0.1.0"))
+            implementation("dev.parez.sidekick:network-monitor-plugin")
+            implementation("dev.parez.sidekick:network-monitor-ktor") // Ktor integration
         }
     }
 }
 ```
 
-If you use a non-Ktor HTTP client, omit `networkMonitor.ktor` and see [Advanced › Custom HTTP client](#custom-http-client).
+If you use a non-Ktor HTTP client, omit `network-monitor-ktor` and see [Advanced › Custom HTTP client](#custom-http-client).
+
+For multi-module apps where the calling code is in a KMP library, see [Installation › Multi-module KMP app](../installation.md#multi-module-kmp-app) for the `compileOnly` / per-target split.
 
 ### 2. Wire into Sidekick
 
@@ -95,6 +98,18 @@ val httpClient = HttpClient {
 ```
 
 Every request made through this client is captured automatically.
+
+### Conditional install in release builds
+
+`:network-monitor-ktor` and `:network-monitor-plugin` are declared as `implementation`, so they ship in release builds alongside `:noop`. `Sidekick()` won't render the panel in release, but the Ktor plugin still records traffic into the in-memory store — measurable CPU + memory for nothing. Gate the install on build type:
+
+```kotlin
+HttpClient {
+    if (!appProperties.isRelease) {
+        install(NetworkMonitorKtor) { /* … */ }
+    }
+}
+```
 
 ## Configuration
 
