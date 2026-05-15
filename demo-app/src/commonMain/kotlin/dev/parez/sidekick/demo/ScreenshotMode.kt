@@ -33,7 +33,13 @@ data class ScreenshotConfig(val target: String?) {
 
 internal fun seedScreenshotData(scope: CoroutineScope, currentTimeMillis: () -> Long) {
     scope.launch {
+        // Wait briefly so each plugin's SQLDelight driver finishes installing,
+        // then wipe any previously-seeded rows. Without this, the deterministic
+        // ids below collide with the PRIMARY KEY constraint on re-run.
         delay(300)
+        NetworkMonitorKoinContext.getDefaultStore().clear()
+        LogMonitorStore.clear()
+        delay(50)
         seedNetworkCalls(currentTimeMillis())
         seedLogs()
     }
