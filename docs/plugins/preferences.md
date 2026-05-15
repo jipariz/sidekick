@@ -37,20 +37,35 @@ Expose typed app settings inside the Sidekick panel — flip feature flags, chan
 ```kotlin
 // build.gradle.kts
 dependencies {
-    debugImplementation(projects.core.runtime)
-    releaseImplementation(projects.core.noop)
+    debugImplementation("dev.parez.sidekick:runtime:0.1.0")
+    releaseImplementation("dev.parez.sidekick:noop:0.1.0")
 }
 
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(projects.plugins.preferences.api)
+            implementation(platform("dev.parez.sidekick:bom:0.1.0"))
+            implementation("dev.parez.sidekick:preferences")
         }
     }
 }
 ```
 
 ### 2. Configure KSP
+
+#### Recommended: apply the Sidekick Preferences Gradle plugin
+
+The `dev.parez.sidekick.preferences` Gradle plugin bundles the KSP processor application, generated-sources directory registration, and task-dependency wiring — the entire setup collapses to:
+
+```kotlin
+plugins {
+    id("dev.parez.sidekick.preferences") version "0.1.0"
+}
+```
+
+#### Manual
+
+If you prefer explicit control, apply the KSP plugin and register the processor yourself:
 
 ```kotlin
 plugins {
@@ -66,7 +81,7 @@ kotlin {
 }
 
 dependencies {
-    add("kspCommonMainMetadata", projects.plugins.preferences.ksp)
+    add("kspCommonMainMetadata", "dev.parez.sidekick:preferences-ksp:0.1.0")
 }
 
 // All compile and KSP tasks must wait for the common-metadata KSP pass.
@@ -270,6 +285,14 @@ class AppSettingsPlugin(
 ```
 
 The keys across `definitions`, `valueFlows`, and `onSet` must match.
+
+!!! info "`valueFlows` expects `StateFlow<Any>`, not cold `Flow`"
+    If your existing store exposes cold `Flow<T>` (typical for DataStore-backed classes), wrap with `.stateIn(scope, …)` before passing it in:
+    ```kotlin
+    private fun <T : Any> Flow<T>.toAnyStateFlow(scope: CoroutineScope, initial: T): StateFlow<Any> =
+        map<T, Any> { it }.stateIn(scope, SharingStarted.Eagerly, initial)
+    ```
+    Then `valueFlows = mapOf("dark_mode" to store.darkModeFlow.toAnyStateFlow(scope, false), …)`.
 
 ### Manual setup without KSP
 
