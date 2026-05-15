@@ -5,14 +5,14 @@ import androidx.compose.runtime.Immutable
 @Immutable
 data class LogFilter(
     val query: String = "",
-    val levels: Set<LogLevel> = LogLevel.entries.toSet(),
+    val levels: Set<LogLevel> = emptySet(),
 ) {
     fun matches(entry: LogEntry): Boolean {
-        if (entry.level !in levels) return false
         if (query.isNotBlank() &&
             !entry.tag.contains(query, ignoreCase = true) &&
             !entry.message.contains(query, ignoreCase = true)
         ) return false
+        if (levels.isNotEmpty() && entry.level !in levels) return false
         return true
     }
 
@@ -21,6 +21,4 @@ data class LogFilter(
         val escaped = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         return "%$escaped%"
     }
-
-    fun allLevelsSelected(): Boolean = levels.size == LogLevel.entries.size
 }

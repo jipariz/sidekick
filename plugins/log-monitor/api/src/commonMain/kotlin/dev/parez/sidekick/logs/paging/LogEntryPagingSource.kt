@@ -34,7 +34,7 @@ internal class LogEntryPagingSource(
         val limit = params.loadSize.toLong()
         val token = filter.toLikeToken()
         return try {
-            val rows = if (filter.allLevelsSelected()) {
+            val rows = if (filter.levels.isEmpty()) {
                 db.logEntryQueries
                     .selectPagedFilteredAllLevels(token, limit, offset.toLong())
                     .awaitAsList()

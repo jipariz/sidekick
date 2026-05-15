@@ -28,12 +28,12 @@ internal class LogMonitorViewModel(
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
 
-    private val _enabledLevels = MutableStateFlow(LogLevel.entries.toSet())
-    val enabledLevels: StateFlow<Set<LogLevel>> = _enabledLevels.asStateFlow()
+    private val _levelFilter = MutableStateFlow<Set<LogLevel>>(emptySet())
+    val levelFilter: StateFlow<Set<LogLevel>> = _levelFilter.asStateFlow()
 
     private val filterFlow: Flow<LogFilter> = combine(
         _query.debounce(150L),
-        _enabledLevels,
+        _levelFilter,
     ) { q, levels -> LogFilter(query = q, levels = levels) }
         .distinctUntilChanged()
 
@@ -57,7 +57,7 @@ internal class LogMonitorViewModel(
     }
 
     fun toggleLevel(level: LogLevel) {
-        _enabledLevels.update { current ->
+        _levelFilter.update { current ->
             if (level in current) current - level else current + level
         }
     }

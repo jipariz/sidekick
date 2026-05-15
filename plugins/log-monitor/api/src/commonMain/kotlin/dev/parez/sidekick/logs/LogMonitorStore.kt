@@ -90,7 +90,7 @@ object LogMonitorStore : LogCollector {
             .flatMapLatest { (db, f) ->
                 if (db != null) {
                     val token = f.toLikeToken()
-                    if (f.allLevelsSelected()) {
+                    if (f.levels.isEmpty()) {
                         db.logEntryQueries.countFilteredAllLevels(token)
                             .asFlow().mapToOne(Dispatchers.Default)
                     } else {

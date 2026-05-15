@@ -38,14 +38,14 @@ class LogMonitorPlugin(
             val lazyItems = viewModel.pagedEntries.collectAsLazyPagingItems()
             val selected by viewModel.selectedEntry.collectAsStateWithLifecycle()
             val query by viewModel.query.collectAsStateWithLifecycle()
-            val enabledLevels by viewModel.enabledLevels.collectAsStateWithLifecycle()
+            val levelFilter by viewModel.levelFilter.collectAsStateWithLifecycle()
             val filteredCount by viewModel.filteredCount.collectAsStateWithLifecycle()
 
             LogMonitorContent(
                 lazyItems = lazyItems,
                 selected = selected,
                 query = query,
-                enabledLevels = enabledLevels,
+                levelFilter = levelFilter,
                 filteredCount = filteredCount,
                 onSelect = viewModel::select,
                 onQueryChange = viewModel::setQuery,
