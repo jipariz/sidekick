@@ -77,6 +77,34 @@ kotlin {
 ```
 
 <details>
+<summary><strong>Using a Gradle version catalog?</strong></summary>
+
+Drop this in `gradle/libs.versions.toml`:
+
+```toml
+[versions]
+sidekick = "0.1.0"
+
+[libraries]
+sidekick-runtime    = { module = "dev.parez.sidekick:runtime",    version.ref = "sidekick" }
+sidekick-noop       = { module = "dev.parez.sidekick:noop",       version.ref = "sidekick" }
+sidekick-bom        = { module = "dev.parez.sidekick:bom",        version.ref = "sidekick" }
+sidekick-network-monitor-plugin = { module = "dev.parez.sidekick:network-monitor-plugin", version.ref = "sidekick" }
+sidekick-network-monitor-ktor   = { module = "dev.parez.sidekick:network-monitor-ktor",   version.ref = "sidekick" }
+sidekick-log-monitor-plugin     = { module = "dev.parez.sidekick:log-monitor-plugin",     version.ref = "sidekick" }
+sidekick-log-monitor-kermit     = { module = "dev.parez.sidekick:log-monitor-kermit",     version.ref = "sidekick" }
+sidekick-preferences            = { module = "dev.parez.sidekick:preferences",            version.ref = "sidekick" }
+sidekick-custom-screens         = { module = "dev.parez.sidekick:custom-screens",         version.ref = "sidekick" }
+
+[plugins]
+sidekick-preferences = { id = "dev.parez.sidekick.preferences", version.ref = "sidekick" }
+```
+
+Then in `build.gradle.kts`: `debugImplementation(libs.sidekick.runtime)`, `implementation(platform(libs.sidekick.bom))`, `implementation(libs.sidekick.network.monitor.plugin)`, `alias(libs.plugins.sidekick.preferences)`, etc.
+
+</details>
+
+<details>
 <summary><strong>Per-platform notes & KSP setup</strong></summary>
 
 - **Desktop (JVM)** — `debugImplementation` is Android-only; add `jvmMain.dependencies { implementation("dev.parez.sidekick:runtime:0.1.0") }` and swap to `dev.parez.sidekick:noop` for production builds yourself.
