@@ -55,10 +55,7 @@ import org.koin.compose.KoinIsolatedContext
 internal enum class RevealKey { SidekickFab }
 
 @Composable
-fun DemoApp(
-    screenshotConfig: ScreenshotConfig = ScreenshotConfig(target = null),
-    nowMillis: () -> Long = { 0L },
-) {
+fun DemoApp() {
     KoinIsolatedContext(context = LibraryKoinContext.koinApp) {
         val prefsPlugin = remember { AppPreferencesPlugin() }
         val networkPlugin = remember { NetworkMonitorPlugin(retentionPeriod = 1.hours) }
@@ -68,19 +65,11 @@ fun DemoApp(
             }
         }
 
-        val seedScope = rememberCoroutineScope()
-        LaunchedEffect(screenshotConfig.target) {
-            if (screenshotConfig.isActive) {
-                seedScreenshotData(scope = seedScope, currentTimeMillis = nowMillis)
-            }
-        }
-
-        val darkModePref by prefsPlugin.accessor.darkMode.collectAsState()
+        val darkMode by prefsPlugin.accessor.darkMode.collectAsState()
         val colorTheme by prefsPlugin.accessor.colorTheme.collectAsState()
         val showNumbers by prefsPlugin.accessor.showNumbers.collectAsState()
         val shinySprites by prefsPlugin.accessor.shinySprites.collectAsState()
 
-        val darkMode = if (screenshotConfig.isActive) true else darkModePref
         val colorScheme = colorSchemeFor(theme = colorTheme, dark = darkMode)
 
         val buildInfoPlugin = remember {
@@ -105,15 +94,12 @@ fun DemoApp(
         }
 
         MaterialTheme(colorScheme = colorScheme, typography = AppTypography) {
-            var sidekickVisible by remember {
-                mutableStateOf(screenshotConfig.openSidekickOnLaunch)
-            }
+            var sidekickVisible by remember { mutableStateOf(false) }
             val revealCanvasState = rememberRevealCanvasState()
             val revealState = rememberRevealState()
             val revealScope = rememberCoroutineScope()
 
             LaunchedEffect(Unit) {
-                if (screenshotConfig.isActive) return@LaunchedEffect
                 if (revealState.isVisible) return@LaunchedEffect
                 delay(1.seconds)
                 revealState.reveal(RevealKey.SidekickFab)
@@ -164,9 +150,8 @@ fun DemoApp(
                                 exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
                             ) {
                                 Sidekick(
-                                    useSidekickTheme = screenshotConfig.isActive,
+                                    useSidekickTheme = false,
                                     plugins = plugins,
-                                    initialPluginId = screenshotConfig.initialPluginId,
                                     actions = {
                                         IconButton(
                                             onClick = { sidekickVisible = false },

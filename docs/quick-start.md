@@ -89,7 +89,6 @@ Sidekick(
     },
     appInfo = SidekickAppInfo.detect()      // optional host metadata block
         .withExtras("Environment" to "staging"),
-    initialPluginId = "network-monitor",    // open directly on a plugin (skip the grid)
 )
 ```
 
@@ -100,7 +99,6 @@ Sidekick(
 | `actions` | empty slot | Trailing slot — wire your close button here. |
 | `appInfo` | auto-detected | Host metadata (app name, version, build type, platform). Pass `null` to hide the header chip. |
 | `useSidekickTheme` | `true` | When `false`, inherits the host's ambient `MaterialTheme`. See [Theming](theming.md). |
-| `initialPluginId` | `null` | When non-null and matching a plugin, opens directly on that plugin instead of the grid. |
 
 `SidekickAppInfo.detect()` auto-fills useful host metadata on every platform:
 
