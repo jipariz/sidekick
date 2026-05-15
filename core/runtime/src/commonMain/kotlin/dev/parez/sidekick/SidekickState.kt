@@ -11,7 +11,10 @@ import dev.parez.sidekick.plugin.SidekickPlugin
 // ── State ────────────────────────────────────────────────────────────────────
 
 @Stable
-class SidekickState(val plugins: List<SidekickPlugin>) {
+class SidekickState(
+    val plugins: List<SidekickPlugin>,
+    initialPluginId: String? = null,
+) {
 
     init {
         val duplicates = plugins.groupingBy { it.id }.eachCount().filter { it.value > 1 }.keys
@@ -22,7 +25,9 @@ class SidekickState(val plugins: List<SidekickPlugin>) {
         }
     }
 
-    internal var selectedPluginId: String? by mutableStateOf(null)
+    internal var selectedPluginId: String? by mutableStateOf(
+        initialPluginId?.takeIf { id -> plugins.any { it.id == id } }
+    )
 
     /** The currently active plugin, derived from the selected plugin ID. */
     val activePlugin: SidekickPlugin?
@@ -51,5 +56,8 @@ class SidekickState(val plugins: List<SidekickPlugin>) {
  * list reference that is itself stable across recompositions.
  */
 @Composable
-fun rememberSidekickState(plugins: List<SidekickPlugin>): SidekickState =
-    remember(plugins) { SidekickState(plugins) }
+fun rememberSidekickState(
+    plugins: List<SidekickPlugin>,
+    initialPluginId: String? = null,
+): SidekickState =
+    remember(plugins) { SidekickState(plugins, initialPluginId) }

@@ -1,6 +1,33 @@
 # Network Monitor
 
-The Network Monitor captures and displays all HTTP traffic made through your app. It has built-in support for [Ktor](https://ktor.io/), and exposes a low-level `NetworkMonitorStore` API to integrate any HTTP client.
+Capture every HTTP request and response your app makes, with searchable list, method filters, and a detail view that pretty-prints headers and JSON bodies. Built-in [Ktor](https://ktor.io/) integration; any other client plugs in via the low-level `NetworkMonitorStore` API.
+
+## Platforms
+
+![Android](https://img.shields.io/badge/Android-3DDC84?logo=android&logoColor=white)
+![iOS](https://img.shields.io/badge/iOS-000000?logo=apple&logoColor=white)
+![Desktop](https://img.shields.io/badge/Desktop_(JVM)-4E8EE9?logo=openjdk&logoColor=white)
+![Web JS](https://img.shields.io/badge/Web_(JS)-F7DF1E?logo=javascript&logoColor=black)
+![Web Wasm](https://img.shields.io/badge/Web_(Wasm)-654FF0?logo=webassembly&logoColor=white)
+
+## Features
+
+- **Searchable call list** — filter by URL, host, path, or response body.
+- **Method chips** — toggle GET / POST / PUT / DELETE / PATCH on or off.
+- **Color-coded status** — `2xx`, `3xx`, `4xx`, `5xx`, and pending requests render distinctly.
+- **Request / response tabs** — copyable headers, pretty-printed JSON bodies.
+- **Header sanitization** — drop or redact `Authorization`, `X-Api-Key`, anything you choose.
+- **Request filtering** — skip specific hosts or routes from being recorded.
+- **Body truncation** — cap captured body length to avoid log bloat.
+- **Configurable retention** — auto-prune calls older than your chosen `Duration`.
+
+## Modules
+
+| Module | Purpose |
+|---|---|
+| `:plugins:network-monitor:api` | SQLDelight data layer + `NetworkMonitorStore` (Paging-backed). |
+| `:plugins:network-monitor:plugin` | Compose UI + `NetworkMonitorPlugin` (the `SidekickPlugin` impl). |
+| `:plugins:network-monitor:ktor` | `NetworkMonitorKtor` Ktor `HttpClientPlugin` (optional). |
 
 ## Setup
 
@@ -23,11 +50,11 @@ kotlin {
 }
 ```
 
-If you are using a custom HTTP client instead of Ktor, omit `networkMonitor.ktor` and follow [Custom HTTP Client Integration](#custom-http-client-integration).
+If you use a non-Ktor HTTP client, omit `networkMonitor.ktor` and see [Advanced › Custom HTTP client](#custom-http-client).
 
-### 2. Add the plugin to Sidekick
+### 2. Wire into Sidekick
 
-The client app owns the FAB and visibility state. `Sidekick` only renders the panel. See [Quick Start](../quick-start.md) for the full pattern:
+The client app owns the FAB and visibility state; `Sidekick` only renders the panel. See [Quick Start](../quick-start.md) for the full pattern:
 
 ```kotlin
 @Composable
@@ -45,25 +72,21 @@ fun App() {
             Icon(Icons.Default.BugReport, contentDescription = "Open Sidekick")
         }
 
-        AnimatedVisibility(visible = sidekickVisible, ...) {
+        AnimatedVisibility(visible = sidekickVisible, /* enter, exit */) {
             Sidekick(
                 plugins = listOf(networkPlugin),
-                onClose = { sidekickVisible = false },
+                actions = {
+                    IconButton(onClick = { sidekickVisible = false }) {
+                        Icon(Icons.Default.Close, contentDescription = "Close")
+                    }
+                },
             )
         }
     }
 }
 ```
 
-### 3. Install on your HTTP client
-
-Pick your integration: [Ktor](#ktor-integration) or [custom HTTP client](#custom-http-client-integration).
-
----
-
-## Ktor Integration
-
-Install `NetworkMonitorKtor` on your `HttpClient`:
+### 3. Install on your Ktor client
 
 ```kotlin
 val httpClient = HttpClient {
@@ -71,53 +94,85 @@ val httpClient = HttpClient {
 }
 ```
 
-All requests made through this client are automatically captured.
+Every request made through this client is captured automatically.
 
-### Configuration
+## Configuration
+
+### Ktor plugin DSL
 
 ```kotlin
 val httpClient = HttpClient {
     install(NetworkMonitorKtor) {
-        // Maximum characters captured per request/response body
+        // Truncate captured request/response bodies past this many characters.
         maxContentLength = ContentLength.Default
 
-        // Redact sensitive headers
+        // Redact sensitive headers (called once per header).
         sanitizeHeader { name -> name.equals("Authorization", ignoreCase = true) }
         sanitizeHeader(placeholder = "<token>") { name ->
             name.equals("X-Api-Key", ignoreCase = true)
         }
 
-        // Exclude specific requests from being recorded
-        filter { request -> request.url.host == "internal.metrics.local" }
+        // Exclude specific requests from being recorded.
+        filter { request: HttpRequestBuilder -> request.url.host == "internal.metrics.local" }
     }
 }
 ```
 
-| `ContentLength` constant | Value |
+| Setting | Type | Default | Notes |
+|---|---|---|---|
+| `maxContentLength` | `Int` | `ContentLength.Default` (65 536) | Use `ContentLength.Full` (`Int.MAX_VALUE`) to disable truncation. |
+| `sanitizeHeader(placeholder, predicate)` | DSL | — | Replaces matching header values with `placeholder` (default `"***"`). Call multiple times. |
+| `filter(predicate)` | DSL | — | Predicate receives an `HttpRequestBuilder`. Requests where any registered predicate returns `true` are skipped. |
+
+### Plugin retention
+
+`NetworkMonitorPlugin` accepts a `kotlin.time.Duration`. Older calls are pruned on next `init`.
+
+```kotlin
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.days
+
+NetworkMonitorPlugin(retentionPeriod = 24.hours)
+```
+
+| Example | Behaviour |
 |---|---|
-| `ContentLength.Default` | 65,536 characters *(default)* |
-| `ContentLength.Full` | `Int.MAX_VALUE` — no truncation |
+| `1.hours` *(default)* | Keep the last hour of calls. |
+| `24.hours` | Keep the last day. |
+| `7.days` | Keep the last week. |
+| `Duration.INFINITE` | Never prune. |
 
----
+The store also caps total rows at **500** (oldest pruned first), regardless of retention.
 
-## Custom HTTP Client Integration
+## UI
 
-If you are not using Ktor, record calls manually via `NetworkMonitorStore`. The store is completely client-agnostic — it is the same store the Ktor plugin writes to.
+The panel adapts to the available width:
 
-### 1. Get the store
+| Width | Layout |
+|---|---|
+| < 600 dp | Single pane — tap a request to navigate to its detail. |
+| 600 – 840 dp | Two panes at 40 / 60 split. |
+| ≥ 840 dp | Two panes — list fixed at 360 dp. |
+
+Each row shows the HTTP method badge, host, path, status code (color-coded), and duration. The detail view has **Request** and **Response** tabs with copyable headers and pretty-printed JSON. Badge and chip colors derive from the active `MaterialTheme.colorScheme` — see [Theming › HTTP badge and status colors](../theming.md#http-badge-and-status-colors).
+
+## Advanced
+
+### Custom HTTP client
+
+If you're not on Ktor, record calls manually via `NetworkMonitorStore`. The store is client-agnostic and shared with the Ktor plugin.
+
+**Get the store**
 
 ```kotlin
 val store = NetworkMonitorKoinContext.getDefaultStore()
 ```
 
-### 2. Record each call
-
-Wrap your HTTP call with the store's recording methods:
+**Record each call**
 
 ```kotlin
 val callId = uuid4().toString() // unique per request
 
-// Before the request
 store.recordRequest(
     id = callId,
     url = request.url.toString(),
@@ -130,26 +185,21 @@ store.recordRequest(
 try {
     val response = yourHttpClient.execute(request)
 
-    // Record status code + headers
     store.recordResponse(
         id = callId,
         code = response.statusCode,
         headers = response.headers.toMap(),
         timestamp = currentTimeMillis(),
     )
-
-    // Record the body (skip for binary responses)
     store.recordResponseBody(id = callId, body = response.bodyAsText())
 
-} catch (e: Exception) {
+} catch (e: Throwable) {
     store.recordError(id = callId, error = e)
     throw e
 }
 ```
 
-### OkHttp example
-
-Wrap the store calls in an `Interceptor` to keep your call sites clean:
+### OkHttp interceptor (Android / JVM)
 
 ```kotlin
 class NetworkMonitorInterceptor(
@@ -200,8 +250,6 @@ class NetworkMonitorInterceptor(
 }
 ```
 
-Register the interceptor on your client:
-
 ```kotlin
 val store = NetworkMonitorKoinContext.getDefaultStore()
 
@@ -211,37 +259,10 @@ val client = OkHttpClient.Builder()
 ```
 
 !!! note
-    `OkHttp` is Android/JVM-only. For truly multiplatform code, consider the [Ktor integration](#ktor-integration).
+    OkHttp is Android/JVM-only. For Compose Multiplatform code, prefer the Ktor integration above.
 
----
+## See also
 
-## Retention
-
-Control how long calls are kept:
-
-```kotlin
-NetworkMonitorPlugin(retentionPeriod = RetentionPeriod.ONE_DAY)
-```
-
-| Constant | Duration |
-|---|---|
-| `RetentionPeriod.ONE_HOUR` | 1 hour *(default)* |
-| `RetentionPeriod.ONE_DAY` | 24 hours |
-| `RetentionPeriod.ONE_WEEK` | 7 days |
-| `RetentionPeriod.FOREVER` | Never purged |
-
----
-
-## UI
-
-The Network Monitor panel adapts to the available screen width:
-
-| Width | Layout |
-|---|---|
-| < 600 dp | Single pane — tap a request to navigate to its detail |
-| 600–840 dp | Two panes at 40/60 split |
-| ≥ 840 dp | Two panes — list fixed at 360 dp |
-
-Each request shows the HTTP method badge, host, path, status code (color-coded), and duration. The detail view has **Request** and **Response** tabs with copyable headers and pretty-printed JSON bodies.
-
-Badge and chip colors are derived from the active `MaterialTheme.colorScheme`. See [Theming](../theming.md#http-badge-and-status-colors) for the full mapping.
+- [Theming › HTTP badge and status colors](../theming.md#http-badge-and-status-colors)
+- [Log Monitor](log-monitor.md)
+- [Custom plugin](custom-plugin.md)

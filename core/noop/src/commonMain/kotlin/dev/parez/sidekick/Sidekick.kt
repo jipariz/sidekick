@@ -13,4 +13,5 @@ fun Sidekick(
     title: String = "Sidekick",
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
+    initialPluginId: String? = null,
 ) = Unit

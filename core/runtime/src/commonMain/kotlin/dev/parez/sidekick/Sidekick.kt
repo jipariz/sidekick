@@ -34,6 +34,9 @@ import dev.parez.sidekick.ui.theme.SidekickTheme
  * @param navigationIcon     Optional leading slot on the plugin-list app bar.
  * @param actions            Optional trailing slot on the plugin-list app bar — a host
  *                           typically wires a close button here.
+ * @param initialPluginId    Optional plugin id to open directly on first composition,
+ *                           skipping the plugin grid. Ignored if no plugin in [plugins]
+ *                           matches the id.
  */
 @Composable
 fun Sidekick(
@@ -43,9 +46,10 @@ fun Sidekick(
     title: String = "Sidekick",
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
+    initialPluginId: String? = null,
 ) {
     val stablePlugins = remember(plugins.map { it.id }) { plugins }
-    val state = rememberSidekickState(stablePlugins)
+    val state = rememberSidekickState(stablePlugins, initialPluginId)
     SidekickTheme(useSidekickTheme = useSidekickTheme) {
         SidekickMenu(state, appInfo, title, navigationIcon, actions)
     }
