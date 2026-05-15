@@ -59,7 +59,7 @@ internal fun LogEntryListPane(
     lazyItems: LazyPagingItems<LogEntry>,
     selected: LogEntry? = null,
     query: String,
-    enabledLevels: Set<LogLevel>,
+    levelFilter: Set<LogLevel>,
     filteredCount: Long,
     onSelect: (LogEntry) -> Unit,
     onQueryChange: (String) -> Unit,
@@ -142,7 +142,7 @@ internal fun LogEntryListPane(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 LogLevel.entries.forEach { level ->
-                    val isSelected = level in enabledLevels
+                    val isSelected = level in levelFilter
                     FilterChip(
                         selected = isSelected,
                         onClick = { onToggleLevel(level) },
@@ -187,7 +187,7 @@ internal fun LogEntryListPane(
             val isEmpty = lazyItems.itemCount == 0 && refresh is LoadState.NotLoading
             when {
                 isEmpty -> LogEntryEmptyState(
-                    isFiltered = query.isNotBlank() || enabledLevels.size < LogLevel.entries.size,
+                    isFiltered = query.isNotBlank() || levelFilter.isNotEmpty(),
                 )
 
                 refresh is LoadState.Error -> LogEntryErrorState(
