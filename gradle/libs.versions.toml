@@ -29,6 +29,7 @@ room3 = "3.0.0-alpha03"
 sqlite = "2.7.0-alpha03"
 reveal = "4.1.0"
 vanniktechMavenPublish = "0.30.0"
+androidxPaging = "3.5.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -80,6 +81,8 @@ compose-material3-adaptive-navigation-suite = { module = "org.jetbrains.compose.
 compose-ui-backhandler = { module = "org.jetbrains.compose.ui:ui-backhandler", version.ref = "composeMultiplatform" }
 reveal-core = { module = "com.svenjacobs.reveal:reveal-core", version.ref = "reveal" }
 reveal-shapes = { module = "com.svenjacobs.reveal:reveal-shapes", version.ref = "reveal" }
+androidx-paging-common  = { module = "androidx.paging:paging-common",  version.ref = "androidxPaging" }
+androidx-paging-compose = { module = "androidx.paging:paging-compose", version.ref = "androidxPaging" }
 
 
 [plugins]

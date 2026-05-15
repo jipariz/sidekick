@@ -19,27 +19,31 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.paging.compose.LazyPagingItems
 import dev.parez.sidekick.logs.LogEntry
-
-// -- Root composable ----------------------------------------------------------
+import dev.parez.sidekick.logs.LogLevel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
 internal fun LogMonitorContent(
-    entries: List<LogEntry>,
+    lazyItems: LazyPagingItems<LogEntry>,
     selected: LogEntry?,
-    onSelect: (LogEntry) -> Unit,
+    query: String,
+    enabledLevels: Set<LogLevel>,
+    filteredCount: Long,
+    onSelect: (String?) -> Unit,
+    onQueryChange: (String) -> Unit,
+    onToggleLevel: (LogLevel) -> Unit,
     onClear: () -> Unit,
     onBack: () -> Unit,
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<String>()
     val scope = rememberCoroutineScope()
 
-    // Sync external selection state with the scaffold navigator
     LaunchedEffect(selected?.id) {
         if (selected != null) {
             navigator.navigateTo(
@@ -55,9 +59,14 @@ internal fun LogMonitorContent(
         listPane = {
             AnimatedPane {
                 LogEntryListPane(
-                    entries = entries,
+                    lazyItems = lazyItems,
                     selected = selected,
-                    onSelect = onSelect,
+                    query = query,
+                    enabledLevels = enabledLevels,
+                    filteredCount = filteredCount,
+                    onSelect = { entry -> onSelect(entry.id) },
+                    onQueryChange = onQueryChange,
+                    onToggleLevel = onToggleLevel,
                     onClear = onClear,
                     showChevron = true,
                     onBack = onBack,
@@ -66,13 +75,12 @@ internal fun LogMonitorContent(
         },
         detailPane = {
             AnimatedPane {
-                val entryId = navigator.currentDestination?.contentKey
-                val entry = entryId?.let { id -> entries.firstOrNull { it.id == id } }
-                if (entry != null) {
+                if (selected != null) {
                     LogEntryDetailPane(
-                        entry = entry,
+                        entry = selected,
                         showBackButton = true,
                         onBack = {
+                            onSelect(null)
                             scope.launch { navigator.navigateBack() }
                         },
                     )
@@ -83,8 +91,6 @@ internal fun LogMonitorContent(
         },
     )
 }
-
-// -- Detail empty state -------------------------------------------------------
 
 @Composable
 internal fun DetailEmptyState() {

@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.compose.collectAsLazyPagingItems
 import dev.parez.sidekick.network.di.NetworkMonitorKoinContext
 import dev.parez.sidekick.network.di.networkMonitorViewModelModule
 import dev.parez.sidekick.network.ui.NetworkMonitorContent
@@ -34,12 +35,21 @@ class NetworkMonitorPlugin(
         val navigateBack = LocalSidekickBackNavigator.current
         KoinIsolatedContext(context = NetworkMonitorKoinContext.koinApp) {
             val viewModel: NetworkMonitorViewModel = koinViewModel()
-            val calls by viewModel.calls.collectAsStateWithLifecycle()
+            val lazyItems = viewModel.pagedCalls.collectAsLazyPagingItems()
+            val selected by viewModel.selectedCall.collectAsStateWithLifecycle()
+            val query by viewModel.query.collectAsStateWithLifecycle()
+            val methodFilter by viewModel.methodFilter.collectAsStateWithLifecycle()
+            val filteredCount by viewModel.filteredCount.collectAsStateWithLifecycle()
 
             NetworkMonitorContent(
-                calls = calls,
-                selected = viewModel.selected,
+                lazyItems = lazyItems,
+                selected = selected,
+                query = query,
+                methodFilter = methodFilter,
+                filteredCount = filteredCount,
                 onSelect = viewModel::select,
+                onQueryChange = viewModel::setQuery,
+                onToggleMethod = viewModel::toggleMethod,
                 onClear = viewModel::clear,
                 onBack = navigateBack,
             )

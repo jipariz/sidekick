@@ -19,13 +19,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.paging.compose.LazyPagingItems
 import dev.parez.sidekick.network.NetworkCall
-
-// ── Root composable ──────────────────────────────────────────────────────────
+import kotlinx.coroutines.launch
 
 /**
  * Root composable for the Network Monitor plugin.
@@ -36,16 +35,20 @@ import dev.parez.sidekick.network.NetworkCall
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
 internal fun NetworkMonitorContent(
-    calls: List<NetworkCall>,
+    lazyItems: LazyPagingItems<NetworkCall>,
     selected: NetworkCall?,
-    onSelect: (NetworkCall) -> Unit,
+    query: String,
+    methodFilter: Set<String>,
+    filteredCount: Long,
+    onSelect: (String?) -> Unit,
+    onQueryChange: (String) -> Unit,
+    onToggleMethod: (String) -> Unit,
     onClear: () -> Unit,
     onBack: () -> Unit,
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<String>()
     val scope = rememberCoroutineScope()
 
-    // Sync external selection state with the scaffold navigator
     LaunchedEffect(selected?.id) {
         if (selected != null) {
             navigator.navigateTo(
@@ -61,9 +64,14 @@ internal fun NetworkMonitorContent(
         listPane = {
             AnimatedPane {
                 NetworkCallListPane(
-                    calls = calls,
+                    lazyItems = lazyItems,
                     selected = selected,
-                    onSelect = onSelect,
+                    query = query,
+                    methodFilter = methodFilter,
+                    filteredCount = filteredCount,
+                    onSelect = { call -> onSelect(call.id) },
+                    onQueryChange = onQueryChange,
+                    onToggleMethod = onToggleMethod,
                     onClear = onClear,
                     showChevron = true,
                     onBack = onBack,
@@ -72,13 +80,12 @@ internal fun NetworkMonitorContent(
         },
         detailPane = {
             AnimatedPane {
-                val callId = navigator.currentDestination?.contentKey
-                val call = callId?.let { id -> calls.firstOrNull { it.id == id } }
-                if (call != null) {
+                if (selected != null) {
                     NetworkCallDetailPane(
-                        call = call,
+                        call = selected,
                         showBackButton = true,
                         onBack = {
+                            onSelect(null)
                             scope.launch { navigator.navigateBack() }
                         },
                     )
@@ -89,8 +96,6 @@ internal fun NetworkMonitorContent(
         },
     )
 }
-
-// ── Detail empty state ────────────────────────────────────────────────────────
 
 @Composable
 internal fun DetailEmptyState() {

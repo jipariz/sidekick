@@ -3,6 +3,7 @@ package dev.parez.sidekick.logs.kermit
 import co.touchlab.kermit.Logger
 import co.touchlab.kermit.platformLogWriter
 import dev.parez.sidekick.logs.LogMonitorPlugin
+import dev.parez.sidekick.logs.LogMonitorStore
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 
@@ -34,6 +35,6 @@ fun kermitLogMonitor(
     retentionPeriod: Duration = 1.hours,
 ): LogMonitorPlugin {
     val plugin = LogMonitorPlugin(retentionPeriod = retentionPeriod)
-    Logger.setLogWriters(platformLogWriter(), LogMonitorLogWriter(plugin.store))
+    Logger.setLogWriters(platformLogWriter(), LogMonitorLogWriter(LogMonitorStore))
     return plugin
 }

@@ -42,6 +42,7 @@ import dev.parez.sidekick.demo.di.LibraryKoinContext
 import dev.parez.sidekick.demo.theme.AppTypography
 import dev.parez.sidekick.demo.theme.colorSchemeFor
 import dev.parez.sidekick.logs.LogMonitorPlugin
+import dev.parez.sidekick.logs.LogMonitorStore
 import dev.parez.sidekick.logs.kermit.LogMonitorLogWriter
 import dev.parez.sidekick.network.NetworkMonitorPlugin
 import dev.parez.sidekick.screens.CustomScreenPlugin
@@ -59,8 +60,8 @@ fun DemoApp() {
         val prefsPlugin = remember { AppPreferencesPlugin() }
         val networkPlugin = remember { NetworkMonitorPlugin(retentionPeriod = 1.hours) }
         val logPlugin = remember {
-            LogMonitorPlugin(retentionPeriod = 1.hours).also { plugin ->
-                Logger.setLogWriters(platformLogWriter(), LogMonitorLogWriter(plugin.store))
+            LogMonitorPlugin(retentionPeriod = 1.hours).also {
+                Logger.setLogWriters(platformLogWriter(), LogMonitorLogWriter(LogMonitorStore))
             }
         }
 

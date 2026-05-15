@@ -2,6 +2,7 @@ package dev.parez.sidekick.network.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,65 +15,61 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.itemContentType
+import androidx.paging.compose.itemKey
 import dev.parez.sidekick.network.CallStatus
 import dev.parez.sidekick.network.NetworkCall
 
-/**
- * List pane for the Network Monitor. Used in both single-pane (compact) and
- * two-pane (medium/expanded) layouts.
- *
- * @param selected    The currently selected call; used to highlight the active row in two-pane mode.
- * @param showChevron Whether to show a trailing chevron (only meaningful in compact/single-pane).
- */
+private val MethodChoices = listOf("GET", "POST", "PUT", "PATCH", "DELETE")
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun NetworkCallListPane(
-    calls: List<NetworkCall>,
+    lazyItems: LazyPagingItems<NetworkCall>,
     selected: NetworkCall? = null,
+    query: String,
+    methodFilter: Set<String>,
+    filteredCount: Long,
     onSelect: (NetworkCall) -> Unit,
+    onQueryChange: (String) -> Unit,
+    onToggleMethod: (String) -> Unit,
     onClear: () -> Unit,
     showChevron: Boolean = true,
     onBack: () -> Unit,
 ) {
-    var query by remember { mutableStateOf("") }
-    val filtered = remember(calls, query) {
-        if (query.isBlank()) calls
-        else calls.filter {
-            it.url.contains(query, ignoreCase = true) ||
-                it.method.contains(query, ignoreCase = true)
-        }
-    }
-    val activeCount = remember(calls) { calls.count { it.status == CallStatus.PENDING } }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -84,16 +81,17 @@ internal fun NetworkCallListPane(
                     )
                 },
                 navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                        }
-                }
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
             )
         },
     ) {
-        Column(Modifier
-            .padding(it)
-            .fillMaxSize()
+        Column(
+            Modifier
+                .padding(it)
+                .fillMaxSize(),
         ) {
             // ── Search bar ────────────────────────────────────────────────────────
             Row(
@@ -104,7 +102,7 @@ internal fun NetworkCallListPane(
             ) {
                 OutlinedTextField(
                     value = query,
-                    onValueChange = { query = it },
+                    onValueChange = onQueryChange,
                     modifier = Modifier.weight(1f),
                     placeholder = {
                         Text(
@@ -137,6 +135,32 @@ internal fun NetworkCallListPane(
                 }
             }
 
+            // ── Method filter chips ───────────────────────────────────────────────
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                MethodChoices.forEach { method ->
+                    val isChosen = method in methodFilter
+                    FilterChip(
+                        selected = isChosen,
+                        onClick = { onToggleMethod(method) },
+                        label = {
+                            Text(
+                                text = method,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontFamily = FontFamily.Monospace,
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(),
+                    )
+                }
+            }
+
             // ── Stats row ─────────────────────────────────────────────────────────
             Row(
                 modifier = Modifier
@@ -146,36 +170,42 @@ internal fun NetworkCallListPane(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "${calls.size} request${if (calls.size != 1) "s" else ""}",
+                    text = "$filteredCount request${if (filteredCount != 1L) "s" else ""}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                if (activeCount > 0) {
-                    Icon(
-                        Icons.Default.Wifi,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.outlineVariant,
-                        modifier = Modifier.size(12.dp),
-                    )
-                    Text(
-                        text = "$activeCount active",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                    )
-                }
             }
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            // ── Refresh progress bar ──────────────────────────────────────────────
+            if (lazyItems.loadState.refresh is LoadState.Loading) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            } else {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            }
 
             // ── Content ───────────────────────────────────────────────────────────
-            if (filtered.isEmpty()) {
-                NetworkCallEmptyState(isFiltered = query.isNotBlank())
-            } else {
-                LazyColumn(
+            val refresh = lazyItems.loadState.refresh
+            val isEmpty = lazyItems.itemCount == 0 && refresh is LoadState.NotLoading
+            when {
+                isEmpty -> NetworkCallEmptyState(
+                    isFiltered = query.isNotBlank() || methodFilter.isNotEmpty(),
+                )
+
+                refresh is LoadState.Error -> NetworkCallErrorState(
+                    error = refresh.error,
+                    onRetry = lazyItems::retry,
+                )
+
+                else -> LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 8.dp),
                 ) {
-                    items(filtered, key = { it.id }) { call ->
+                    items(
+                        count = lazyItems.itemCount,
+                        key = lazyItems.itemKey { it.id },
+                        contentType = lazyItems.itemContentType { "NetworkCall" },
+                    ) { index ->
+                        val call = lazyItems[index] ?: return@items
                         NetworkCallRow(
                             call = call,
                             isSelected = selected?.id == call.id,
@@ -187,13 +217,87 @@ internal fun NetworkCallListPane(
                             modifier = Modifier.padding(start = 56.dp),
                         )
                     }
+
+                    when (val appendState = lazyItems.loadState.append) {
+                        is LoadState.Loading -> item { AppendLoadingRow() }
+                        is LoadState.Error -> item {
+                            AppendErrorRow(
+                                error = appendState.error,
+                                onRetry = lazyItems::retry,
+                            )
+                        }
+
+                        is LoadState.NotLoading -> Unit
+                    }
                 }
             }
         }
     }
 }
 
-// ── List row ──────────────────────────────────────────────────────────────────
+@Composable
+private fun AppendLoadingRow() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        CircularProgressIndicator(modifier = Modifier.size(20.dp))
+    }
+}
+
+@Composable
+private fun AppendErrorRow(error: Throwable, onRetry: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "Failed to load more: ${error.message ?: error::class.simpleName}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(onClick = onRetry) {
+            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(4.dp))
+            Text("Retry", style = MaterialTheme.typography.labelMedium)
+        }
+    }
+}
+
+@Composable
+private fun NetworkCallErrorState(error: Throwable, onRetry: () -> Unit) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(32.dp),
+        ) {
+            Icon(
+                Icons.Default.Wifi,
+                contentDescription = null,
+                modifier = Modifier.size(40.dp),
+                tint = MaterialTheme.colorScheme.error,
+            )
+            Text(
+                text = "Failed to load requests",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.error,
+            )
+            Text(
+                text = error.message ?: error::class.simpleName.orEmpty(),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            TextButton(onClick = onRetry) { Text("Retry") }
+        }
+    }
+}
 
 @Composable
 private fun NetworkCallRow(
@@ -217,10 +321,8 @@ private fun NetworkCallRow(
             verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            // Method badge — left-aligned, padded to top
             MethodBadge(call.method, modifier = Modifier.padding(top = 2.dp))
 
-            // URL + meta — fills available width
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -255,7 +357,6 @@ private fun NetworkCallRow(
                     )
                 }
 
-                // Duration + response body size
                 val meta = buildString {
                     call.durationMs?.let { append("${it}ms") }
                     call.responseBody?.let {
@@ -273,7 +374,6 @@ private fun NetworkCallRow(
                 }
             }
 
-            // Status + optional chevron — right column
             Column(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -292,18 +392,16 @@ private fun NetworkCallRow(
     }
 }
 
-// ── Method badge ──────────────────────────────────────────────────────────────
-
 @Composable
 internal fun MethodBadge(method: String, modifier: Modifier = Modifier) {
     val cs = MaterialTheme.colorScheme
     val bg = when (method.uppercase()) {
-        "GET"    -> cs.primary
-        "POST"   -> cs.secondary
-        "PUT"    -> cs.tertiary
+        "GET" -> cs.primary
+        "POST" -> cs.secondary
+        "PUT" -> cs.tertiary
         "DELETE" -> cs.error
-        "PATCH"  -> cs.tertiaryContainer
-        else     -> cs.outline
+        "PATCH" -> cs.tertiaryContainer
+        else -> cs.outline
     }
     Surface(
         color = bg,
@@ -320,14 +418,12 @@ internal fun MethodBadge(method: String, modifier: Modifier = Modifier) {
     }
 }
 
-// ── Status chip ───────────────────────────────────────────────────────────────
-
 @Composable
 internal fun StatusChip(call: NetworkCall) {
     val cs = MaterialTheme.colorScheme
     val (text, bg) = when (call.status) {
-        CallStatus.PENDING  -> "●  PENDING" to cs.outlineVariant
-        CallStatus.ERROR    -> "ERR"         to cs.error
+        CallStatus.PENDING -> "●  PENDING" to cs.outlineVariant
+        CallStatus.ERROR -> "ERR" to cs.error
         CallStatus.COMPLETE -> {
             val code = call.responseCode ?: 0
             val label = "$code ${statusText(code)}".trim()
@@ -335,7 +431,7 @@ internal fun StatusChip(call: NetworkCall) {
                 code < 300 -> cs.secondary
                 code < 400 -> cs.primary
                 code < 500 -> cs.tertiary
-                else       -> cs.error
+                else -> cs.error
             }
             label to c
         }
@@ -350,8 +446,6 @@ internal fun StatusChip(call: NetworkCall) {
         )
     }
 }
-
-// ── Empty state ───────────────────────────────────────────────────────────────
 
 @Composable
 private fun NetworkCallEmptyState(isFiltered: Boolean) {
@@ -372,7 +466,7 @@ private fun NetworkCallEmptyState(isFiltered: Boolean) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = if (isFiltered) "Try a different search term" else "Make a network call to see it here",
+                text = if (isFiltered) "Adjust filters or search to see results" else "Make a network call to see it here",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
             )

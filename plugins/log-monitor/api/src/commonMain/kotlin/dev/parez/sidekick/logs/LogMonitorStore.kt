@@ -1,21 +1,31 @@
 package dev.parez.sidekick.logs
 
+import androidx.paging.LoadState
+import androidx.paging.LoadStates
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import app.cash.sqldelight.async.coroutines.awaitAsOne
 import app.cash.sqldelight.coroutines.asFlow
-import app.cash.sqldelight.coroutines.mapToList
-import dev.parez.sidekick.logs.db.LogEntry as DbLogEntry
+import app.cash.sqldelight.coroutines.mapToOne
+import app.cash.sqldelight.coroutines.mapToOneOrNull
 import dev.parez.sidekick.logs.db.LogMonitorDatabase
+import dev.parez.sidekick.logs.paging.LogEntryPagingSource
+import dev.parez.sidekick.logs.paging.toDomain
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.time.Duration
@@ -24,15 +34,17 @@ import kotlin.time.Duration.Companion.hours
 private const val MAX_ENTRIES = 1000L
 private const val MAX_MESSAGE_LENGTH = 16_384
 
+@OptIn(ExperimentalCoroutinesApi::class)
 object LogMonitorStore : LogCollector {
 
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
-    // SQLDelight-backed storage (android, ios, jvm, js)
     private val _database = MutableStateFlow<LogMonitorDatabase?>(null)
-
-    // In-memory fallback when SQLDelight is unavailable (wasmJs)
     private val _inMemory = MutableStateFlow<List<LogEntry>?>(null)
+
+    private val inMemorySnapshot: StateFlow<List<LogEntry>> = _inMemory
+        .filterNotNull()
+        .stateIn(scope, SharingStarted.Eagerly, emptyList())
 
     private val initialized = MutableStateFlow(false)
 
@@ -51,22 +63,56 @@ object LogMonitorStore : LogCollector {
         }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val entries: Flow<List<LogEntry>> = _database
-        .flatMapLatest { db ->
-            if (db != null) {
-                db.logEntryQueries
-                    .selectAll()
-                    .asFlow()
-                    .mapToList(Dispatchers.Default)
-                    .map { rows -> rows.map { it.toDomain() } }
-            } else {
-                _inMemory.flatMapLatest { list ->
-                    if (list != null) flowOf(list) else emptyFlow()
+    fun pagedEntries(filter: Flow<LogFilter>): Flow<PagingData<LogEntry>> =
+        combine(_database, filter.distinctUntilChanged()) { db, f -> db to f }
+            .flatMapLatest { (db, f) ->
+                if (db != null) {
+                    Pager(
+                        config = LogPagingConfig,
+                        pagingSourceFactory = { LogEntryPagingSource(db, f) },
+                    ).flow
+                } else {
+                    // In-memory fallback (wasmJs): the list is capped at MAX_ENTRIES
+                    // so we don't need real pagination — just snapshot the filtered list
+                    // each time it changes. PagingData.from() avoids the Pager + PagingSource
+                    // machinery, which has interop issues on wasmJs.
+                    inMemorySnapshot.map { list ->
+                        PagingData.from(
+                            data = list.filter(f::matches),
+                            sourceLoadStates = StaticLoadStates,
+                        )
+                    }
                 }
             }
+
+    fun filteredCount(filter: Flow<LogFilter>): Flow<Long> =
+        combine(_database, filter.distinctUntilChanged()) { db, f -> db to f }
+            .flatMapLatest { (db, f) ->
+                if (db != null) {
+                    val token = f.toLikeToken()
+                    if (f.allLevelsSelected()) {
+                        db.logEntryQueries.countFilteredAllLevels(token)
+                            .asFlow().mapToOne(Dispatchers.Default)
+                    } else {
+                        val levelNames = f.levels.map { it.name }.toSet()
+                        db.logEntryQueries.countFiltered(token, levelNames)
+                            .asFlow().mapToOne(Dispatchers.Default)
+                    }
+                } else {
+                    inMemorySnapshot.map { list -> list.count(f::matches).toLong() }
+                }
+            }
+
+    fun entryById(id: String): Flow<LogEntry?> = _database.flatMapLatest { db ->
+        if (db != null) {
+            db.logEntryQueries.selectById(id)
+                .asFlow()
+                .mapToOneOrNull(Dispatchers.Default)
+                .map { it?.toDomain() }
+        } else {
+            inMemorySnapshot.map { list -> list.firstOrNull { it.id == id } }
         }
-        .onStart { emit(emptyList()) }
+    }
 
     override fun log(level: LogLevel, tag: String, message: String, throwable: Throwable?) {
         val id = randomUuid()
@@ -140,17 +186,24 @@ object LogMonitorStore : LogCollector {
         if (over > 0) db.logEntryQueries.deleteOldestOverLimit(over)
     }
 
-    private fun DbLogEntry.toDomain() = LogEntry(
-        id = id,
-        timestamp = timestamp,
-        level = LogLevel.entries.firstOrNull { it.name == level } ?: LogLevel.DEBUG,
-        tag = tag,
-        message = message,
-        throwable = throwable,
-        metadata = metadata?.decodeToMetadataMap(),
-    )
-
     private fun String.truncate() =
         if (length > MAX_MESSAGE_LENGTH) take(MAX_MESSAGE_LENGTH) + "…" else this
-}
 
+    internal val LogPagingConfig = PagingConfig(
+        pageSize = 30,
+        prefetchDistance = 15,
+        initialLoadSize = 60,
+        enablePlaceholders = false,
+        maxSize = 300,
+        jumpThreshold = 120,
+    )
+
+    // For PagingData.from() on the in-memory path: signal that the static list
+    // is fully loaded so LazyPagingItems renders NotLoading instead of staying
+    // in the default Loading state.
+    private val StaticLoadStates = LoadStates(
+        refresh = LoadState.NotLoading(endOfPaginationReached = true),
+        prepend = LoadState.NotLoading(endOfPaginationReached = true),
+        append = LoadState.NotLoading(endOfPaginationReached = true),
+    )
+}

@@ -11,6 +11,7 @@ kotlin {
             implementation(libs.sqldelight.asyncExtensions)
             implementation(libs.sqldelight.primitiveAdapters)
             api(libs.koin.core)
+            api(libs.androidx.paging.common)
         }
         androidMain.dependencies {
             // ApplicationContextHolder lives in core:plugin-api androidMain

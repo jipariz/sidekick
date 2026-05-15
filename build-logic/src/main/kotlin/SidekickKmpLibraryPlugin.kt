@@ -46,7 +46,6 @@ class SidekickKmpLibraryPlugin : Plugin<Project> {
                 publishLibraryVariants("release", "debug")
             }
             iosArm64()
-            iosX64()
             iosSimulatorArm64()
             jvm()
             js {
