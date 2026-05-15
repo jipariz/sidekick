@@ -1,8 +1,17 @@
 # Sidekick
 
-**A Kotlin Multiplatform debug overlay SDK** for Android, iOS, Desktop (JVM), and Web (JS/Wasm).
+**A Kotlin Multiplatform debug overlay SDK** for Android, iOS, Desktop (JVM), and Web (JS / Wasm).
 
-Sidekick adds a floating button to your app during development that opens a panel with pluggable debug tools — network inspector, log viewer, preferences editor, and more. In release builds, a no-op module strips the overlay entirely with zero overhead.
+![Android](https://img.shields.io/badge/Android-3DDC84?logo=android&logoColor=white)
+![iOS](https://img.shields.io/badge/iOS-000000?logo=apple&logoColor=white)
+![Desktop](https://img.shields.io/badge/Desktop_(JVM)-4E8EE9?logo=openjdk&logoColor=white)
+![Web JS](https://img.shields.io/badge/Web_(JS)-F7DF1E?logo=javascript&logoColor=black)
+![Web Wasm](https://img.shields.io/badge/Web_(Wasm)-654FF0?logo=webassembly&logoColor=white)
+![License](https://img.shields.io/badge/license-Apache_2.0-blue)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.3.20-7F52FF?logo=kotlin&logoColor=white)
+![Compose](https://img.shields.io/badge/Compose_Multiplatform-1.10.3-4285F4)
+
+Sidekick adds a floating debug panel to your app during development — network inspector, log viewer, preferences editor, custom screens. In release builds, a no-op module strips the overlay entirely with zero overhead.
 
 <div style="text-align: center; margin: 2rem 0;">
   <a href="demo/index.html" class="md-button md-button--primary" style="margin-right: 0.5rem;">
@@ -15,22 +24,22 @@ Sidekick adds a floating button to your app during development that opens a pane
 
 ---
 
-## Features
+## Why Sidekick
 
-- **Floating overlay** — a FAB and slide-up panel that sits on top of your app
-- **Pluggable** — built-in plugins for network monitoring, logs, and preferences; easy to add your own
-- **Adaptive UI** — responsive list-detail layouts at 600 dp and 840 dp breakpoints
-- **Zero release cost** — `core:noop` replaces the overlay with a passthrough composable
-- **Compose Multiplatform** — single UI codebase across all platforms
+- **One panel, many tools** — built-in network inspector, log viewer, typed preferences editor, custom Composables.
+- **Pluggable** — implement `SidekickPlugin` to add anything else.
+- **Zero release cost** — `core:noop` replaces the overlay with a passthrough composable; release binaries don't contain a single byte of Sidekick UI code.
+- **Compose Multiplatform** — single UI codebase across Android, iOS, Desktop, and Web.
+- **Visibility is yours to control** — Sidekick renders the panel; the host app decides when to show it (FAB, shake gesture, build-type check, anything).
 
 ## Built-in Plugins
 
 | Plugin | What it does |
 |--------|-------------|
-| [Network Monitor](plugins/network-monitor.md) | Captures and displays all HTTP traffic via Ktor |
-| [Log Monitor](plugins/log-monitor.md) | Displays app logs with level filtering and search |
-| [Preferences](plugins/preferences.md) | Exposes typed settings in the panel with KSP code generation |
-| [Custom Screens](plugins/custom-screens.md) | Wraps any Composable as a first-class debug screen |
+| [Network Monitor](plugins/network-monitor.md) | Captures and displays all HTTP traffic via Ktor (or any client via `NetworkMonitorStore`). |
+| [Log Monitor](plugins/log-monitor.md) | Displays app logs with level filtering and search (Kermit built-in, any SDK via `LogCollector`). |
+| [Preferences](plugins/preferences.md) | Exposes typed settings in the panel — KSP code generation or manual DataStore bridging. |
+| [Custom Screens](plugins/custom-screens.md) | Wraps any Composable as a first-class debug screen. |
 
 ## Quick Example
 
@@ -56,7 +65,7 @@ fun App() {
                         plugins = plugins,
                         actions = {
                             IconButton(onClick = { sidekickVisible = false }) {
-                                Icon(Icons.Default.Close, contentDescription = "Close Sidekick")
+                                Icon(Icons.Default.Close, contentDescription = "Close")
                             }
                         },
                     )

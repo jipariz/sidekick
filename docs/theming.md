@@ -6,7 +6,7 @@ By default `Sidekick` applies its own Material 3 color scheme — a dark indigo 
 
 ```kotlin
 // Uses Sidekick's own theme (default)
-Sidekick(plugins = plugins, onClose = { ... })
+Sidekick(plugins = plugins)
 ```
 
 ## Inheriting the Host App's Theme
@@ -18,8 +18,12 @@ MaterialTheme(colorScheme = myBrandColorScheme) {
     // ...
     Sidekick(
         plugins = plugins,
-        onClose = { sidekickVisible = false },
         useSidekickTheme = false, // uses myBrandColorScheme
+        actions = {
+            IconButton(onClick = { sidekickVisible = false }) {
+                Icon(Icons.Default.Close, contentDescription = "Close")
+            }
+        },
     )
 }
 ```
