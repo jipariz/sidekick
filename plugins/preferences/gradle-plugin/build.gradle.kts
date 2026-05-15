@@ -1,12 +1,12 @@
-import org.gradle.api.publish.maven.MavenPublication
+import com.vanniktech.maven.publish.GradlePlugin
+import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.SonatypeHost
 import org.gradle.api.tasks.WriteProperties
-import org.gradle.plugins.signing.Sign
 
 plugins {
     alias(libs.plugins.kotlinJvm)
     `java-gradle-plugin`
-    `maven-publish`
-    signing
+    alias(libs.plugins.vanniktechMavenPublish)
 }
 
 // Set group/version at script-evaluation time, before `java-gradle-plugin`
@@ -57,84 +57,49 @@ gradlePlugin {
     }
 }
 
-// Maven Central requires a javadoc jar even for KDoc-only projects. An empty
-// jar satisfies the gate without us running Dokka here.
-val javadocJar = tasks.register<Jar>("javadocJar") {
-    archiveClassifier.set("javadoc")
-}
+// Vanniktech bundles the main plugin jar + per-plugin marker publications
+// and uploads them to the Sonatype Central Portal as a single deployment.
+// The previous raw `maven-publish` + `publishing { repositories { mavenCentralPortal } }`
+// setup tried to PUT each file individually, which the Portal's bundle-only
+// upload API rejected with 404.
+mavenPublishing {
+    coordinates("dev.parez.sidekick", "sidekick-preferences-gradle-plugin", project.version.toString())
+    configure(GradlePlugin(javadocJar = JavadocJar.Empty(), sourcesJar = true))
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL, automaticRelease = false)
 
-java {
-    withSourcesJar()
-}
+    val hasSigningKey = providers.environmentVariable("ORG_GRADLE_PROJECT_signingInMemoryKey").isPresent ||
+        providers.gradleProperty("signingInMemoryKey").isPresent
+    if (hasSigningKey) {
+        signAllPublications()
+    }
 
-publishing {
-    publications.withType<MavenPublication>().configureEach {
-        if (name == "pluginMaven") {
-            artifact(javadocJar)
+    pom {
+        name.set("Sidekick Preferences Gradle Plugin")
+        description.set(
+            "Gradle plugin that wires the Sidekick @SidekickPreferences KSP processor " +
+                "into a Kotlin Multiplatform project."
+        )
+        url.set("https://github.com/jipariz/sidekick")
+        inceptionYear.set("2025")
+        licenses {
+            license {
+                name.set("The Apache License, Version 2.0")
+                url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                distribution.set("repo")
+            }
         }
-        pom {
-            name.set("Sidekick Preferences Gradle Plugin")
-            description.set(
-                "Gradle plugin that wires the Sidekick @SidekickPreferences KSP processor " +
-                    "into a Kotlin Multiplatform project."
-            )
+        developers {
+            developer {
+                id.set("jipariz")
+                name.set("Jiri Parizek")
+                email.set("jiri.parizek@strv.com")
+                url.set("https://github.com/jipariz")
+            }
+        }
+        scm {
             url.set("https://github.com/jipariz/sidekick")
-            inceptionYear.set("2025")
-            licenses {
-                license {
-                    name.set("The Apache License, Version 2.0")
-                    url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
-                    distribution.set("repo")
-                }
-            }
-            developers {
-                developer {
-                    id.set("jipariz")
-                    name.set("Jiri Parizek")
-                    email.set("jiri.parizek@strv.com")
-                    url.set("https://github.com/jipariz")
-                }
-            }
-            scm {
-                url.set("https://github.com/jipariz/sidekick")
-                connection.set("scm:git:https://github.com/jipariz/sidekick.git")
-                developerConnection.set("scm:git:ssh://git@github.com/jipariz/sidekick.git")
-            }
+            connection.set("scm:git:https://github.com/jipariz/sidekick.git")
+            developerConnection.set("scm:git:ssh://git@github.com/jipariz/sidekick.git")
         }
     }
-    repositories {
-        // Maven Central Portal upload target. Credentials come from env vars
-        // (ORG_GRADLE_PROJECT_mavenCentralUsername / ORG_GRADLE_PROJECT_mavenCentralPassword).
-        maven {
-            name = "mavenCentralPortal"
-            url = uri("https://central.sonatype.com/api/v1/publisher/upload/")
-            credentials {
-                username = providers.gradleProperty("mavenCentralUsername").orElse("").get()
-                password = providers.gradleProperty("mavenCentralPassword").orElse("").get()
-            }
-        }
-    }
-}
-
-// Conditional signing — sign only when keys are present (CI / explicit local
-// release). Local snapshot builds and CI PR checks stay unsigned so they
-// don't fail without a key.
-val hasSigningKey = providers.environmentVariable("ORG_GRADLE_PROJECT_signingInMemoryKey").isPresent ||
-    providers.gradleProperty("signingInMemoryKey").isPresent
-if (hasSigningKey) {
-    signing {
-        val signingKey = providers.gradleProperty("signingInMemoryKey")
-            .orElse(providers.environmentVariable("ORG_GRADLE_PROJECT_signingInMemoryKey"))
-            .orNull
-        val signingPassword = providers.gradleProperty("signingInMemoryKeyPassword")
-            .orElse(providers.environmentVariable("ORG_GRADLE_PROJECT_signingInMemoryKeyPassword"))
-            .orNull
-        useInMemoryPgpKeys(signingKey, signingPassword)
-        sign(publishing.publications)
-    }
-}
-
-// Make sure the empty javadoc jar is up to date when signing.
-tasks.withType<Sign>().configureEach {
-    dependsOn(javadocJar)
 }
