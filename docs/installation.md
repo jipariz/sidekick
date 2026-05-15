@@ -109,11 +109,7 @@ If you need to supply build metadata (build type, flavor) explicitly, you can st
 
 ## KSP (Preferences code generator)
 
-The Preferences plugin ships a KSP processor that generates boilerplate from annotations. There are two ways to wire it up.
-
-### Recommended: apply the Sidekick Preferences Gradle plugin
-
-The `dev.parez.sidekick.preferences` Gradle plugin bundles the KSP processor application, the generated-sources directory registration, and the task-dependency wiring — so the entire setup collapses to:
+The Preferences plugin ships a KSP processor that generates boilerplate from `@SidekickPreferences`-annotated classes. Apply the Sidekick Preferences Gradle plugin — it bundles the KSP processor application, the generated-sources directory registration, and the KMP task-ordering wiring:
 
 ```kotlin
 plugins {
@@ -121,43 +117,7 @@ plugins {
 }
 ```
 
-### Manual
-
-If you prefer explicit control, apply the KSP plugin and register the processor yourself:
-
-```kotlin
-plugins {
-    alias(libs.plugins.ksp)
-}
-
-kotlin {
-    sourceSets {
-        commonMain {
-            kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/metadata/commonMain/kotlin"))
-        }
-    }
-}
-
-dependencies {
-    add("kspCommonMainMetadata", "dev.parez.sidekick:preferences-ksp:0.1.0")
-}
-
-// All compile and KSP tasks must wait for the common-metadata KSP pass
-tasks.matching { task ->
-    task.name != "kspCommonMainKotlinMetadata" &&
-        (task.name.startsWith("compile") && task.name.contains("Kotlin") ||
-            task.name.startsWith("ksp"))
-}.configureEach {
-    dependsOn("kspCommonMainKotlinMetadata")
-}
-
-// Disable build caching for the KSP task (source dir registration is unreliable in cache)
-tasks.matching { it.name == "kspCommonMainKotlinMetadata" }.configureEach {
-    outputs.cacheIf { false }
-    val outDir = layout.buildDirectory.dir("generated/ksp/metadata/commonMain/kotlin")
-    outputs.upToDateWhen { outDir.get().asFile.exists() }
-}
-```
+That's it. See [Preferences › Defining Preferences](plugins/preferences.md#defining-preferences) for the annotations, and [Preferences › Manual setup without KSP](plugins/preferences.md#manual-setup-without-ksp) if you want to wire the processor by hand instead of applying the Gradle plugin.
 
 !!! tip "Automated setup"
-    Use the [`/setup-sidekick`](claude-code-skills.md#setup-sidekick) Claude Code skill to handle all of this automatically, including KSP wiring and plugin selection.
+    Use the [`/setup-sidekick`](claude-code-skills.md#setup-sidekick) Claude Code skill to handle the whole install (core, plugins, KSP) in one go.
