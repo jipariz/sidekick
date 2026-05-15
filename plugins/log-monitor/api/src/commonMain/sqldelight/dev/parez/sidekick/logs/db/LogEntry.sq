@@ -8,8 +8,33 @@ CREATE TABLE LogEntry (
     metadata  TEXT
 );
 
+CREATE INDEX IF NOT EXISTS LogEntry_timestamp_idx ON LogEntry(timestamp DESC);
+CREATE INDEX IF NOT EXISTS LogEntry_level_idx ON LogEntry(level);
+
 selectAll:
 SELECT * FROM LogEntry ORDER BY timestamp DESC;
+
+selectPagedFiltered:
+SELECT * FROM LogEntry
+WHERE (tag LIKE :likeToken OR message LIKE :likeToken)
+  AND level IN :levels
+ORDER BY timestamp DESC
+LIMIT :limit OFFSET :offset;
+
+selectPagedFilteredAllLevels:
+SELECT * FROM LogEntry
+WHERE (tag LIKE :likeToken OR message LIKE :likeToken)
+ORDER BY timestamp DESC
+LIMIT :limit OFFSET :offset;
+
+countFiltered:
+SELECT COUNT(*) FROM LogEntry
+WHERE (tag LIKE :likeToken OR message LIKE :likeToken)
+  AND level IN :levels;
+
+countFilteredAllLevels:
+SELECT COUNT(*) FROM LogEntry
+WHERE (tag LIKE :likeToken OR message LIKE :likeToken);
 
 selectById:
 SELECT * FROM LogEntry WHERE id = ?;

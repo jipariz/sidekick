@@ -1,4 +1,4 @@
-package dev.parez.sidekick.network
+package dev.parez.sidekick.logs
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -21,31 +21,31 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
-internal class NetworkMonitorViewModel(
-    private val store: NetworkMonitorStore,
+internal class LogMonitorViewModel(
+    private val store: LogMonitorStore,
 ) : ViewModel() {
 
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
 
-    private val _methodFilter = MutableStateFlow<Set<String>>(emptySet())
-    val methodFilter: StateFlow<Set<String>> = _methodFilter.asStateFlow()
+    private val _enabledLevels = MutableStateFlow(LogLevel.entries.toSet())
+    val enabledLevels: StateFlow<Set<LogLevel>> = _enabledLevels.asStateFlow()
 
-    private val filterFlow: Flow<NetworkFilter> = combine(
+    private val filterFlow: Flow<LogFilter> = combine(
         _query.debounce(150L),
-        _methodFilter,
-    ) { q, methods -> NetworkFilter(query = q, methods = methods) }
+        _enabledLevels,
+    ) { q, levels -> LogFilter(query = q, levels = levels) }
         .distinctUntilChanged()
 
-    val pagedCalls: Flow<PagingData<NetworkCall>> = store.pagedCalls(filterFlow)
+    val pagedEntries: Flow<PagingData<LogEntry>> = store.pagedEntries(filterFlow)
         .cachedIn(viewModelScope)
 
     val filteredCount: StateFlow<Long> = store.filteredCount(filterFlow)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0L)
 
     private val _selectedId = MutableStateFlow<String?>(null)
-    val selectedCall: StateFlow<NetworkCall?> = _selectedId
-        .flatMapLatest { id -> if (id == null) flowOf(null) else store.callById(id) }
+    val selectedEntry: StateFlow<LogEntry?> = _selectedId
+        .flatMapLatest { id -> if (id == null) flowOf(null) else store.entryById(id) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun select(id: String?) {
@@ -56,9 +56,9 @@ internal class NetworkMonitorViewModel(
         _query.value = value
     }
 
-    fun toggleMethod(method: String) {
-        _methodFilter.update { current ->
-            if (method in current) current - method else current + method
+    fun toggleLevel(level: LogLevel) {
+        _enabledLevels.update { current ->
+            if (level in current) current - level else current + level
         }
     }
 

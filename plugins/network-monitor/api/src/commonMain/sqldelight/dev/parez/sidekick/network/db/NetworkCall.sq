@@ -13,8 +13,33 @@ CREATE TABLE NetworkCall (
     status            TEXT    NOT NULL DEFAULT 'PENDING'
 );
 
+CREATE INDEX IF NOT EXISTS NetworkCall_requestTimestamp_idx ON NetworkCall(requestTimestamp DESC);
+CREATE INDEX IF NOT EXISTS NetworkCall_method_idx ON NetworkCall(method);
+
 selectAll:
 SELECT * FROM NetworkCall ORDER BY requestTimestamp DESC;
+
+selectPagedFiltered:
+SELECT * FROM NetworkCall
+WHERE (url LIKE :likeToken OR method LIKE :likeToken)
+  AND method IN :methods
+ORDER BY requestTimestamp DESC
+LIMIT :limit OFFSET :offset;
+
+selectPagedFilteredAllMethods:
+SELECT * FROM NetworkCall
+WHERE (url LIKE :likeToken OR method LIKE :likeToken)
+ORDER BY requestTimestamp DESC
+LIMIT :limit OFFSET :offset;
+
+countFiltered:
+SELECT COUNT(*) FROM NetworkCall
+WHERE (url LIKE :likeToken OR method LIKE :likeToken)
+  AND method IN :methods;
+
+countFilteredAllMethods:
+SELECT COUNT(*) FROM NetworkCall
+WHERE (url LIKE :likeToken OR method LIKE :likeToken);
 
 selectById:
 SELECT * FROM NetworkCall WHERE id = ?;

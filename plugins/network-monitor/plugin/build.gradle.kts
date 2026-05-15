@@ -17,6 +17,7 @@ kotlin {
             implementation(libs.koin.compose.viewmodel)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation(libs.androidx.paging.compose)
         }
         androidMain.dependencies {
             implementation(libs.koin.android)

@@ -15,64 +15,59 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.itemContentType
+import androidx.paging.compose.itemKey
 import dev.parez.sidekick.logs.LogEntry
 import dev.parez.sidekick.logs.LogLevel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun LogEntryListPane(
-    entries: List<LogEntry>,
+    lazyItems: LazyPagingItems<LogEntry>,
     selected: LogEntry? = null,
+    query: String,
+    enabledLevels: Set<LogLevel>,
+    filteredCount: Long,
     onSelect: (LogEntry) -> Unit,
+    onQueryChange: (String) -> Unit,
+    onToggleLevel: (LogLevel) -> Unit,
     onClear: () -> Unit,
     showChevron: Boolean = true,
     onBack: () -> Unit,
 ) {
-    var query by remember { mutableStateOf("") }
-    var enabledLevels by remember { mutableStateOf(LogLevel.entries.toSet()) }
-
-    val filtered = remember(entries, query, enabledLevels) {
-        entries.filter { entry ->
-            entry.level in enabledLevels && (
-                query.isBlank() ||
-                    entry.tag.contains(query, ignoreCase = true) ||
-                    entry.message.contains(query, ignoreCase = true)
-                )
-        }
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -87,140 +82,218 @@ internal fun LogEntryListPane(
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
             )
         },
     ) {
-    Column(Modifier
-        .padding(it)
-        .fillMaxSize()
-    ) {
-        // -- Search bar -------------------------------------------------------
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            Modifier
+                .padding(it)
+                .fillMaxSize(),
         ) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                modifier = Modifier.weight(1f),
-                placeholder = {
-                    Text(
-                        "Search tag or message…",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Search,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                },
-                singleLine = true,
-                textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                ),
-                shape = MaterialTheme.shapes.small,
-            )
-            Spacer(Modifier.width(4.dp))
-            IconButton(onClick = onClear) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "Clear all",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-
-        // -- Level filter chips -----------------------------------------------
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 12.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            LogLevel.entries.forEach { level ->
-                val isSelected = level in enabledLevels
-                FilterChip(
-                    selected = isSelected,
-                    onClick = {
-                        enabledLevels = if (isSelected) enabledLevels - level
-                        else enabledLevels + level
-                    },
-                    label = {
+            // ── Search bar ────────────────────────────────────────────────────────
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = onQueryChange,
+                    modifier = Modifier.weight(1f),
+                    placeholder = {
                         Text(
-                            level.label(),
-                            style = MaterialTheme.typography.labelSmall,
+                            "Search tag or message…",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = level.color(),
-                        selectedLabelColor = level.onColor(),
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    },
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
                     ),
+                    shape = MaterialTheme.shapes.small,
                 )
+                Spacer(Modifier.width(4.dp))
+                IconButton(onClick = onClear) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Clear all",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
-        }
 
-        // -- Stats row --------------------------------------------------------
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "${entries.size} log${if (entries.size != 1) "s" else ""}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            val errorCount = remember(entries) {
-                entries.count { it.level == LogLevel.ERROR || it.level == LogLevel.ASSERT }
-            }
-            if (errorCount > 0) {
-                Text(
-                    text = "$errorCount error${if (errorCount != 1) "s" else ""}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
-        }
-
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
-        // -- Content ----------------------------------------------------------
-        if (filtered.isEmpty()) {
-            LogEntryEmptyState(isFiltered = query.isNotBlank() || enabledLevels.size < LogLevel.entries.size)
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 8.dp),
+            // ── Level filter chips ───────────────────────────────────────────────
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                items(filtered, key = { it.id }) { entry ->
-                    LogEntryRow(
-                        entry = entry,
-                        isSelected = selected?.id == entry.id,
-                        showChevron = showChevron,
-                        onClick = { onSelect(entry) },
+                LogLevel.entries.forEach { level ->
+                    val isSelected = level in enabledLevels
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { onToggleLevel(level) },
+                        label = {
+                            Text(
+                                level.label(),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = level.color(),
+                            selectedLabelColor = level.onColor(),
+                        ),
                     )
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                        modifier = Modifier.padding(start = 56.dp),
-                    )
+                }
+            }
+
+            // ── Stats row ─────────────────────────────────────────────────────────
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "$filteredCount log${if (filteredCount != 1L) "s" else ""}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            // ── Refresh progress / divider ────────────────────────────────────────
+            if (lazyItems.loadState.refresh is LoadState.Loading) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            } else {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            }
+
+            // ── Content ───────────────────────────────────────────────────────────
+            val refresh = lazyItems.loadState.refresh
+            val isEmpty = lazyItems.itemCount == 0 && refresh is LoadState.NotLoading
+            when {
+                isEmpty -> LogEntryEmptyState(
+                    isFiltered = query.isNotBlank() || enabledLevels.size < LogLevel.entries.size,
+                )
+
+                refresh is LoadState.Error -> LogEntryErrorState(
+                    error = refresh.error,
+                    onRetry = lazyItems::retry,
+                )
+
+                else -> LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 8.dp),
+                ) {
+                    items(
+                        count = lazyItems.itemCount,
+                        key = lazyItems.itemKey { it.id },
+                        contentType = lazyItems.itemContentType { "LogEntry" },
+                    ) { index ->
+                        val entry = lazyItems[index] ?: return@items
+                        LogEntryRow(
+                            entry = entry,
+                            isSelected = selected?.id == entry.id,
+                            showChevron = showChevron,
+                            onClick = { onSelect(entry) },
+                        )
+                        HorizontalDivider(
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.padding(start = 56.dp),
+                        )
+                    }
+
+                    when (val appendState = lazyItems.loadState.append) {
+                        is LoadState.Loading -> item { AppendLoadingRow() }
+                        is LoadState.Error -> item {
+                            AppendErrorRow(error = appendState.error, onRetry = lazyItems::retry)
+                        }
+
+                        is LoadState.NotLoading -> Unit
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun AppendLoadingRow() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        CircularProgressIndicator(modifier = Modifier.size(20.dp))
     }
 }
 
-// -- List row -----------------------------------------------------------------
+@Composable
+private fun AppendErrorRow(error: Throwable, onRetry: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "Failed to load more: ${error.message ?: error::class.simpleName}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(onClick = onRetry) {
+            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(4.dp))
+            Text("Retry", style = MaterialTheme.typography.labelMedium)
+        }
+    }
+}
+
+@Composable
+private fun LogEntryErrorState(error: Throwable, onRetry: () -> Unit) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(32.dp),
+        ) {
+            Icon(
+                Icons.AutoMirrored.Default.List,
+                contentDescription = null,
+                modifier = Modifier.size(40.dp),
+                tint = MaterialTheme.colorScheme.error,
+            )
+            Text(
+                text = "Failed to load logs",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.error,
+            )
+            Text(
+                text = error.message ?: error::class.simpleName.orEmpty(),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            TextButton(onClick = onRetry) { Text("Retry") }
+        }
+    }
+}
 
 @Composable
 private fun LogEntryRow(
@@ -244,10 +317,8 @@ private fun LogEntryRow(
             verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            // Level badge
             LevelBadge(entry.level, modifier = Modifier.padding(top = 2.dp))
 
-            // Tag + message
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -275,7 +346,6 @@ private fun LogEntryRow(
                 )
             }
 
-            // Chevron
             if (showChevron) {
                 Icon(
                     Icons.AutoMirrored.Filled.KeyboardArrowRight,
@@ -289,8 +359,6 @@ private fun LogEntryRow(
         }
     }
 }
-
-// -- Level badge --------------------------------------------------------------
 
 @Composable
 internal fun LevelBadge(level: LogLevel, modifier: Modifier = Modifier) {
@@ -308,8 +376,6 @@ internal fun LevelBadge(level: LogLevel, modifier: Modifier = Modifier) {
         )
     }
 }
-
-// -- Empty state --------------------------------------------------------------
 
 @Composable
 private fun LogEntryEmptyState(isFiltered: Boolean) {
@@ -330,8 +396,7 @@ private fun LogEntryEmptyState(isFiltered: Boolean) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = if (isFiltered) "Try a different search or level filter"
-                else "Log messages will appear here",
+                text = if (isFiltered) "Try a different search or level filter" else "Log messages will appear here",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
             )
