@@ -12,6 +12,61 @@ repositories {
 }
 ```
 
+## Version catalog (copy-paste)
+
+If your project uses a Gradle version catalog (`gradle/libs.versions.toml`), drop the block below in. It covers every published Sidekick artifact plus the Preferences Gradle plugin.
+
+```toml
+[versions]
+sidekick = "0.1.0"
+
+[libraries]
+# Core
+sidekick-runtime    = { module = "dev.parez.sidekick:runtime",    version.ref = "sidekick" }
+sidekick-noop       = { module = "dev.parez.sidekick:noop",       version.ref = "sidekick" }
+sidekick-plugin-api = { module = "dev.parez.sidekick:plugin-api", version.ref = "sidekick" }
+
+# BOM — aligns the versions of every Sidekick module
+sidekick-bom = { module = "dev.parez.sidekick:bom", version.ref = "sidekick" }
+
+# Plugins
+sidekick-network-monitor        = { module = "dev.parez.sidekick:network-monitor",        version.ref = "sidekick" }
+sidekick-network-monitor-plugin = { module = "dev.parez.sidekick:network-monitor-plugin", version.ref = "sidekick" }
+sidekick-network-monitor-ktor   = { module = "dev.parez.sidekick:network-monitor-ktor",   version.ref = "sidekick" }
+sidekick-log-monitor            = { module = "dev.parez.sidekick:log-monitor",            version.ref = "sidekick" }
+sidekick-log-monitor-plugin     = { module = "dev.parez.sidekick:log-monitor-plugin",     version.ref = "sidekick" }
+sidekick-log-monitor-kermit     = { module = "dev.parez.sidekick:log-monitor-kermit",     version.ref = "sidekick" }
+sidekick-preferences            = { module = "dev.parez.sidekick:preferences",            version.ref = "sidekick" }
+sidekick-custom-screens         = { module = "dev.parez.sidekick:custom-screens",         version.ref = "sidekick" }
+
+[plugins]
+# Preferences KSP wiring — applies the KSP processor + generated-sources srcDir
+sidekick-preferences = { id = "dev.parez.sidekick.preferences", version.ref = "sidekick" }
+```
+
+Then reference the typesafe accessors in `build.gradle.kts`:
+
+```kotlin
+plugins {
+    alias(libs.plugins.sidekick.preferences)
+}
+
+dependencies {
+    debugImplementation(libs.sidekick.runtime)
+    releaseImplementation(libs.sidekick.noop)
+
+    implementation(platform(libs.sidekick.bom))
+    implementation(libs.sidekick.network.monitor.plugin)
+    implementation(libs.sidekick.network.monitor.ktor)
+    implementation(libs.sidekick.log.monitor.plugin)
+    implementation(libs.sidekick.log.monitor.kermit)
+    implementation(libs.sidekick.preferences)
+    implementation(libs.sidekick.custom.screens)
+}
+```
+
+The rest of this page uses the inline `"group:artifact:version"` form so it's readable for projects that don't use a version catalog. Both styles work identically.
+
 ## Core
 
 Every app needs the core runtime (debug builds) and the no-op stub (release builds). How you wire them depends on whether you're in a single-module app or a multi-module one.
