@@ -4,9 +4,9 @@ Sidekick is a multi-module library published to **Maven Central** under the `dev
 
 ## Versioning at a glance
 
-- **BOM is calendar-versioned** (`YYYY.MM.DD`). Pin one BOM coordinate and every plugin module is resolved transitively. Cutting a new BOM means publishing a new dated coordinate; older BOMs stay on Central forever.
-- **Plugin modules are per-family semver.** Each plugin family — `core` (`plugin-api`/`runtime`/`noop`), `network-monitor`, `log-monitor`, `preferences`, `custom-screens` — has its own `MAJOR.MINOR.PATCH` version. Members of a family always share a version, but families can drift independently.
-- **You normally never pin module versions directly** — let the BOM do it. The exceptions are Android's `debugImplementation` / `releaseImplementation` configurations for `core:runtime` and `core:noop`, which don't pick up the BOM and need an explicit `core`-family version.
+- **One BOM coordinate covers everything.** The BOM is calendar-versioned (`YYYY.MM.DD`). Pin it once and every Sidekick artifact resolves through it — including `runtime` / `noop` in the Android variant-config swap, because BOM constraints propagate down the `implementation` extension chain.
+- **Plugin modules are per-family semver under the hood.** Each family (`core`, `network-monitor`, `log-monitor`, `preferences`, `custom-screens`) has its own `MAJOR.MINOR.PATCH` version that can drift independently. You don't need to know these — the BOM pins them.
+- **The Gradle plugin keeps its own version.** Gradle's plugin DSL resolves plugins before any BOM is in scope, so `dev.parez.sidekick.preferences` needs an explicit version in your `plugins { … }` block (or version catalog `[plugins]` section). This is a Gradle limitation, not a Sidekick design choice.
 
 The Maven Central badge at the top of the [README](../README.md) renders the latest BOM coordinate.
 
@@ -22,23 +22,18 @@ repositories {
 
 ## Version catalog (copy-paste)
 
-If your project uses a Gradle version catalog (`gradle/libs.versions.toml`), drop the block below in. It covers every published Sidekick artifact plus the Preferences Gradle plugin.
+If your project uses a Gradle version catalog (`gradle/libs.versions.toml`), drop the block below in. One BOM version key covers every published Sidekick artifact; the Gradle plugin has its own inline version because the plugin DSL can't resolve through a BOM.
 
 ```toml
 [versions]
-# BOM is calendar-versioned — bump when you want to track the latest release.
-sidekick-bom = "2026.05.16"
-# Core family (plugin-api, runtime, noop). Needed directly because the BOM
-# doesn't propagate to Android `debugImplementation`/`releaseImplementation`.
-sidekick-core = "0.1.0"
+sidekick = "2026.05.16"  # BOM version (YYYY.MM.DD)
 
 [libraries]
-sidekick-bom        = { module = "dev.parez.sidekick:bom",        version.ref = "sidekick-bom" }
-sidekick-runtime    = { module = "dev.parez.sidekick:runtime",    version.ref = "sidekick-core" }
-sidekick-noop       = { module = "dev.parez.sidekick:noop",       version.ref = "sidekick-core" }
-sidekick-plugin-api = { module = "dev.parez.sidekick:plugin-api", version.ref = "sidekick-core" }
-
-# Plugin modules — version pulled from the BOM at use site.
+sidekick-bom = { module = "dev.parez.sidekick:bom", version.ref = "sidekick" }
+# Everything below is BOM-managed — no version needed.
+sidekick-runtime    = { module = "dev.parez.sidekick:runtime" }
+sidekick-noop       = { module = "dev.parez.sidekick:noop" }
+sidekick-plugin-api = { module = "dev.parez.sidekick:plugin-api" }
 sidekick-network-monitor        = { module = "dev.parez.sidekick:network-monitor" }
 sidekick-network-monitor-plugin = { module = "dev.parez.sidekick:network-monitor-plugin" }
 sidekick-network-monitor-ktor   = { module = "dev.parez.sidekick:network-monitor-ktor" }
@@ -50,8 +45,8 @@ sidekick-custom-screens         = { module = "dev.parez.sidekick:custom-screens"
 
 [plugins]
 # Preferences KSP wiring — applies the KSP processor + generated-sources srcDir.
-# Gradle plugins resolve via the plugin DSL, not via the BOM, so the version
-# is pinned directly here (preferences family version).
+# Bump alongside `sidekick` above whenever a new BOM changes the
+# preferences-family version (see release notes on Maven Central).
 sidekick-preferences = { id = "dev.parez.sidekick.preferences", version = "0.1.0" }
 ```
 
@@ -87,8 +82,9 @@ Every app needs the core runtime (debug builds) and the no-op stub (release buil
 ```kotlin
 // build.gradle.kts (Android app module)
 dependencies {
-    debugImplementation("dev.parez.sidekick:runtime:0.1.0")
-    releaseImplementation("dev.parez.sidekick:noop:0.1.0")
+    implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
+    debugImplementation("dev.parez.sidekick:runtime")   // version from BOM
+    releaseImplementation("dev.parez.sidekick:noop")    // version from BOM
 }
 ```
 
@@ -104,13 +100,14 @@ dependencies {
 kotlin {
     sourceSets {
         commonMain.dependencies {
+            implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
             // compileOnly: the type is on the compile classpath of the library,
             // but the runtime impl is provided per-target by the app module below.
-            compileOnly("dev.parez.sidekick:runtime:0.1.0")
+            compileOnly("dev.parez.sidekick:runtime")
         }
         appleMain.dependencies {
             // iOS has no Gradle-level debug/release split — provide the runtime here.
-            implementation("dev.parez.sidekick:runtime:0.1.0")
+            implementation("dev.parez.sidekick:runtime")
         }
     }
 }
@@ -120,8 +117,9 @@ kotlin {
 // ATASSproApp/android/build.gradle.kts — Android application module
 dependencies {
     implementation(projects.feature.devtools)        // your feature module
-    debugImplementation("dev.parez.sidekick:runtime:0.1.0")
-    releaseImplementation("dev.parez.sidekick:noop:0.1.0")
+    implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
+    debugImplementation("dev.parez.sidekick:runtime")
+    releaseImplementation("dev.parez.sidekick:noop")
 }
 ```
 
@@ -133,7 +131,8 @@ The library compiles against `runtime` types; on Android the app module swaps `r
 
 ```kotlin
 jvmMain.dependencies {
-    implementation("dev.parez.sidekick:runtime:0.1.0")
+    implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
+    implementation("dev.parez.sidekick:runtime")
 }
 ```
 

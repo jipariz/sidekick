@@ -35,11 +35,6 @@ Capture every HTTP request and response your app makes, with searchable list, me
 
 ```kotlin
 // build.gradle.kts
-dependencies {
-    debugImplementation("dev.parez.sidekick:runtime:0.1.0")
-    releaseImplementation("dev.parez.sidekick:noop:0.1.0")
-}
-
 kotlin {
     sourceSets {
         commonMain.dependencies {
@@ -48,6 +43,11 @@ kotlin {
             implementation("dev.parez.sidekick:network-monitor-ktor") // Ktor integration
         }
     }
+}
+
+dependencies {
+    debugImplementation("dev.parez.sidekick:runtime")   // version from BOM
+    releaseImplementation("dev.parez.sidekick:noop")    // version from BOM
 }
 ```
 

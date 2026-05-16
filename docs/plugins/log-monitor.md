@@ -34,11 +34,6 @@ View your app's logs without ADB or platform-specific consoles. Level filters, f
 
 ```kotlin
 // build.gradle.kts
-dependencies {
-    debugImplementation("dev.parez.sidekick:runtime:0.1.0")
-    releaseImplementation("dev.parez.sidekick:noop:0.1.0")
-}
-
 kotlin {
     sourceSets {
         commonMain.dependencies {
@@ -47,6 +42,11 @@ kotlin {
             implementation("dev.parez.sidekick:log-monitor-kermit") // optional — Kermit bridge
         }
     }
+}
+
+dependencies {
+    debugImplementation("dev.parez.sidekick:runtime")   // version from BOM
+    releaseImplementation("dev.parez.sidekick:noop")    // version from BOM
 }
 ```
 
