@@ -53,6 +53,8 @@
 
 ## 🚀 Quick install
 
+Pin the **BOM** once; every plugin line is then version-agnostic. The BOM is calendar-versioned (`YYYY.MM.DD`); check the Maven Central badge above for the latest. The two variant-scoped lines (`debugImplementation` / `releaseImplementation`) take an explicit module version because Android Gradle Plugin variant configurations don't pick up the BOM by default.
+
 ```kotlin
 // build.gradle.kts
 dependencies {
@@ -63,8 +65,8 @@ dependencies {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            // BOM aligns versions; individual plugin lines drop the version.
-            implementation(platform("dev.parez.sidekick:bom:0.1.0"))
+            // BOM pins every plugin module to its current family version.
+            implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
             implementation("dev.parez.sidekick:network-monitor-plugin")
             implementation("dev.parez.sidekick:network-monitor-ktor")
             implementation("dev.parez.sidekick:log-monitor-plugin")
@@ -83,21 +85,27 @@ Drop this in `gradle/libs.versions.toml`:
 
 ```toml
 [versions]
-sidekick = "0.1.0"
+# BOM is calendar-versioned — bump when you want to track the latest published release.
+sidekick-bom = "2026.05.16"
+# Core family (runtime, noop). Needed directly because the BOM doesn't propagate
+# to Android `debugImplementation` / `releaseImplementation` configurations.
+sidekick-core = "0.1.0"
 
 [libraries]
-sidekick-runtime    = { module = "dev.parez.sidekick:runtime",    version.ref = "sidekick" }
-sidekick-noop       = { module = "dev.parez.sidekick:noop",       version.ref = "sidekick" }
-sidekick-bom        = { module = "dev.parez.sidekick:bom",        version.ref = "sidekick" }
-sidekick-network-monitor-plugin = { module = "dev.parez.sidekick:network-monitor-plugin", version.ref = "sidekick" }
-sidekick-network-monitor-ktor   = { module = "dev.parez.sidekick:network-monitor-ktor",   version.ref = "sidekick" }
-sidekick-log-monitor-plugin     = { module = "dev.parez.sidekick:log-monitor-plugin",     version.ref = "sidekick" }
-sidekick-log-monitor-kermit     = { module = "dev.parez.sidekick:log-monitor-kermit",     version.ref = "sidekick" }
-sidekick-preferences            = { module = "dev.parez.sidekick:preferences",            version.ref = "sidekick" }
-sidekick-custom-screens         = { module = "dev.parez.sidekick:custom-screens",         version.ref = "sidekick" }
+sidekick-bom     = { module = "dev.parez.sidekick:bom",     version.ref = "sidekick-bom" }
+sidekick-runtime = { module = "dev.parez.sidekick:runtime", version.ref = "sidekick-core" }
+sidekick-noop    = { module = "dev.parez.sidekick:noop",    version.ref = "sidekick-core" }
+# Plugin modules — version is pulled from the BOM at use site.
+sidekick-network-monitor-plugin = { module = "dev.parez.sidekick:network-monitor-plugin" }
+sidekick-network-monitor-ktor   = { module = "dev.parez.sidekick:network-monitor-ktor" }
+sidekick-log-monitor-plugin     = { module = "dev.parez.sidekick:log-monitor-plugin" }
+sidekick-log-monitor-kermit     = { module = "dev.parez.sidekick:log-monitor-kermit" }
+sidekick-preferences            = { module = "dev.parez.sidekick:preferences" }
+sidekick-custom-screens         = { module = "dev.parez.sidekick:custom-screens" }
 
 [plugins]
-sidekick-preferences = { id = "dev.parez.sidekick.preferences", version.ref = "sidekick" }
+# Gradle plugins resolve via the plugin DSL, not via the BOM.
+sidekick-preferences = { id = "dev.parez.sidekick.preferences", version = "0.1.0" }
 ```
 
 Then in `build.gradle.kts`: `debugImplementation(libs.sidekick.runtime)`, `implementation(platform(libs.sidekick.bom))`, `implementation(libs.sidekick.network.monitor.plugin)`, `alias(libs.plugins.sidekick.preferences)`, etc.

@@ -42,7 +42,7 @@ dependencies {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(platform("dev.parez.sidekick:bom:0.1.0"))
+            implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
             implementation("dev.parez.sidekick:log-monitor-plugin")
             implementation("dev.parez.sidekick:log-monitor-kermit") // optional — Kermit bridge
         }
