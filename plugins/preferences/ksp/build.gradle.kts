@@ -5,10 +5,11 @@ import com.vanniktech.maven.publish.SonatypeHost
 plugins {
     alias(libs.plugins.kotlinJvm)
     alias(libs.plugins.vanniktechMavenPublish)
+    id("sidekick.version.read")
 }
 
 group = "dev.parez.sidekick"
-version = findProperty("sidekick.version") as String
+// version is set by sidekick.version.read from version.properties
 
 dependencies {
     compileOnly(libs.ksp.api)
@@ -18,7 +19,7 @@ dependencies {
 }
 
 mavenPublishing {
-    coordinates("dev.parez.sidekick", "preferences-ksp", project.version.toString())
+    coordinates("dev.parez.sidekick", "preferences-ksp", project.version.toString()) // version from sidekick.version.read
     configure(KotlinJvm(javadocJar = JavadocJar.Empty(), sourcesJar = true))
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL, automaticRelease = false)
 

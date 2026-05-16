@@ -7,22 +7,24 @@ plugins {
 }
 
 group = "dev.parez.sidekick"
-version = findProperty("sidekick.version") as String
+// BOM is calendar-versioned. The per-module versions it pins are derived
+// transitively from each `:projects.*` accessor's project.version.
+version = findProperty("sidekick.bomVersion") as String
 
 dependencies {
     constraints {
-        api("dev.parez.sidekick:plugin-api:$version")
-        api("dev.parez.sidekick:runtime:$version")
-        api("dev.parez.sidekick:noop:$version")
-        api("dev.parez.sidekick:preferences:$version")
-        api("dev.parez.sidekick:preferences-ksp:$version")
-        api("dev.parez.sidekick:network-monitor:$version")
-        api("dev.parez.sidekick:network-monitor-plugin:$version")
-        api("dev.parez.sidekick:network-monitor-ktor:$version")
-        api("dev.parez.sidekick:log-monitor:$version")
-        api("dev.parez.sidekick:log-monitor-plugin:$version")
-        api("dev.parez.sidekick:log-monitor-kermit:$version")
-        api("dev.parez.sidekick:custom-screens:$version")
+        api(projects.core.pluginApi)
+        api(projects.core.runtime)
+        api(projects.core.noop)
+        api(projects.plugins.preferences.api)
+        api(projects.plugins.preferences.ksp)
+        api(projects.plugins.networkMonitor.api)
+        api(projects.plugins.networkMonitor.plugin)
+        api(projects.plugins.networkMonitor.ktor)
+        api(projects.plugins.logMonitor.api)
+        api(projects.plugins.logMonitor.plugin)
+        api(projects.plugins.logMonitor.kermit)
+        api(projects.plugins.customScreens.api)
     }
 }
 
@@ -39,7 +41,10 @@ mavenPublishing {
 
     pom {
         name.set("Sidekick BOM")
-        description.set("Bill of Materials for the Sidekick KMP debug overlay SDK.")
+        description.set(
+            "Bill of Materials for the Sidekick KMP debug overlay SDK. Calendar-versioned; " +
+                "pins each plugin module's independent semver version for a coherent install."
+        )
         url.set("https://github.com/jipariz/sidekick")
         inceptionYear.set("2025")
         licenses {

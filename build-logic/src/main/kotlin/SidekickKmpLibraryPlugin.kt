@@ -20,6 +20,10 @@ class SidekickKmpLibraryPlugin : Plugin<Project> {
         // vanniktech.maven.publish brings in `maven-publish` + `signing` and adds
         // a tighter coordinates/POM DSL plus a one-shot Central upload task.
         pluginManager.apply("com.vanniktech.maven.publish")
+        // Reads this module's version.properties and sets project.version.
+        // The BOM later picks up each module's version via project.version,
+        // so this must run before the coordinates() call below.
+        pluginManager.apply("sidekick.version.read")
 
         val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
         val compileSdkVersion = libs.findVersion("android-compileSdk").get().requiredVersion.toInt()
@@ -64,12 +68,12 @@ class SidekickKmpLibraryPlugin : Plugin<Project> {
             }
         }
 
-        val sidekickVersion = findProperty("sidekick.version") as String
-
         extensions.configure<MavenPublishBaseExtension> {
             // Coordinates: groupId is fixed, artifactId comes from the per-module
             // override set in the root build.gradle.kts ext("sidekick.artifactId"),
-            // falling back to the Gradle project name.
+            // falling back to the Gradle project name. Version is set by
+            // SidekickVersionReadConventionPlugin from this module's
+            // version.properties — read it back via project.version.
             val resolvedArtifactId = (extensions.extraProperties
                 .takeIf { it.has("sidekick.artifactId") }
                 ?.get("sidekick.artifactId") as? String)
@@ -77,7 +81,7 @@ class SidekickKmpLibraryPlugin : Plugin<Project> {
             coordinates(
                 groupId = "dev.parez.sidekick",
                 artifactId = resolvedArtifactId,
-                version = sidekickVersion,
+                version = project.version.toString(),
             )
 
             // POM metadata + Central Portal target + conditional signing.

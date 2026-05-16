@@ -22,5 +22,13 @@ gradlePlugin {
             id = "sidekick.kmp.library"
             implementationClass = "SidekickKmpLibraryPlugin"
         }
+        register("sidekickVersionRead") {
+            id = "sidekick.version.read"
+            implementationClass = "SidekickVersionReadConventionPlugin"
+        }
+        register("sidekickVersionUpdate") {
+            id = "sidekick.version.update"
+            implementationClass = "SidekickVersionUpdateConventionPlugin"
+        }
     }
 }
