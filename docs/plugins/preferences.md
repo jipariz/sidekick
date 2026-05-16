@@ -59,7 +59,7 @@ The `dev.parez.sidekick.preferences` Gradle plugin bundles the KSP processor app
 
 ```kotlin
 plugins {
-    id("dev.parez.sidekick.preferences") version "0.1.0"
+    id("dev.parez.sidekick.preferences") version "2026.05.16"
 }
 ```
 

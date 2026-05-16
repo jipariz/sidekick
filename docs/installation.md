@@ -6,7 +6,7 @@ Sidekick is a multi-module library published to **Maven Central** under the `dev
 
 - **One BOM coordinate covers everything.** The BOM is calendar-versioned (`YYYY.MM.DD`). Pin it once and every Sidekick artifact resolves through it — including `runtime` / `noop` in the Android variant-config swap, because BOM constraints propagate down the `implementation` extension chain.
 - **Plugin modules are per-family semver under the hood.** Each family (`core`, `network-monitor`, `log-monitor`, `preferences`, `custom-screens`) has its own `MAJOR.MINOR.PATCH` version that can drift independently. You don't need to know these — the BOM pins them.
-- **The Gradle plugin keeps its own version.** Gradle's plugin DSL resolves plugins before any BOM is in scope, so `dev.parez.sidekick.preferences` needs an explicit version in your `plugins { … }` block (or version catalog `[plugins]` section). This is a Gradle limitation, not a Sidekick design choice.
+- **The Gradle plugin tracks the BOM too.** `dev.parez.sidekick.preferences`'s marker artifact is republished at the BOM's calendar version every release, so you pin the same number in `plugins { id("…") version "…" }` (or via `version.ref = "sidekick"` in the catalog). The marker resolves transparently to the impl at its current preferences-family version — you never see that number.
 
 The Maven Central badge at the top of the [README](../README.md) renders the latest BOM coordinate.
 
@@ -45,9 +45,8 @@ sidekick-custom-screens         = { module = "dev.parez.sidekick:custom-screens"
 
 [plugins]
 # Preferences KSP wiring — applies the KSP processor + generated-sources srcDir.
-# Bump alongside `sidekick` above whenever a new BOM changes the
-# preferences-family version (see release notes on Maven Central).
-sidekick-preferences = { id = "dev.parez.sidekick.preferences", version = "0.1.0" }
+# Marker is published at the BOM's calendar version, so we reuse the same key.
+sidekick-preferences = { id = "dev.parez.sidekick.preferences", version.ref = "sidekick" }
 ```
 
 Then reference the typesafe accessors in `build.gradle.kts`:
@@ -178,7 +177,7 @@ The Preferences plugin ships a KSP processor that generates boilerplate from `@S
 
 ```kotlin
 plugins {
-    id("dev.parez.sidekick.preferences") version "0.1.0"
+    id("dev.parez.sidekick.preferences") version "2026.05.16"
 }
 ```
 

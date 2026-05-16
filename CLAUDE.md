@@ -127,7 +127,9 @@ Two distinct upload paths because of how the build is structured:
 - **Main build** — `./gradlew publishToMavenCentral` from the repo root. The Vanniktech plugin (`com.vanniktech.maven.publish`, applied via `SidekickKmpLibraryPlugin`, plus directly in `bom/` and `plugins/preferences/ksp/`) bundles all KMP + BOM + KSP artifacts into one zip for the Central Portal API.
 - **Included gradle-plugin** — `cd plugins/preferences/gradle-plugin && ../../../gradlew publishToMavenCentral` because the gradle-plugin is a standalone included build (separate Gradle root, invisible to `rootProject.subprojects`). It also uses Vanniktech with `configure(GradlePlugin(...))` for the `java-gradle-plugin` shape, bundling the main `pluginMaven` publication plus per-plugin-id marker publications into a second zip.
 
-The published gradle plugin id is `dev.parez.sidekick.preferences`. Marker artifact: `dev.parez.sidekick:dev.parez.sidekick.preferences.gradle.plugin`. The included build reads its version from `../version.properties` (the `preferences` family file) so it stays in lockstep with `:plugins:preferences:api` and `:plugins:preferences:ksp`.
+The published gradle plugin id is `dev.parez.sidekick.preferences`. The marker artifact's version is **decoupled from the impl** — the impl jar publishes at the preferences-family semver (`<../version.properties>:sdk.version`, currently `0.1.0`), but the plugin-marker pom (the artifact the Gradle plugin DSL resolves) publishes at the calendar **BOM version** (`gradle.properties:sidekick.bomVersion`). The marker's pom declares a `<dependency>` on the impl at its semver.
+
+This split (override in the included gradle-plugin's `build.gradle.kts`, in the `afterEvaluate` block on `*PluginMarkerMaven` publications) lets consumers pin a single calendar coordinate in their version catalog — `sidekick-preferences = { id = "dev.parez.sidekick.preferences", version.ref = "sidekick" }` where `sidekick` is the same BOM version key. They never see the family semver.
 
 ### Maven Central namespace + signing
 

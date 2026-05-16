@@ -102,10 +102,11 @@ sidekick-preferences            = { module = "dev.parez.sidekick:preferences" }
 sidekick-custom-screens         = { module = "dev.parez.sidekick:custom-screens" }
 
 [plugins]
-# Gradle plugins resolve via the plugin DSL (not the BOM), so the version
-# is pinned here. Bump alongside `sidekick` above when a new release
-# changes the preferences-family version (see Maven Central).
-sidekick-preferences = { id = "dev.parez.sidekick.preferences", version = "0.1.0" }
+# Plugin markers are published at the BOM's calendar version too, so you
+# pin the same `sidekick` key here. The marker resolves transparently to
+# the impl jar at its current preferences-family version — you don't see
+# that number.
+sidekick-preferences = { id = "dev.parez.sidekick.preferences", version.ref = "sidekick" }
 ```
 
 Then in `build.gradle.kts`: `implementation(platform(libs.sidekick.bom))`, `implementation(libs.sidekick.network.monitor.plugin)`, `debugImplementation(libs.sidekick.runtime)`, `alias(libs.plugins.sidekick.preferences)`, etc.
