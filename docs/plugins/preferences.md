@@ -36,18 +36,19 @@ Expose typed app settings inside the Sidekick panel — flip feature flags, chan
 
 ```kotlin
 // build.gradle.kts
-dependencies {
-    debugImplementation("dev.parez.sidekick:runtime:0.1.0")
-    releaseImplementation("dev.parez.sidekick:noop:0.1.0")
-}
-
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(platform("dev.parez.sidekick:bom:0.1.0"))
+            implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
             implementation("dev.parez.sidekick:preferences")
         }
     }
+}
+
+dependencies {
+    implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
+    debugImplementation("dev.parez.sidekick:runtime")   // version from BOM
+    releaseImplementation("dev.parez.sidekick:noop")    // version from BOM
 }
 ```
 
@@ -59,7 +60,7 @@ The `dev.parez.sidekick.preferences` Gradle plugin bundles the KSP processor app
 
 ```kotlin
 plugins {
-    id("dev.parez.sidekick.preferences") version "0.1.0"
+    id("dev.parez.sidekick.preferences") version "2026.05.16"
 }
 ```
 

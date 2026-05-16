@@ -2,6 +2,14 @@
 
 Sidekick is a multi-module library published to **Maven Central** under the `dev.parez.sidekick` group. Add the modules you need as dependencies in your app's `build.gradle.kts`.
 
+## Versioning at a glance
+
+- **One BOM coordinate covers everything.** The BOM is calendar-versioned (`YYYY.MM.DD`). Pin it once and every Sidekick artifact resolves through it — including `runtime` / `noop` in the Android variant-config swap, because BOM constraints propagate down the `implementation` extension chain.
+- **Plugin modules are per-family semver under the hood.** Each family (`core`, `network-monitor`, `log-monitor`, `preferences`, `custom-screens`) has its own `MAJOR.MINOR.PATCH` version that can drift independently. You don't need to know these — the BOM pins them.
+- **The Gradle plugin tracks the BOM too.** `dev.parez.sidekick.preferences`'s marker artifact is republished at the BOM's calendar version every release, so you pin the same number in `plugins { id("…") version "…" }` (or via `version.ref = "sidekick"` in the catalog). The marker resolves transparently to the impl at its current preferences-family version — you never see that number.
+
+The Maven Central badge at the top of the [README](../README.md) renders the latest BOM coordinate.
+
 ## Repository
 
 Maven Central is available by default in Gradle. If your project pins a custom repository list, make sure `mavenCentral()` is included:
@@ -14,33 +22,30 @@ repositories {
 
 ## Version catalog (copy-paste)
 
-If your project uses a Gradle version catalog (`gradle/libs.versions.toml`), drop the block below in. It covers every published Sidekick artifact plus the Preferences Gradle plugin.
+If your project uses a Gradle version catalog (`gradle/libs.versions.toml`), drop the block below in. One BOM version key covers every published Sidekick artifact; the Gradle plugin has its own inline version because the plugin DSL can't resolve through a BOM.
 
 ```toml
 [versions]
-sidekick = "0.1.0"
+sidekick = "2026.05.16"  # BOM version (YYYY.MM.DD)
 
 [libraries]
-# Core
-sidekick-runtime    = { module = "dev.parez.sidekick:runtime",    version.ref = "sidekick" }
-sidekick-noop       = { module = "dev.parez.sidekick:noop",       version.ref = "sidekick" }
-sidekick-plugin-api = { module = "dev.parez.sidekick:plugin-api", version.ref = "sidekick" }
-
-# BOM — aligns the versions of every Sidekick module
 sidekick-bom = { module = "dev.parez.sidekick:bom", version.ref = "sidekick" }
-
-# Plugins
-sidekick-network-monitor        = { module = "dev.parez.sidekick:network-monitor",        version.ref = "sidekick" }
-sidekick-network-monitor-plugin = { module = "dev.parez.sidekick:network-monitor-plugin", version.ref = "sidekick" }
-sidekick-network-monitor-ktor   = { module = "dev.parez.sidekick:network-monitor-ktor",   version.ref = "sidekick" }
-sidekick-log-monitor            = { module = "dev.parez.sidekick:log-monitor",            version.ref = "sidekick" }
-sidekick-log-monitor-plugin     = { module = "dev.parez.sidekick:log-monitor-plugin",     version.ref = "sidekick" }
-sidekick-log-monitor-kermit     = { module = "dev.parez.sidekick:log-monitor-kermit",     version.ref = "sidekick" }
-sidekick-preferences            = { module = "dev.parez.sidekick:preferences",            version.ref = "sidekick" }
-sidekick-custom-screens         = { module = "dev.parez.sidekick:custom-screens",         version.ref = "sidekick" }
+# Everything below is BOM-managed — no version needed.
+sidekick-runtime    = { module = "dev.parez.sidekick:runtime" }
+sidekick-noop       = { module = "dev.parez.sidekick:noop" }
+sidekick-plugin-api = { module = "dev.parez.sidekick:plugin-api" }
+sidekick-network-monitor        = { module = "dev.parez.sidekick:network-monitor" }
+sidekick-network-monitor-plugin = { module = "dev.parez.sidekick:network-monitor-plugin" }
+sidekick-network-monitor-ktor   = { module = "dev.parez.sidekick:network-monitor-ktor" }
+sidekick-log-monitor            = { module = "dev.parez.sidekick:log-monitor" }
+sidekick-log-monitor-plugin     = { module = "dev.parez.sidekick:log-monitor-plugin" }
+sidekick-log-monitor-kermit     = { module = "dev.parez.sidekick:log-monitor-kermit" }
+sidekick-preferences            = { module = "dev.parez.sidekick:preferences" }
+sidekick-custom-screens         = { module = "dev.parez.sidekick:custom-screens" }
 
 [plugins]
-# Preferences KSP wiring — applies the KSP processor + generated-sources srcDir
+# Preferences KSP wiring — applies the KSP processor + generated-sources srcDir.
+# Marker is published at the BOM's calendar version, so we reuse the same key.
 sidekick-preferences = { id = "dev.parez.sidekick.preferences", version.ref = "sidekick" }
 ```
 
@@ -76,8 +81,9 @@ Every app needs the core runtime (debug builds) and the no-op stub (release buil
 ```kotlin
 // build.gradle.kts (Android app module)
 dependencies {
-    debugImplementation("dev.parez.sidekick:runtime:0.1.0")
-    releaseImplementation("dev.parez.sidekick:noop:0.1.0")
+    implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
+    debugImplementation("dev.parez.sidekick:runtime")   // version from BOM
+    releaseImplementation("dev.parez.sidekick:noop")    // version from BOM
 }
 ```
 
@@ -93,13 +99,14 @@ dependencies {
 kotlin {
     sourceSets {
         commonMain.dependencies {
+            implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
             // compileOnly: the type is on the compile classpath of the library,
             // but the runtime impl is provided per-target by the app module below.
-            compileOnly("dev.parez.sidekick:runtime:0.1.0")
+            compileOnly("dev.parez.sidekick:runtime")
         }
         appleMain.dependencies {
             // iOS has no Gradle-level debug/release split — provide the runtime here.
-            implementation("dev.parez.sidekick:runtime:0.1.0")
+            implementation("dev.parez.sidekick:runtime")
         }
     }
 }
@@ -109,8 +116,9 @@ kotlin {
 // ATASSproApp/android/build.gradle.kts — Android application module
 dependencies {
     implementation(projects.feature.devtools)        // your feature module
-    debugImplementation("dev.parez.sidekick:runtime:0.1.0")
-    releaseImplementation("dev.parez.sidekick:noop:0.1.0")
+    implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
+    debugImplementation("dev.parez.sidekick:runtime")
+    releaseImplementation("dev.parez.sidekick:noop")
 }
 ```
 
@@ -122,7 +130,8 @@ The library compiles against `runtime` types; on Android the app module swaps `r
 
 ```kotlin
 jvmMain.dependencies {
-    implementation("dev.parez.sidekick:runtime:0.1.0")
+    implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
+    implementation("dev.parez.sidekick:runtime")
 }
 ```
 
@@ -138,7 +147,7 @@ The Sidekick BOM aligns the versions of every plugin module — apply it once an
 
 ```kotlin
 commonMain.dependencies {
-    implementation(platform("dev.parez.sidekick:bom:0.1.0"))
+    implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
 
     // Network monitor
     implementation("dev.parez.sidekick:network-monitor-plugin")
@@ -168,7 +177,7 @@ The Preferences plugin ships a KSP processor that generates boilerplate from `@S
 
 ```kotlin
 plugins {
-    id("dev.parez.sidekick.preferences") version "0.1.0"
+    id("dev.parez.sidekick.preferences") version "2026.05.16"
 }
 ```
 

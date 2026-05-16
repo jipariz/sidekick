@@ -66,6 +66,85 @@ Use typesafe project accessors: `projects.core.runtime`, `projects.plugins.prefe
 
 iOS: open `iosApp/` in Xcode or use an IDE run configuration.
 
+## Versioning and Publishing
+
+### Versioning model: per-family semver + calendar-versioned BOM
+
+Sidekick uses **per-family semver** coordinated by a **calendar-versioned BOM**. A *family* is a directory containing modules that share internal API surface and therefore must move together. The five families:
+
+| Family root | Members |
+|---|---|
+| `core/` | `plugin-api`, `runtime`, `noop` |
+| `plugins/network-monitor/` | `api`, `plugin`, `ktor` |
+| `plugins/log-monitor/` | `api`, `plugin`, `kermit` |
+| `plugins/preferences/` | `api`, `ksp`, `gradle-plugin` (included build) |
+| `plugins/custom-screens/` | `api` |
+
+Each family root owns a single `version.properties` (e.g. `plugins/network-monitor/version.properties`) with two keys:
+- `sdk.version` — semver `MAJOR.MINOR.PATCH`
+- `sdk.content.hash` — SHA-256 over the union of every member module's `src/main/` + `src/<sourceSet>Main/` source trees
+
+`SidekickVersionReadConventionPlugin` (build-logic) walks up from each module's projectDir to find the nearest family `version.properties` and applies its `sdk.version` to `project.version`. The BOM (`bom/build.gradle.kts`) declares `api(projects.X)` constraints — Gradle resolves each module's `project.version` transitively into the BOM POM's `dependencyManagement` block. The BOM itself is calendar-versioned: `sidekick.bomVersion` in `gradle.properties` holds `YYYY.MM.DD`.
+
+**Why per-family, not per-module?** Modules within a family have tight intra-family deps (e.g. `network-monitor:plugin` imports types from `network-monitor:api`). Per-module versions would let `:plugin@X` claim compatibility with `:api@X` even when an internal `:api` refactor invalidated the binding. Per-family ensures every sibling at the same version pairs cleanly with every other.
+
+### Day-to-day: bumping module versions
+
+`SidekickVersionUpdateConventionPlugin` (build-logic, applied to the root project) registers two tasks:
+
+```bash
+./gradlew updateModuleVersions   # local dev — run before pushing source changes
+./gradlew checkModuleVersions    # CI gate — runs on every PR via check-versions.yml
+```
+
+`updateModuleVersions` walks every family, recomputes the SHA-256 over its union of source trees, and bumps the family's PATCH on any change. **MAJOR/MINOR are manual** — edit `version.properties` directly and re-run `updateModuleVersions` to refresh the hash. ABI-impacting changes to `core` (which contains `plugin-api`) typically warrant manually bumping the MINOR of every depending family in the same PR — the hash automation doesn't follow inter-family dependencies.
+
+The `checkModuleVersions` task fails the build if any family's hash drifted but PATCH wasn't bumped, or if a family is missing its `version.properties`.
+
+`SidekickVersionReadConventionPlugin`'s configuration-time check additionally fails the build if a module can't find any family `version.properties` walking up to the repo root.
+
+### Cutting a BOM release
+
+The publish workflow (`.github/workflows/publish.yml`) fires on `v*` tag push. It runs two steps with `automaticRelease = false` — both bundles land in staging at central.sonatype.com → Deployments and must be manually promoted.
+
+Standard cut:
+
+1. **Bump BOM version.** Edit `gradle.properties:sidekick.bomVersion` to today's date (`YYYY.MM.DD`). Open PR + merge.
+2. **Tag and push.**
+   ```bash
+   git checkout main && git pull
+   git tag v<bomVersion>          # e.g. v2026.06.01
+   git push origin v<bomVersion>
+   ```
+3. **Watch the workflow** at `gh run watch <id> --repo jipariz/sidekick --exit-status`.
+4. **Promote in Portal.** Open https://central.sonatype.com → Deployments. Two staging deployments per release (main bundle + gradle-plugin bundle). Click Publish on each. Propagation to `repo1.maven.org` takes 10–30 min.
+5. **Create GitHub Release.** `gh release create v<bomVersion> --title "Sidekick BOM <bomVersion>" --notes …` with the resolved per-family versions from the new BOM's POM.
+
+### Publish-workflow architecture
+
+Two distinct upload paths because of how the build is structured:
+
+- **Main build** — `./gradlew publishToMavenCentral` from the repo root. The Vanniktech plugin (`com.vanniktech.maven.publish`, applied via `SidekickKmpLibraryPlugin`, plus directly in `bom/` and `plugins/preferences/ksp/`) bundles all KMP + BOM + KSP artifacts into one zip for the Central Portal API.
+- **Included gradle-plugin** — `cd plugins/preferences/gradle-plugin && ../../../gradlew publishToMavenCentral` because the gradle-plugin is a standalone included build (separate Gradle root, invisible to `rootProject.subprojects`). It also uses Vanniktech with `configure(GradlePlugin(...))` for the `java-gradle-plugin` shape, bundling the main `pluginMaven` publication plus per-plugin-id marker publications into a second zip.
+
+The published gradle plugin id is `dev.parez.sidekick.preferences`. The marker artifact's version is **decoupled from the impl** — the impl jar publishes at the preferences-family semver (`<../version.properties>:sdk.version`, currently `0.1.0`), but the plugin-marker pom (the artifact the Gradle plugin DSL resolves) publishes at the calendar **BOM version** (`gradle.properties:sidekick.bomVersion`). The marker's pom declares a `<dependency>` on the impl at its semver.
+
+This split (override in the included gradle-plugin's `build.gradle.kts`, in the `afterEvaluate` block on `*PluginMarkerMaven` publications) lets consumers pin a single calendar coordinate in their version catalog — `sidekick-preferences = { id = "dev.parez.sidekick.preferences", version.ref = "sidekick" }` where `sidekick` is the same BOM version key. They never see the family semver.
+
+### Maven Central namespace + signing
+
+- **Namespace** `dev.parez` is verified on Sonatype Central Portal (`central.sonatype.com → Namespaces`). All artifacts publish to `dev.parez.sidekick:*`.
+- **Signing key** GPG, in-memory. Stored in GitHub environment `maven-central` as `SIGNING_IN_MEMORY_KEY` + `SIGNING_IN_MEMORY_KEY_PASSWORD`. Public key uploaded to `keys.openpgp.org` + `keyserver.ubuntu.com`.
+- **Portal user token** stored in the same environment as `MAVEN_CENTRAL_USERNAME` + `MAVEN_CENTRAL_PASSWORD` (short opaque strings — not the portal login). Issued at `central.sonatype.com → View Account → Generate User Token`.
+- `SidekickPomConfig.kt` and the per-module `mavenPublishing { ... }` blocks apply signing **only** when `ORG_GRADLE_PROJECT_signingInMemoryKey` is present. Local snapshot builds and CI PR checks therefore don't fail without a key.
+
+### Hard-won lessons (don't repeat these mistakes)
+
+- **Portal upload is bundled-zip, not per-file PUT.** Earlier the gradle-plugin module used raw `maven-publish` with a `maven { url = "central.sonatype.com/api/v1/publisher/upload/" }` repository — every PUT returned 404 because the endpoint only accepts a `POST` with a zipped bundle. Fix: always use Vanniktech's `publishToMavenCentral` task (PR #28).
+- **Included builds don't inherit `gradle.properties`.** When the publish step runs from `plugins/preferences/gradle-plugin/`, the root `gradle.properties` is invisible. The build script must read its own `version.properties` (or its family file via `../version.properties`) directly. Originally we tried passing `-Psidekick.version=…` from the workflow shell as a workaround, but the inline-read approach is cleaner.
+- **Doc-comment lexer doesn't honor backticks.** Kotlin's block-comment scanner matches `*/` literally even inside backticked code in KDoc. A KDoc that mentions `src/*Main/` will close the comment prematurely. Use `src/<sourceSet>Main/` or similar.
+- **Tag re-creation after a failed release.** If a publish run fails partway (one bundle uploaded, the other didn't), drop the partial staging in Portal, fix the issue on a PR, merge, then `git push --delete origin v<x>; git tag -d v<x>` and re-tag at the new HEAD. Don't try to amend the original tag — `git tag -f` works locally but tag-force-push is blocked on protected refs and confuses Central if the original deployment already landed.
+
 ## Architecture
 
 ### Plugin System

@@ -6,13 +6,14 @@ Replace `runtime` with `noop` in release builds. The no-op module replaces `Side
 
 ## Android (single-module app)
 
-Use Gradle's variant-specific configurations:
+Use Gradle's variant-specific configurations. The BOM resolves the per-family versions:
 
 ```kotlin
 // build.gradle.kts (Android app module)
 dependencies {
-    debugImplementation("dev.parez.sidekick:runtime:0.1.0")
-    releaseImplementation("dev.parez.sidekick:noop:0.1.0")
+    implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
+    debugImplementation("dev.parez.sidekick:runtime")   // version from BOM
+    releaseImplementation("dev.parez.sidekick:noop")    // version from BOM
 }
 ```
 
@@ -32,11 +33,12 @@ Same as iOS: there's no Gradle variant split, so depend on `runtime` directly:
 
 ```kotlin
 jvmMain.dependencies {
-    implementation("dev.parez.sidekick:runtime:0.1.0")
+    implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
+    implementation("dev.parez.sidekick:runtime")
 }
 ```
 
-Swap to `dev.parez.sidekick:noop:0.1.0` for production builds yourself — typically via a build flag, a separate distribution task, or a conditional in your build script.
+Swap to `dev.parez.sidekick:noop` for production builds yourself — typically via a build flag, a separate distribution task, or a conditional in your build script.
 
 ## What gets stripped in `noop`
 
