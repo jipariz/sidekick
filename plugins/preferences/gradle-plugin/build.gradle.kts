@@ -18,17 +18,19 @@ plugins {
 //
 // This module is an INCLUDED build (separate Gradle root). It can't apply
 // the main repo's `sidekick.version.read` convention plugin, so we inline
-// the same logic: read this module's version.properties and use sdk.version.
+// the equivalent: read the *family-level* version.properties one directory
+// up at `plugins/preferences/version.properties`, which is shared with
+// `:plugins:preferences:api` and `:plugins:preferences:ksp`.
 group = "dev.parez.sidekick"
 version = run {
-    val versionFile = file("version.properties")
+    val versionFile = file("../version.properties")
     require(versionFile.exists()) {
-        "Module plugins/preferences/gradle-plugin is missing version.properties. " +
+        "Family-level version.properties not found at ${versionFile.path}. " +
             "Run `./gradlew updateModuleVersions` from the repo root."
     }
     val props = Properties().apply { versionFile.inputStream().use(::load) }
     props.getProperty("sdk.version")
-        ?: error("version.properties in plugins/preferences/gradle-plugin must contain 'sdk.version'")
+        ?: error("version.properties at ${versionFile.path} must contain 'sdk.version'")
 }
 
 fun Provider<PluginDependency>.toDep() = map {
