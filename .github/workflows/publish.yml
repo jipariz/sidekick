@@ -43,12 +43,9 @@ jobs:
       - name: Publish preferences gradle-plugin (included build) to Maven Central
         if: ${{ !inputs.dry_run }}
         working-directory: plugins/preferences/gradle-plugin
-        # The gradle-plugin is a standalone Gradle build; it does NOT inherit
-        # gradle.properties from the repo root. Pass sidekick.version explicitly
-        # from the root file so the published coordinate matches the main build.
-        run: |
-          SIDEKICK_VERSION=$(grep '^sidekick\.version=' ../../../gradle.properties | cut -d= -f2)
-          ../../../gradlew publishToMavenCentral -Psidekick.version="$SIDEKICK_VERSION" --no-configuration-cache
+        # The gradle-plugin is a standalone Gradle build that reads its own
+        # `version.properties` directly (see this module's build.gradle.kts).
+        run: ../../../gradlew publishToMavenCentral --no-configuration-cache
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
@@ -59,9 +56,8 @@ jobs:
         if: ${{ inputs.dry_run }}
         run: |
           ./gradlew publishToMavenLocal --no-configuration-cache
-          SIDEKICK_VERSION=$(grep '^sidekick\.version=' gradle.properties | cut -d= -f2)
           cd plugins/preferences/gradle-plugin
-          ../../../gradlew publishToMavenLocal -Psidekick.version="$SIDEKICK_VERSION" --no-configuration-cache
+          ../../../gradlew publishToMavenLocal --no-configuration-cache
         env:
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_IN_MEMORY_KEY }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_IN_MEMORY_KEY_PASSWORD }}

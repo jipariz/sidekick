@@ -2,6 +2,7 @@ import com.vanniktech.maven.publish.GradlePlugin
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.SonatypeHost
 import org.gradle.api.tasks.WriteProperties
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlinJvm)
@@ -14,10 +15,21 @@ plugins {
 // project.version="unspecified" and a stale copy is published alongside the
 // real one. Per Gradle's plugin-resolution convention, the marker keeps its
 // own groupId (= plugin id), so we deliberately do NOT override it here.
-// providers.gradleProperty (vs findProperty) traverses property providers
-// correctly when this build is consumed as an included build from the root.
+//
+// This module is an INCLUDED build (separate Gradle root). It can't apply
+// the main repo's `sidekick.version.read` convention plugin, so we inline
+// the same logic: read this module's version.properties and use sdk.version.
 group = "dev.parez.sidekick"
-version = providers.gradleProperty("sidekick.version").orElse("0.0.0-LOCAL").get()
+version = run {
+    val versionFile = file("version.properties")
+    require(versionFile.exists()) {
+        "Module plugins/preferences/gradle-plugin is missing version.properties. " +
+            "Run `./gradlew updateModuleVersions` from the repo root."
+    }
+    val props = Properties().apply { versionFile.inputStream().use(::load) }
+    props.getProperty("sdk.version")
+        ?: error("version.properties in plugins/preferences/gradle-plugin must contain 'sdk.version'")
+}
 
 fun Provider<PluginDependency>.toDep() = map {
     "${it.pluginId}:${it.pluginId}.gradle.plugin:${it.version}"
