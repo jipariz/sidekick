@@ -29,16 +29,30 @@ import java.util.Properties
  *   ./gradlew checkModuleVersions
  *     CI gate. Fails the build if any module's hash drifted but PATCH
  *     wasn't bumped — i.e. someone changed code without running
- *     updateModuleVersions before pushing.
+ *     updateModuleVersions before pushing. Also fails if a managed module
+ *     is missing its version.properties entirely.
  *
  * Adapted from MjDevCz/android-sdk-crypto-ecosystem's
- * SdkVersionUpdateConventionPlugin, with two Sidekick-specific changes:
- *   1. The source-hash walk covers KMP source sets (every `src/<sourceSet>Main/`
- *      directory), not just `src/main`.
- *   2. Module filter targets Sidekick's `:core:*` and `:plugins:*` paths,
- *      excluding `:bom` and `:demo-app`.
+ * SdkVersionUpdateConventionPlugin, with Sidekick-specific changes:
+ *   1. The source-hash walk covers KMP source sets (every src/<sourceSet>Main/
+ *      directory) as well as plain JVM src/main/, so JVM-only modules like
+ *      the KSP processor and the included gradle-plugin are handled too.
+ *   2. Module enumeration includes the standalone gradle-plugin build at
+ *      plugins/preferences/gradle-plugin/ — it's a separate Gradle root
+ *      (included build), invisible to rootProject.subprojects, but still
+ *      a publishable module whose hash must be maintained.
+ *   3. checkModuleVersions fails (rather than silently skips) when a
+ *      managed module is missing version.properties.
  */
 class SidekickVersionUpdateConventionPlugin : Plugin<Project> {
+
+    /** A publishable Sidekick module, identified by its filesystem dir. */
+    private data class ManagedModule(
+        /** Display path used in log + failure messages (e.g. ":core:runtime"). */
+        val displayPath: String,
+        /** The module's project directory. */
+        val dir: File,
+    )
 
     override fun apply(target: Project) {
         if (target != target.rootProject) {
@@ -58,7 +72,14 @@ class SidekickVersionUpdateConventionPlugin : Plugin<Project> {
                     var bumped = 0
                     var seeded = 0
                     modules.forEach { module ->
-                        val info = computeModuleHashInfo(module) ?: return@forEach
+                        val info = computeModuleHashInfo(module)
+                        if (info == null) {
+                            logger.warn(
+                                "[VersionBump] SKIPPING: ${module.displayPath} " +
+                                    "(no version.properties — create one with `sdk.version=0.1.0` and re-run)."
+                            )
+                            return@forEach
+                        }
 
                         // First-run seeding: version.properties was hand-created
                         // with sdk.version but no sdk.content.hash. Write the hash
@@ -66,7 +87,7 @@ class SidekickVersionUpdateConventionPlugin : Plugin<Project> {
                         // pins every module at 0.1.0 without an immediate bump.
                         if (info.lastHash == null) {
                             logger.lifecycle(
-                                "[VersionBump] SEED: ${module.path} -> hash recorded " +
+                                "[VersionBump] SEED: ${module.displayPath} -> hash recorded " +
                                     "(version held at ${info.currentVersion})"
                             )
                             info.props.setProperty("sdk.content.hash", info.currentHash)
@@ -82,7 +103,7 @@ class SidekickVersionUpdateConventionPlugin : Plugin<Project> {
                         }
 
                         if (info.isMatch) {
-                            logger.lifecycle("[VersionBump] NO CHANGE: ${module.path} (${info.currentVersion})")
+                            logger.lifecycle("[VersionBump] NO CHANGE: ${module.displayPath} (${info.currentVersion})")
                             return@forEach
                         }
 
@@ -90,7 +111,7 @@ class SidekickVersionUpdateConventionPlugin : Plugin<Project> {
                         if (parts.size != 3 || parts.any { it.toIntOrNull() == null }) {
                             logger.error(
                                 "[VersionBump] ERROR: Invalid version '${info.currentVersion}' " +
-                                    "in ${module.path} — expected MAJOR.MINOR.PATCH."
+                                    "in ${module.displayPath} — expected MAJOR.MINOR.PATCH."
                             )
                             return@forEach
                         }
@@ -100,7 +121,7 @@ class SidekickVersionUpdateConventionPlugin : Plugin<Project> {
                         val newVersion = "$major.$minor.${patch + 1}"
 
                         logger.lifecycle(
-                            "[VersionBump] CHANGE DETECTED: ${module.path} " +
+                            "[VersionBump] CHANGE DETECTED: ${module.displayPath} " +
                                 "${info.currentVersion} -> $newVersion"
                         )
 
@@ -126,9 +147,9 @@ class SidekickVersionUpdateConventionPlugin : Plugin<Project> {
                 description = "Fails if any Sidekick module has un-bumped version changes."
 
                 val modules = managedModules(this@with)
-                inputs.files(modules.map { it.file("version.properties") })
+                inputs.files(modules.map { File(it.dir, "version.properties") })
                 modules.forEach { module ->
-                    sourceSetMainRoots(module).forEach { root ->
+                    sourceSetMainRoots(module.dir).forEach { root ->
                         inputs.dir(root).withPathSensitivity(
                             org.gradle.api.tasks.PathSensitivity.RELATIVE
                         )
@@ -138,13 +159,16 @@ class SidekickVersionUpdateConventionPlugin : Plugin<Project> {
                 doLast {
                     val failures = mutableListOf<String>()
                     modules.forEach { module ->
-                        val info = computeModuleHashInfo(module) ?: return@forEach
+                        val info = computeModuleHashInfo(module)
                         when {
+                            info == null ->
+                                failures += "  - ${module.displayPath}: missing version.properties " +
+                                    "(publishable module must have one with sdk.version)."
                             info.lastHash == null ->
-                                failures += "  - ${module.path}: version.properties has no sdk.content.hash yet " +
+                                failures += "  - ${module.displayPath}: version.properties has no sdk.content.hash yet " +
                                     "(needs seeding)."
                             !info.isMatch ->
-                                failures += "  - ${module.path}: source changed but version not bumped " +
+                                failures += "  - ${module.displayPath}: source changed but version not bumped " +
                                     "(version.properties hash: ${info.lastHash}, actual: ${info.currentHash})."
                         }
                     }
@@ -167,33 +191,50 @@ class SidekickVersionUpdateConventionPlugin : Plugin<Project> {
     }
 
     /**
-     * Publishable Sidekick modules: everything under `:core:` and `:plugins:`
-     * that has a `src/` directory (excludes Gradle-synthesized parent projects
-     * like `:plugins:network-monitor` which only exist as containers for
-     * `:plugins:network-monitor:api` etc.). Also excludes the BOM and demo-app.
-     * The included gradle-plugin build is a separate Gradle root; it owns its
-     * own version.properties read logic.
+     * Publishable Sidekick modules. Combines two sources:
+     *
+     *   1. Standard subprojects under :core: / :plugins: that have a src/
+     *      directory, excluding :bom, :demo-app, and Gradle-synthesized
+     *      parent projects (e.g. :plugins:network-monitor — the container
+     *      for :plugins:network-monitor:api etc.).
+     *
+     *   2. The standalone gradle-plugin at plugins/preferences/gradle-plugin/,
+     *      which is an included Gradle build (not a subproject) but is still
+     *      a publishable module whose version.properties must be maintained
+     *      from the same root-level tasks.
      */
-    private fun managedModules(rootProject: Project): List<Project> =
-        rootProject.subprojects.filter { project ->
+    private fun managedModules(rootProject: Project): List<ManagedModule> {
+        val subprojects = rootProject.subprojects.mapNotNull { project ->
             val path = project.path
             val pathOk = (path.startsWith(":core:") || path.startsWith(":plugins:")) &&
-                path != ":bom" &&
-                path != ":demo-app"
-            pathOk && project.file("src").isDirectory
+                path != ":bom" && path != ":demo-app"
+            if (!pathOk || !project.file("src").isDirectory) null
+            else ManagedModule(displayPath = path, dir = project.projectDir)
         }
+        val includedGradlePlugin = File(rootProject.rootDir, "plugins/preferences/gradle-plugin")
+        val extras = if (File(includedGradlePlugin, "src").isDirectory) {
+            listOf(
+                ManagedModule(
+                    displayPath = ":plugins:preferences:gradle-plugin (included build)",
+                    dir = includedGradlePlugin,
+                )
+            )
+        } else emptyList()
+        return (subprojects + extras).sortedBy { it.displayPath }
+    }
 
     /**
-     * KMP source-set roots that participate in the published artifact:
-     * every `src/<sourceSet>Main/` directory under the module, excluding `*Test/`.
-     * Includes `commonMain`, `androidMain`, `iosMain`, `jvmMain`, `jsMain`,
-     * `wasmJsMain`, and any other KMP `Main` source sets.
+     * Source-set roots that participate in the published artifact:
+     * every `src/<sourceSet>Main/` directory (KMP convention) plus
+     * `src/main/` (plain JVM/Java/Gradle plugin convention). Test source
+     * sets are intentionally excluded — test-only changes shouldn't bump
+     * a published version.
      */
-    private fun sourceSetMainRoots(module: Project): List<File> {
-        val src = module.file("src")
+    private fun sourceSetMainRoots(moduleDir: File): List<File> {
+        val src = File(moduleDir, "src")
         if (!src.exists() || !src.isDirectory) return emptyList()
         return src.listFiles().orEmpty()
-            .filter { it.isDirectory && it.name.endsWith("Main") }
+            .filter { it.isDirectory && (it.name == "main" || it.name.endsWith("Main")) }
             .sortedBy { it.name }
     }
 
@@ -206,25 +247,24 @@ class SidekickVersionUpdateConventionPlugin : Plugin<Project> {
         val isMatch: Boolean,
     )
 
-    private fun computeModuleHashInfo(module: Project): ModuleHashInfo? {
-        val versionFile = module.file("version.properties")
-        if (!versionFile.exists()) {
-            module.logger.warn(
-                "[VersionCheck] SKIPPING: ${module.path} (no version.properties — " +
-                    "run `./gradlew updateModuleVersions` to seed it)."
-            )
-            return null
-        }
+    /**
+     * Returns hash info for a module, or null if its version.properties is
+     * missing. Callers decide whether null is fatal (checkModuleVersions
+     * treats it as a failure; updateModuleVersions logs a warning).
+     */
+    private fun computeModuleHashInfo(module: ManagedModule): ModuleHashInfo? {
+        val versionFile = File(module.dir, "version.properties")
+        if (!versionFile.exists()) return null
 
         val props = Properties().apply {
             FileInputStream(versionFile).use(::load)
         }
         val currentVersion = props.getProperty("sdk.version")
             ?: throw GradleException(
-                "version.properties in ${module.path} must contain 'sdk.version'"
+                "version.properties in ${module.displayPath} must contain 'sdk.version'"
             )
         val lastHash = props.getProperty("sdk.content.hash")
-        val currentHash = computeContentHash(module)
+        val currentHash = computeContentHash(module.dir)
 
         return ModuleHashInfo(
             props = props,
@@ -238,18 +278,18 @@ class SidekickVersionUpdateConventionPlugin : Plugin<Project> {
 
     /**
      * SHA-256 over the byte content of every regular file in the module's
-     * `src/<sourceSet>Main/` source sets, sorted by relative path for OS-independent
-     * output. Source code only — build scripts and generated `build/`
-     * outputs are intentionally excluded.
+     * `src/main/` and `src/<sourceSet>Main/` source sets, sorted by
+     * relative path for OS-independent output. Source code only — build
+     * scripts and `build/` outputs are intentionally excluded.
      */
-    private fun computeContentHash(module: Project): String {
+    private fun computeContentHash(moduleDir: File): String {
         val md = MessageDigest.getInstance("SHA-256")
-        val roots = sourceSetMainRoots(module)
+        val roots = sourceSetMainRoots(moduleDir)
         if (roots.isEmpty()) {
             // Modules with no Main source yet still hash deterministically.
             return "0".repeat(64)
         }
-        val moduleDir = module.projectDir.toPath()
+        val modulePath = moduleDir.toPath()
         val files = roots
             .asSequence()
             .flatMap { root ->
@@ -257,7 +297,7 @@ class SidekickVersionUpdateConventionPlugin : Plugin<Project> {
                     .filter { it.isFile }
                     .filter { !it.toPath().any { p -> p.toString() == "build" } }
             }
-            .map { file -> moduleDir.relativize(file.toPath()).toString().replace(File.separatorChar, '/') to file }
+            .map { file -> modulePath.relativize(file.toPath()).toString().replace(File.separatorChar, '/') to file }
             .sortedBy { it.first }
             .toList()
 
