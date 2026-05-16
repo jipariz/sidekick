@@ -26,7 +26,7 @@ This skill handles two modes:
 
 If `$ARGUMENTS` is `bump-only` or `release`, use that directly. Otherwise ask:
 
-```
+```yaml
 AskUserQuestion:
   question: "What do you want to do?"
   header: "Mode"
@@ -78,7 +78,7 @@ If any check fails, stop and tell the user how to fix it. Do not proceed.
 
 Compute today's date in `YYYY.MM.DD` format. If it equals the current `sidekick.bomVersion`:
 
-```
+```yaml
 AskUserQuestion:
   question: "Today's date equals the current BOM version (<value>). What do you want to do?"
   header: "Same-day"
@@ -97,7 +97,7 @@ If the new BOM version differs from the current one:
 
 1. Create a branch: `git checkout -b chore/bump-bom-<new-version>`.
 2. Edit `gradle.properties`:
-   ```
+   ```properties
    sidekick.bomVersion=<old> → sidekick.bomVersion=<new>
    ```
 3. Commit with message `chore(release): bump BOM to <new>`.
@@ -109,7 +109,7 @@ If the new BOM version differs from the current one:
 
 1. Confirm `gradle.properties:sidekick.bomVersion` matches the planned `<new>`.
 2. Compose the tag annotation. Read each family's `version.properties` and build a list:
-   ```
+   ```text
    Sidekick BOM <new>
 
    Pins:
@@ -147,7 +147,7 @@ Wait for the user to confirm they've promoted both before continuing.
 
 1. After Central promotion is confirmed, compose release notes. Use this template:
 
-```markdown
+````markdown
 **Sidekick BOM <new>** — pins the following per-family versions:
 
 | Family | Version |
@@ -190,7 +190,7 @@ plugins {
 ```
 
 See [Installation](https://github.com/jipariz/sidekick/blob/v<new>/docs/installation.md).
-```
+````
 
 2. Create the release:
    ```bash

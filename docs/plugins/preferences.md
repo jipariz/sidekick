@@ -46,6 +46,7 @@ kotlin {
 }
 
 dependencies {
+    implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
     debugImplementation("dev.parez.sidekick:runtime")   // version from BOM
     releaseImplementation("dev.parez.sidekick:noop")    // version from BOM
 }
