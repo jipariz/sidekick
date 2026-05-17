@@ -9,15 +9,12 @@ enum class ColorTheme {
 
 @SidekickPreferences(title = "Preferences")
 class AppPreferences {
-    @Preference(label = "Dark Mode", defaultValue = "false")
     var darkMode: Boolean = false
 
-    @Preference(label = "Color Theme", defaultValue = "DEFAULT")
     var colorTheme: ColorTheme = ColorTheme.DEFAULT
 
-    @Preference(label = "Show Pokédex Numbers", defaultValue = "true")
+    @Preference(label = "Show Pokédex Numbers")
     var showNumbers: Boolean = true
 
-    @Preference(label = "Shiny Sprites", defaultValue = "false")
     var shinySprites: Boolean = false
 }

@@ -12,5 +12,8 @@ annotation class SidekickPreferences(
 annotation class Preference(
     val label: String = "",
     val description: String = "",
-    val defaultValue: String = "",
 )
+
+@Target(AnnotationTarget.PROPERTY)
+@Retention(AnnotationRetention.SOURCE)
+annotation class IgnorePreference

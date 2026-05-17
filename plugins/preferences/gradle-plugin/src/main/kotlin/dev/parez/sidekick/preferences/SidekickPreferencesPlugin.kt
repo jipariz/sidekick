@@ -3,19 +3,10 @@ package dev.parez.sidekick.preferences
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
-import java.util.Properties
-
-open class SidekickPreferencesExtension {
-    /** Set to false when you supply the kspCommonMainMetadata dependency yourself (e.g. local composite builds). */
-    var addProcessor: Boolean = true
-}
 
 class SidekickPreferencesPlugin : Plugin<Project> {
 
     override fun apply(target: Project) {
-        val version = readVersion()
-        val extension = target.extensions.create("sidekickPreferences", SidekickPreferencesExtension::class.java)
-
         // KSP must be applied before KMP targets are finalized so it can register
         // per-target configurations (including kspCommonMainMetadata).
         target.pluginManager.apply("com.google.devtools.ksp")
@@ -24,12 +15,17 @@ class SidekickPreferencesPlugin : Plugin<Project> {
         // so plugin order in the consumer's plugins block doesn't matter.
         target.plugins.withId("org.jetbrains.kotlin.multiplatform") {
             val kmp = target.extensions.getByType(KotlinMultiplatformExtension::class.java)
+
+            // KSP auto-registers `build/generated/ksp/metadata/commonMain/kotlin` as a
+            // commonMain source dir for the `compileCommonMainKotlinMetadata` task, but
+            // per-target compiles (compileDebugKotlinAndroid, compileKotlinJvm, …) read
+            // commonMain srcDirs from a *different* snapshot that doesn't include KSP's
+            // auto-registered dir. We bridge the gap by registering a sibling stable dir
+            // that the Sync task copies KSP output into; the stable dir is on commonMain
+            // for both the metadata pass and the per-target compiles. KSP's own dir is
+            // also (auto-)registered, but only the metadata task sees it — no redeclaration
+            // results because the metadata task scans each srcDir exactly once.
             val kspOutDir = target.layout.buildDirectory.dir("generated/ksp/metadata/commonMain/kotlin")
-            // Stable directory: not declared as a KSP task output, so Gradle never cleans it
-            // between incremental builds even when kspCommonMainKotlinMetadata re-runs and KSP
-            // skips generation (incremental mode, no annotation changes). This prevents the
-            // "Unresolved reference" failure that occurs when the KSP output dir is wiped but
-            // KSP generates nothing because sources haven't changed.
             val stableDir = target.layout.buildDirectory.dir("generated/sidekick-preferences/commonMain/kotlin")
 
             val syncKspOutputs = target.tasks.register("syncSidekickPreferencesKsp", org.gradle.api.tasks.Sync::class.java) { sync ->
@@ -38,31 +34,18 @@ class SidekickPreferencesPlugin : Plugin<Project> {
                 sync.dependsOn("kspCommonMainKotlinMetadata")
             }
 
-            // Explicit parameter required — lambda-with-receiver for Action<T> is only
-            // available in .kts files via the kotlin-dsl plugin.
             kmp.sourceSets.named("commonMain").configure { commonMain ->
                 commonMain.kotlin.srcDir(stableDir)
             }
 
-            // Per-target KSP outputs for JS / WasmJS. KSP emits to
-            // build/generated/ksp/<target>/<sourceSet>/kotlin during per-target
-            // KSP tasks (when added); these directories need to be on the
-            // source set's kotlin srcDirs so the compiler sees the generated
-            // code even if KSP produces nothing this build. configureEach is
-            // lazy: it fires whichever order the consumer registers the targets.
+            // Per-target KSP outputs for JS / WasmJS. configureEach is lazy: it fires
+            // whichever order the consumer registers the targets.
             val perTargetDirs = mapOf(
                 "jsMain" to target.layout.buildDirectory.dir("generated/ksp/js/jsMain/kotlin"),
                 "wasmJsMain" to target.layout.buildDirectory.dir("generated/ksp/wasmJs/wasmJsMain/kotlin"),
             )
             kmp.sourceSets.matching { it.name in perTargetDirs.keys }.configureEach { sourceSet ->
                 sourceSet.kotlin.srcDir(perTargetDirs.getValue(sourceSet.name))
-            }
-
-            // afterEvaluate lets the consumer configure the extension before we read it.
-            target.afterEvaluate {
-                if (extension.addProcessor) {
-                    target.dependencies.add("kspCommonMainMetadata", "dev.parez.sidekick:preferences-ksp:$version")
-                }
             }
 
             // tasks.configureEach + if is required for Gradle configuration cache compatibility;
@@ -75,19 +58,21 @@ class SidekickPreferencesPlugin : Plugin<Project> {
                     task.dependsOn(syncKspOutputs)
                 }
             }
+
+            // Always re-run the KSP metadata task. Gradle's UP-TO-DATE check is keyed on
+            // input fingerprints, not on whether the output dir still exists — and the
+            // dir gets cleaned in some `assembleDebug`/`allTests` paths between phases.
+            // When that happens, KSP is skipped, Sync sees no source files, and per-
+            // target compiles fail with "Unresolved reference" against the generated
+            // accessors. Forcing re-execution costs one cheap KSP pass per build but
+            // keeps the output dir authoritative. Build cache is also disabled because
+            // sharing a path-sensitive output dir across machines is unsafe.
             target.tasks.configureEach { task ->
                 if (task.name == "kspCommonMainKotlinMetadata") {
                     task.outputs.cacheIf { false }
+                    task.outputs.upToDateWhen { false }
                 }
             }
         }
-    }
-
-    private fun readVersion(): String {
-        val props = Properties()
-        SidekickPreferencesPlugin::class.java
-            .getResourceAsStream("/sidekick-preferences.properties")
-            ?.use { props.load(it) }
-        return props.getProperty("version", "unspecified")
     }
 }

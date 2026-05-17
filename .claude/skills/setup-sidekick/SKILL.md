@@ -266,24 +266,21 @@ kotlin {
 
 > This step will become unnecessary once the Gradle plugin handles JS/Wasm directly. Track in the Sidekick repo's audit recommendations.
 
-#### Local-dev override
+#### Adding the KSP processor dependency
 
-If the consumer's project includes the Sidekick mono-repo as a composite
-build (`includeBuild("path/to/sidekick/plugins/preferences/gradle-plugin")`)
-and wants to use the local KSP processor instead of the Maven artifact, set:
+The `dev.parez.sidekick.preferences` Gradle plugin applies KSP, wires the
+generated-source directory, and orders the compile/KSP tasks — but it does
+**not** auto-add the `preferences-ksp` artifact. Add it yourself on
+`kspCommonMainMetadata`:
 
 ```kotlin
-sidekickPreferences {
-    addProcessor = false
-}
-
 dependencies {
-    add("kspCommonMainMetadata", projects.plugins.preferences.ksp)
+    add("kspCommonMainMetadata", "dev.parez.sidekick:preferences-ksp:<bom-version>")
 }
 ```
 
-For ordinary external consumers, omit this block — `addProcessor = true` is
-the default and pulls the published `preferences-ksp` artifact automatically.
+For monorepo / composite-build setups, substitute a project dependency
+(`projects.plugins.preferences.ksp`) without needing any opt-out flag.
 
 ### 3e. Preferences class migration
 
@@ -330,8 +327,8 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
 ```kotlin
 @SidekickPreferences(title = "App")
 class AppPreferences {
-    @Preference(label = "Debug Mode", defaultValue = "false")
-    var debugMode: Boolean = false
+    @Preference(label = "Debug Mode")
+    var debugMode: Boolean = false  // default value comes from this initializer
 }
 ```
 
