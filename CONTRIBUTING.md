@@ -7,8 +7,8 @@ Sidekick uses **per-family semver** coordinated by a calendar-versioned BOM. The
 | Family root | Modules sharing one version |
 |---|---|
 | `core/` | `plugin-api`, `runtime`, `noop` |
-| `plugins/network-monitor/` | `api`, `plugin`, `ktor` |
-| `plugins/log-monitor/` | `api`, `plugin`, `kermit` |
+| `plugins/network-monitor/` | `api`, `plugin`, `ktor`, `noop` |
+| `plugins/log-monitor/` | `api`, `plugin`, `kermit`, `noop` |
 | `plugins/preferences/` | `api`, `ksp`, `gradle-plugin` (included build) |
 | `plugins/custom-screens/` | `api` |
 

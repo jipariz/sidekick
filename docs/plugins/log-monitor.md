@@ -27,6 +27,7 @@ View your app's logs without ADB or platform-specific consoles. Level filters, f
 | `:plugins:log-monitor:api` | Core data model, `LogMonitorStore`, `LogCollector` interface. |
 | `:plugins:log-monitor:plugin` | Compose UI + `LogMonitorPlugin` (the `SidekickPlugin` impl). |
 | `:plugins:log-monitor:kermit` | Kermit `LogWriter` bridge. |
+| `:plugins:log-monitor:noop` | Release stub for all three above — same FQNs, empty bodies. No SQLDelight database, `LogMonitorLogWriter.log()` discards entries, `LogMonitorStore.record()` is a no-op. Swap in via `releaseImplementation` on Android or a build property on other targets. See [Release builds](../release-builds.md). |
 
 ## Setup
 
@@ -38,18 +39,28 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
-            implementation("dev.parez.sidekick:log-monitor-plugin")
-            implementation("dev.parez.sidekick:log-monitor-kermit") // optional — Kermit bridge
+            // `compileOnly` keeps the real jars off Android release's runtime
+            // classpath, where they would collide with the noop variant.
+            compileOnly("dev.parez.sidekick:log-monitor-plugin")
+            compileOnly("dev.parez.sidekick:log-monitor-kermit") // optional — Kermit bridge
         }
     }
 }
 
 dependencies {
     implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
-    debugImplementation("dev.parez.sidekick:runtime")   // version from BOM
-    releaseImplementation("dev.parez.sidekick:noop")    // version from BOM
+    debugImplementation("dev.parez.sidekick:runtime")
+    releaseImplementation("dev.parez.sidekick:noop")
+    // Release Android: swap the recording trio (api + plugin + kermit) for the
+    // single `log-monitor-noop` module, which exposes the same FQNs but strips
+    // SQLDelight and makes record / log calls empty.
+    debugImplementation("dev.parez.sidekick:log-monitor-plugin")
+    debugImplementation("dev.parez.sidekick:log-monitor-kermit")
+    releaseImplementation("dev.parez.sidekick:log-monitor-noop")
 }
 ```
+
+`debugImplementation` / `releaseImplementation` are Android-only. For Desktop / iOS / JS / Wasm, see [Release builds › Non-Android targets](../release-builds.md#non-android-targets-ios--desktop-jvm--js--wasm) for the property-gated swap recipe.
 
 Omit `log-monitor-kermit` if you're not using Kermit; see [Advanced › Custom logging library](#custom-logging-library).
 
@@ -120,7 +131,9 @@ val logger = Logger(config = config, tag = "MyApp")
 
 #### Conditional bridge in release builds
 
-`:log-monitor-kermit` and `:log-monitor-plugin` are declared as `implementation`, so they ship in release builds alongside `:noop`. `Sidekick()` won't render the panel in release, but `LogMonitorLogWriter()` still records every Kermit call into the in-memory store. Gate the writer on build type:
+If you use the `releaseImplementation("dev.parez.sidekick:log-monitor-noop")` swap shown above, **no further gating is needed** — `LogMonitorLogWriter()` resolves to the noop's empty subclass in release builds, every call to `log(...)` discards the entry, and `LogMonitorStore.record(...)` is also a no-op. Verified by inspecting the merged release DEX: `LogMonitorDatabase` symbols are absent entirely.
+
+If you can't use the noop swap (e.g. you ship the real `log-monitor-kermit` in release for parity testing, or you're on a target without an automatic swap), gate the writer on build type instead:
 
 ```kotlin
 val writers = buildList {
