@@ -35,7 +35,7 @@
 - 🪵 **View logs without ADB** — Kermit bridge ships out of the box; Timber and friends drop in via a 4-line `LogCollector`.
 - 🎚️ **Flip feature flags from the panel** — annotate a class, KSP generates the DataStore wiring and a ready-to-use UI.
 - 🧩 **Wrap any Composable as a debug screen** — internal QA dashboards, environment switchers, build-info pages.
-- ⚡ **Zero release-build cost** — `core:noop` swaps the overlay for a passthrough composable; release binaries don't ship one byte of Sidekick UI code.
+- ⚡ **Zero release-build cost** — `core:noop` swaps the overlay for a passthrough composable, and `network-monitor:noop` / `log-monitor:noop` strip the recording side too; release binaries don't ship one byte of Sidekick UI or database code.
 - 🖼️ **Compose Multiplatform** — one codebase, five targets: Android, iOS, Desktop (JVM), Web (JS), Web (Wasm).
 - 🎨 **Theme-aware** — applies its own light/dark palette by default, or inherits your `MaterialTheme` with one flag.
 
@@ -64,10 +64,13 @@ kotlin {
             // configurations that extend `implementation` — including the
             // Android `debugImplementation` / `releaseImplementation` below.
             implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
-            implementation("dev.parez.sidekick:network-monitor-plugin")
-            implementation("dev.parez.sidekick:network-monitor-ktor")
-            implementation("dev.parez.sidekick:log-monitor-plugin")
-            implementation("dev.parez.sidekick:log-monitor-kermit")
+            // `compileOnly` here gives commonMain the type stubs without
+            // putting the real plugin jars on Android release's runtime
+            // classpath — they would collide with the noop variants.
+            compileOnly("dev.parez.sidekick:network-monitor-plugin")
+            compileOnly("dev.parez.sidekick:network-monitor-ktor")
+            compileOnly("dev.parez.sidekick:log-monitor-plugin")
+            compileOnly("dev.parez.sidekick:log-monitor-kermit")
             implementation("dev.parez.sidekick:preferences")
             implementation("dev.parez.sidekick:custom-screens")
         }
@@ -75,8 +78,21 @@ kotlin {
 }
 
 dependencies {
-    debugImplementation("dev.parez.sidekick:runtime")  // version from BOM
-    releaseImplementation("dev.parez.sidekick:noop")   // no-op in release — zero cost
+    // Android only. `debugImplementation` / `releaseImplementation` are AGP
+    // configurations and don't exist on JVM / iOS / JS / WasmJS — see the
+    // per-platform notes below.
+    debugImplementation("dev.parez.sidekick:runtime")
+    releaseImplementation("dev.parez.sidekick:noop")
+
+    // Recording plugins follow the same swap: debug gets the real api+plugin
+    // +ktor/kermit trio; release gets the noop, which strips SQLDelight and
+    // makes every recordX/install hook a no-op.
+    debugImplementation("dev.parez.sidekick:network-monitor-plugin")
+    debugImplementation("dev.parez.sidekick:network-monitor-ktor")
+    releaseImplementation("dev.parez.sidekick:network-monitor-noop")
+    debugImplementation("dev.parez.sidekick:log-monitor-plugin")
+    debugImplementation("dev.parez.sidekick:log-monitor-kermit")
+    releaseImplementation("dev.parez.sidekick:log-monitor-noop")
 }
 ```
 
@@ -96,8 +112,10 @@ sidekick-runtime = { module = "dev.parez.sidekick:runtime" }
 sidekick-noop    = { module = "dev.parez.sidekick:noop" }
 sidekick-network-monitor-plugin = { module = "dev.parez.sidekick:network-monitor-plugin" }
 sidekick-network-monitor-ktor   = { module = "dev.parez.sidekick:network-monitor-ktor" }
+sidekick-network-monitor-noop   = { module = "dev.parez.sidekick:network-monitor-noop" }
 sidekick-log-monitor-plugin     = { module = "dev.parez.sidekick:log-monitor-plugin" }
 sidekick-log-monitor-kermit     = { module = "dev.parez.sidekick:log-monitor-kermit" }
+sidekick-log-monitor-noop       = { module = "dev.parez.sidekick:log-monitor-noop" }
 sidekick-preferences            = { module = "dev.parez.sidekick:preferences" }
 sidekick-custom-screens         = { module = "dev.parez.sidekick:custom-screens" }
 
@@ -116,7 +134,27 @@ Then in `build.gradle.kts`: `implementation(platform(libs.sidekick.bom))`, `impl
 <details>
 <summary><strong>Per-platform notes & KSP setup</strong></summary>
 
-- **Desktop (JVM)** — `debugImplementation` is Android-only; add `jvmMain.dependencies { implementation("dev.parez.sidekick:runtime") }` (BOM resolves the version) and swap to `dev.parez.sidekick:noop` for production builds yourself.
+- **Non-Android targets (Desktop / iOS / JS / Wasm)** — `debugImplementation` and `releaseImplementation` are AGP configurations and **only work on Android**. For other targets the consumer picks the real or noop module manually in each leaf source set (`jvmMain`, `iosMain`, `jsMain`, `wasmJsMain`). A property-gated recipe (run prod builds with `-Psidekick.noop=true`):
+
+    ```kotlin
+    val sidekickNoop = (findProperty("sidekick.noop") as? String).toBoolean()
+
+    jvmMain.dependencies {
+        if (sidekickNoop) {
+            implementation("dev.parez.sidekick:noop")
+            implementation("dev.parez.sidekick:network-monitor-noop")
+            implementation("dev.parez.sidekick:log-monitor-noop")
+        } else {
+            implementation("dev.parez.sidekick:runtime")
+            implementation("dev.parez.sidekick:network-monitor-plugin")
+            implementation("dev.parez.sidekick:network-monitor-ktor")
+            implementation("dev.parez.sidekick:log-monitor-plugin")
+            implementation("dev.parez.sidekick:log-monitor-kermit")
+        }
+    }
+    ```
+
+    Mirror the same shape in `iosMain.dependencies`, `jsMain.dependencies`, and `wasmJsMain.dependencies`.
 - **KSP for Preferences** — easiest path: apply the `dev.parez.sidekick.preferences` Gradle plugin, which wires the KSP processor, the generated-sources directory, and the task dependencies for you. Full snippet (and a manual alternative) in [docs/installation.md](docs/installation.md).
 - **Android `ContentProvider`** — `dev.parez.sidekick:plugin-api` ships a `SidekickInitializer` that auto-initializes the library context. No manual call required.
 
@@ -171,7 +209,7 @@ Use any trigger — a shake gesture, a hidden tap zone, a build-type check. Side
 |---|---|
 | [Installation](docs/installation.md) | Per-platform notes, KSP setup. |
 | [Quick start](docs/quick-start.md) | Wire-up snippet, header customization, `appInfo`. |
-| [Release builds](docs/release-builds.md) | Swap `core:runtime` → `core:noop`. Zero overhead. |
+| [Release builds](docs/release-builds.md) | Swap `core:runtime` → `core:noop` and the monitor families to their noop variants. Zero overhead. |
 | [Theming](docs/theming.md) | Use Sidekick's theme or inherit yours. HTTP badge colors. |
 | [Network Monitor](docs/plugins/network-monitor.md) | Ktor integration, OkHttp recipe, sanitization, retention. |
 | [Log Monitor](docs/plugins/log-monitor.md) | Kermit bridge, Timber recipe, custom `LogCollector`. |

@@ -37,9 +37,11 @@ sidekick-plugin-api = { module = "dev.parez.sidekick:plugin-api" }
 sidekick-network-monitor        = { module = "dev.parez.sidekick:network-monitor" }
 sidekick-network-monitor-plugin = { module = "dev.parez.sidekick:network-monitor-plugin" }
 sidekick-network-monitor-ktor   = { module = "dev.parez.sidekick:network-monitor-ktor" }
+sidekick-network-monitor-noop   = { module = "dev.parez.sidekick:network-monitor-noop" }
 sidekick-log-monitor            = { module = "dev.parez.sidekick:log-monitor" }
 sidekick-log-monitor-plugin     = { module = "dev.parez.sidekick:log-monitor-plugin" }
 sidekick-log-monitor-kermit     = { module = "dev.parez.sidekick:log-monitor-kermit" }
+sidekick-log-monitor-noop       = { module = "dev.parez.sidekick:log-monitor-noop" }
 sidekick-preferences            = { module = "dev.parez.sidekick:preferences" }
 sidekick-custom-screens         = { module = "dev.parez.sidekick:custom-screens" }
 
@@ -82,13 +84,15 @@ Every app needs the core runtime (debug builds) and the no-op stub (release buil
 // build.gradle.kts (Android app module)
 dependencies {
     implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
-    debugImplementation("dev.parez.sidekick:runtime")   // version from BOM
-    releaseImplementation("dev.parez.sidekick:noop")    // version from BOM
+    debugImplementation("dev.parez.sidekick:runtime")
+    releaseImplementation("dev.parez.sidekick:noop")
 }
 ```
 
 !!! info "`noop`"
     The no-op module replaces `Sidekick()` with an empty composable that does nothing. Zero overhead — Sidekick is completely absent from release builds.
+
+    The network and log monitor plugins ship their own noop modules (`network-monitor-noop`, `log-monitor-noop`) to strip the recording side too. Wire them the same way; see the [Plugins section below](#plugins) and the dedicated [Release builds](release-builds.md) page.
 
 ### Multi-module KMP app
 
@@ -124,46 +128,71 @@ dependencies {
 
 The library compiles against `runtime` types; on Android the app module swaps `runtime` (debug) for `noop` (release); on iOS the runtime ships in both configurations.
 
-### Desktop (JVM)
+### Non-Android targets (Desktop / iOS / JS / Wasm)
 
-`debugImplementation` is Android-only, so add the runtime explicitly and swap to `noop` for production builds yourself:
+`debugImplementation` / `releaseImplementation` are Android Gradle Plugin configurations. Other KMP targets don't have a Gradle-level build-type split, so **the consumer picks the real or noop module manually per build**. The recommended pattern is a property-gated swap — run prod builds with `-Psidekick.noop=true`:
 
 ```kotlin
+val sidekickNoop = (findProperty("sidekick.noop") as? String).toBoolean()
+
 jvmMain.dependencies {
     implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
-    implementation("dev.parez.sidekick:runtime")
+    if (sidekickNoop) {
+        implementation("dev.parez.sidekick:noop")
+        implementation("dev.parez.sidekick:network-monitor-noop")
+        implementation("dev.parez.sidekick:log-monitor-noop")
+    } else {
+        implementation("dev.parez.sidekick:runtime")
+        implementation("dev.parez.sidekick:network-monitor-plugin")
+        implementation("dev.parez.sidekick:network-monitor-ktor")
+        implementation("dev.parez.sidekick:log-monitor-plugin")
+        implementation("dev.parez.sidekick:log-monitor-kermit")
+    }
 }
 ```
 
-### iOS
+Mirror the same shape in `iosMain.dependencies`, `jsMain.dependencies`, and `wasmJsMain.dependencies`. See [Release builds › Non-Android targets](release-builds.md#non-android-targets-ios--desktop-jvm--js--wasm) for the rationale and alternatives (hand-rolled swap, runtime opt-out).
 
-iOS apps don't have a Gradle-level debug/release split — the Xcode build configuration controls which framework ships. Simplest path: depend on `runtime` in `appleMain` (or `iosMain`) and accept that Sidekick is present in iOS release builds. The panel is gated by your app's FAB / visibility logic, so it never appears unless you show it.
-
-If you need iOS release builds to be Sidekick-free, use Xcode configuration-aware source sets (e.g. `iosReleaseMain` depending on `noop`) — out of scope for this guide, but the standard Compose Multiplatform pattern applies.
+The simplest dev-only setup omits the property entirely and ships the real modules unconditionally on these targets — `Sidekick()` is gated by your app's FAB anyway.
 
 ## Plugins
 
-The Sidekick BOM aligns the versions of every plugin module — apply it once and drop the version from individual plugin lines:
+The Sidekick BOM aligns the versions of every plugin module — apply it once and drop the version from individual plugin lines. The network / log monitor plugins follow the same `debugImplementation` ↔ `releaseImplementation` swap as the core, with their own noop modules that strip the SQLDelight recording layer:
 
 ```kotlin
-commonMain.dependencies {
-    implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
 
-    // Network monitor
-    implementation("dev.parez.sidekick:network-monitor-plugin")
-    implementation("dev.parez.sidekick:network-monitor-ktor")   // Ktor integration
+            // Type stubs only — Android's variant swap below provides the real
+            // (debug) or noop (release) module on the runtime classpath. Without
+            // `compileOnly`, the real plugin would collide with the noop in
+            // release.
+            compileOnly("dev.parez.sidekick:network-monitor-plugin")
+            compileOnly("dev.parez.sidekick:network-monitor-ktor")
+            compileOnly("dev.parez.sidekick:log-monitor-plugin")
+            compileOnly("dev.parez.sidekick:log-monitor-kermit")
 
-    // Log monitor
-    implementation("dev.parez.sidekick:log-monitor-plugin")
-    implementation("dev.parez.sidekick:log-monitor-kermit")     // Kermit bridge (optional)
+            // Preferences and Custom Screens have no noop module — they don't
+            // record traffic and they don't allocate at construction time.
+            implementation("dev.parez.sidekick:preferences")
+            implementation("dev.parez.sidekick:custom-screens")
+        }
+    }
+}
 
-    // Preferences
-    implementation("dev.parez.sidekick:preferences")
-
-    // Custom screens
-    implementation("dev.parez.sidekick:custom-screens")
+dependencies {
+    debugImplementation("dev.parez.sidekick:network-monitor-plugin")
+    debugImplementation("dev.parez.sidekick:network-monitor-ktor")
+    releaseImplementation("dev.parez.sidekick:network-monitor-noop")
+    debugImplementation("dev.parez.sidekick:log-monitor-plugin")
+    debugImplementation("dev.parez.sidekick:log-monitor-kermit")
+    releaseImplementation("dev.parez.sidekick:log-monitor-noop")
 }
 ```
+
+For non-Android targets, use the property-gated pattern shown above in [Non-Android targets](#non-android-targets-desktop--ios--js--wasm).
 
 ## Android Context
 

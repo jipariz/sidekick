@@ -65,11 +65,20 @@ kotlin {
                 implementation(compose.ui)
                 implementation(compose.materialIconsExtended)
                 implementation(projects.plugins.preferences.api)
-                implementation(projects.plugins.networkMonitor.plugin)
-                implementation(projects.plugins.networkMonitor.ktor)
-                implementation(projects.plugins.logMonitor.plugin)
-                implementation(projects.plugins.logMonitor.kermit)
                 implementation(projects.plugins.customScreens.api)
+                // compileOnly: same rationale as `core/runtime` below — give
+                // commonMain the type stubs (`NetworkMonitorPlugin`,
+                // `LogMonitorPlugin`, `installSidekick`, `LogMonitorLogWriter`,
+                // …) without putting the real plugins on Android release's
+                // runtime classpath, where they would collide with the noop
+                // variant. Per-platform source sets add the real modules via
+                // `implementation` below; Android picks real (debug) or noop
+                // (release) via the variant swap in the `dependencies { }`
+                // block further down.
+                compileOnly(projects.plugins.networkMonitor.plugin)
+                compileOnly(projects.plugins.networkMonitor.ktor)
+                compileOnly(projects.plugins.logMonitor.plugin)
+                compileOnly(projects.plugins.logMonitor.kermit)
                 implementation(libs.kermit)
                 implementation(libs.ktor.client.core)
                 implementation(libs.kotlinx.serialization.json)
@@ -114,6 +123,10 @@ kotlin {
             implementation(libs.ktor.client.cio)
             implementation(libs.sqlite.bundled)
             implementation(projects.core.runtime)
+            implementation(projects.plugins.networkMonitor.plugin)
+            implementation(projects.plugins.networkMonitor.ktor)
+            implementation(projects.plugins.logMonitor.plugin)
+            implementation(projects.plugins.logMonitor.kermit)
         }
         jsMain {
             kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/js/jsMain/kotlin"))
@@ -128,6 +141,10 @@ kotlin {
                 npm("sqlite-wasm-worker", layout.projectDirectory.dir("sqlite-worker").asFile)
             )
             implementation(projects.core.runtime)
+            implementation(projects.plugins.networkMonitor.plugin)
+            implementation(projects.plugins.networkMonitor.ktor)
+            implementation(projects.plugins.logMonitor.plugin)
+            implementation(projects.plugins.logMonitor.kermit)
         }
         wasmJsMain {
             kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/wasmJs/wasmJsMain/kotlin"))
@@ -139,10 +156,18 @@ kotlin {
                 npm("sqlite-wasm-worker", layout.projectDirectory.dir("sqlite-worker").asFile)
             )
             implementation(projects.core.runtime)
+            implementation(projects.plugins.networkMonitor.plugin)
+            implementation(projects.plugins.networkMonitor.ktor)
+            implementation(projects.plugins.logMonitor.plugin)
+            implementation(projects.plugins.logMonitor.kermit)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
             implementation(projects.core.runtime)
+            implementation(projects.plugins.networkMonitor.plugin)
+            implementation(projects.plugins.networkMonitor.ktor)
+            implementation(projects.plugins.logMonitor.plugin)
+            implementation(projects.plugins.logMonitor.kermit)
         }
     }
 }
@@ -150,6 +175,16 @@ kotlin {
 dependencies {
     debugImplementation(projects.core.runtime)
     releaseImplementation(projects.core.noop)
+    // Monitor plugins: debug Android keeps the real recording trio (api + plugin
+    // + ktor/kermit). Release Android swaps the whole family for the noop
+    // module, which exposes the same FQNs but with empty bodies — no SQLDelight
+    // DB opens, no HTTP/log entries persist.
+    debugImplementation(projects.plugins.networkMonitor.plugin)
+    debugImplementation(projects.plugins.networkMonitor.ktor)
+    releaseImplementation(projects.plugins.networkMonitor.noop)
+    debugImplementation(projects.plugins.logMonitor.plugin)
+    debugImplementation(projects.plugins.logMonitor.kermit)
+    releaseImplementation(projects.plugins.logMonitor.noop)
     add("kspCommonMainMetadata", projects.plugins.preferences.ksp)
     // Room 3 KSP — only on the targets Room supports.
     add("kspAndroid", libs.room3.compiler)

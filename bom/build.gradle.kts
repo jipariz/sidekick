@@ -21,9 +21,11 @@ dependencies {
         api(projects.plugins.networkMonitor.api)
         api(projects.plugins.networkMonitor.plugin)
         api(projects.plugins.networkMonitor.ktor)
+        api(projects.plugins.networkMonitor.noop)
         api(projects.plugins.logMonitor.api)
         api(projects.plugins.logMonitor.plugin)
         api(projects.plugins.logMonitor.kermit)
+        api(projects.plugins.logMonitor.noop)
         api(projects.plugins.customScreens.api)
     }
 }

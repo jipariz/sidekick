@@ -63,7 +63,7 @@ internal fun SidekickPluginList(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            stickyHeader {
+            item {
                 if (appInfo != null) {
                     AppInfoStrip(appInfo)
                 }
