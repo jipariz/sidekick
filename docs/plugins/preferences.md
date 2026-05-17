@@ -15,6 +15,7 @@ Expose typed app settings inside the Sidekick panel — flip feature flags, chan
 ## Features
 
 - **Type-safe accessors** — `StateFlow<T>` for reading, `suspend fun setX(value: T)` for writing.
+- **Minimal annotations** — a single `@SidekickPreferences` on the class is enough; defaults come from each property's Kotlin initializer.
 - **KSP code generation** — annotate a plain class, get the DataStore wiring + a ready-to-use `SidekickPlugin` for free.
 - **Six primitive types** — `Boolean`, `String`, `Int`, `Long`, `Float`, `Double`.
 - **Enum chip picker** — `EnumPref` renders a chip row for any string-backed enum.
@@ -56,17 +57,23 @@ dependencies {
 
 #### Recommended: apply the Sidekick Preferences Gradle plugin
 
-The `dev.parez.sidekick.preferences` Gradle plugin bundles the KSP processor application, generated-sources directory registration, and task-dependency wiring — the entire setup collapses to:
+The `dev.parez.sidekick.preferences` Gradle plugin bundles the KSP plugin application, the generated-sources directory registration, and the task-dependency wiring. Apply it, then add the processor to `kspCommonMainMetadata`:
 
 ```kotlin
 plugins {
     id("dev.parez.sidekick.preferences") version "2026.05.16"
 }
+
+dependencies {
+    add("kspCommonMainMetadata", "dev.parez.sidekick:preferences-ksp:0.1.0")
+}
 ```
 
-#### Manual
+(Sidekick deliberately does not auto-add the processor — keeping that line in your build script makes it obvious which KSP processors are running, and lets monorepo setups substitute a project dependency without an opt-out flag.)
 
-If you prefer explicit control, apply the KSP plugin and register the processor yourself:
+#### Manual (no Gradle plugin)
+
+If you'd rather not apply the `dev.parez.sidekick.preferences` Gradle plugin — for example to keep your KSP wiring identical to other code generators in the same module — you can do the same wiring directly:
 
 ```kotlin
 plugins {
@@ -78,6 +85,9 @@ kotlin {
         commonMain {
             kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/metadata/commonMain/kotlin"))
         }
+        // KSP emits per-target outputs for JS / WasmJS; register them too if you have those targets.
+        jsMain { kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/js/jsMain/kotlin")) }
+        wasmJsMain { kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/wasmJs/wasmJsMain/kotlin")) }
     }
 }
 
@@ -93,12 +103,18 @@ tasks.configureEach {
         dependsOn("kspCommonMainKotlinMetadata")
     }
 }
+```
 
-// Disable build caching for the KSP task (source-dir registration is unreliable in cache).
-tasks.configureEach {
-    if (name == "kspCommonMainKotlinMetadata") {
-        outputs.cacheIf { false }
-    }
+For **Android-only modules** (not Kotlin Multiplatform) the KSP plumbing collapses to two lines — KSP's standard `ksp(...)` configuration auto-registers the generated source dir:
+
+```kotlin
+plugins {
+    alias(libs.plugins.ksp)
+}
+
+dependencies {
+    implementation("dev.parez.sidekick:preferences:0.1.0")
+    ksp("dev.parez.sidekick:preferences-ksp:0.1.0")
 }
 ```
 
@@ -122,7 +138,21 @@ Sidekick(
 
 ## Defining Preferences
 
-Annotate a class with `@SidekickPreferences` and its properties with `@Preference`:
+Annotate a class with `@SidekickPreferences`. **Every property of the class becomes a preference**, and the default value comes from the property's Kotlin initializer — no extra annotation needed for the common case:
+
+```kotlin
+@SidekickPreferences  // title and storeName auto-derived from the class name
+class AppPreferences {
+    var darkMode: Boolean = false
+    var apiUrl: String = "https://api.example.com"
+    var timeout: Int = 30
+    var colorTheme: ColorTheme = ColorTheme.DEFAULT   // enum entry → EnumPref chip row
+}
+
+enum class ColorTheme { DEFAULT, FIRE, WATER, GRASS }
+```
+
+UI labels are humanised from each property name (`darkMode` → "Dark Mode"). To override a label, a description, or both — use `@Preference`:
 
 ```kotlin
 @SidekickPreferences(
@@ -130,31 +160,23 @@ Annotate a class with `@SidekickPreferences` and its properties with `@Preferenc
     storeName = "",            // optional — defaults to title.lowercase().replace(" ", "_")
 )
 class AppPreferences {
-    @Preference(label = "Dark Mode", defaultValue = "false")
     var darkMode: Boolean = false
 
-    @Preference(label = "API URL", defaultValue = "https://api.example.com")
-    var apiUrl: String = ""
-
-    @Preference(label = "Request Timeout (s)", defaultValue = "30")
-    var timeout: Int = 0
+    @Preference(label = "API endpoint")
+    var apiUrl: String = "https://api.example.com"
 
     @Preference(
-        label = "Feature Flag",
+        label = "Feature flag",
         description = "Enables the experimental new checkout flow.",
-        defaultValue = "false",
     )
     var newCheckout: Boolean = false
 
-    // Enum prefs render as a chip row. Stored as the enum entry name.
-    @Preference(label = "Color Theme", defaultValue = "DEFAULT")
-    var colorTheme: ColorTheme = ColorTheme.DEFAULT
+    @IgnorePreference   // skipped by the processor entirely
+    var internalCache: String = ""
 }
-
-enum class ColorTheme { DEFAULT, FIRE, WATER, GRASS }
 ```
 
-Supported property types: `Boolean`, `String`, `Int`, `Long`, `Float`, `Double`, and any Kotlin `enum` (auto-detected — KSP emits an `EnumPref`).
+Supported property types: `Boolean`, `String`, `Int`, `Long`, `Float`, `Double`, and any Kotlin `enum` (auto-detected — KSP emits an `EnumPref`). The processor reads the property's Kotlin initializer (`= ...`) and emits it as the preference's default. Properties without an initializer fall back to the type-zero value (`false`, `0`, `""`, or the first enum entry).
 
 ## Generated Code
 
@@ -231,19 +253,16 @@ If you already have a hand-written `DataStore<Preferences>` class, choose either
     ```kotlin
     @SidekickPreferences(title = "App Settings", storeName = "app_preferences")
     class AppPreferences {
-        @Preference(label = "Dark Mode", defaultValue = "false")
         var darkMode: Boolean = false
+        var apiUrl: String = "https://api.example.com"
 
-        @Preference(label = "API URL", defaultValue = "https://api.example.com")
-        var apiUrl: String = ""
-
-        @Preference(label = "Request Timeout (s)", defaultValue = "30")
-        var timeout: Int = 0
+        @Preference(label = "Request Timeout (s)")
+        var timeout: Int = 30
     }
     ```
 
     !!! tip "Preserving existing DataStore data"
-        The generated accessor derives the DataStore file name from `title` (lowercased, spaces → underscores). Pass `storeName` explicitly to match your existing file (`app_preferences.preferences_pb`) so stored values aren't lost.
+        The generated accessor derives the DataStore file name from `title` (lowercased, spaces → underscores). Pass `storeName` explicitly to match your existing file (`app_preferences.preferences_pb`) so stored values aren't lost. The DataStore key for each property is the property name verbatim (`darkMode`, `apiUrl`, …) — if your existing keys differ, rename the properties to match.
 
 4. Build the project. KSP generates `AppPreferencesAccessor` and `AppPreferencesPlugin`.
 5. Replace usages:

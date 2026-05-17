@@ -12,11 +12,6 @@ plugins {
     alias(libs.plugins.room3)
 }
 
-// Use the local project as the KSP processor instead of the published Maven artifact.
-sidekickPreferences {
-    addProcessor = false
-}
-
 kotlin {
     androidTarget {
         compilerOptions {

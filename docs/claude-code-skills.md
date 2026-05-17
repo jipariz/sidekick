@@ -48,8 +48,8 @@ When you run `/setup-sidekick` (or describe your existing `AppSettingsStore` to 
     // Generated:
     @SidekickPreferences(title = "App Settings", storeName = "app_settings")
     class AppPreferences {
-        @Preference(label = "Dark Mode", defaultValue = "false")
-        var darkMode: Boolean = false
+        @Preference(label = "Dark Mode")
+        var darkMode: Boolean = false  // default value comes from this initializer
         // ...
     }
     ```

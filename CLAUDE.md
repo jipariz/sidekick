@@ -18,9 +18,9 @@ settings.gradle.kts
 │   └── noop              — Release stub: Sidekick() is a no-op (zero overhead)
 ├── plugins/
 │   ├── preferences/
-│   │   ├── api           — DataStore-backed preferences UI (@AppPreferences annotation)
-│   │   ├── ksp           — JVM-only KSP processor generating type-safe accessors (KotlinPoet)
-│   │   └── gradle-plugin — Wires the KSP processor + commonMain srcDir into consuming modules
+│   │   ├── api           — DataStore-backed preferences UI (@SidekickPreferences / @Preference / @IgnorePreference annotations)
+│   │   ├── ksp           — JVM-only KSP processor generating type-safe accessors (KotlinPoet). Reads property defaults from each property's Kotlin initializer via source-location lookup.
+│   │   └── gradle-plugin — Applies KSP, registers the generated-sources srcDir, wires task deps. Does NOT auto-add the preferences-ksp dependency — consumers do that on `kspCommonMainMetadata` themselves.
 │   ├── network-monitor/
 │   │   ├── api           — SQLDelight data layer for HTTP traffic recording + Paging
 │   │   ├── plugin        — Compose UI + NetworkMonitorPlugin (SidekickPlugin impl)
@@ -252,10 +252,16 @@ Gradle configuration cache and build caching are both enabled (`gradle.propertie
 
 ## KSP + KMP Setup
 
-The preferences KSP processor (`:plugins:preferences:ksp`) is JVM-only. In consuming modules:
+The preferences KSP processor (`:plugins:preferences:ksp`) is JVM-only. The `dev.parez.sidekick.preferences` Gradle plugin handles all of the wiring below for KMP consumers; this section is what it does internally (and what a manual setup needs to do).
+
 - Only use `kspCommonMainMetadata` configuration (not per-target `kspAndroid`/`kspJvm`)
 - Wire generated sources: `commonMain.kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/metadata/commonMain/kotlin"))`
 - All `compile*` and `ksp*` tasks must `dependsOn("kspCommonMainKotlinMetadata")`
+- The Gradle plugin does NOT auto-add the `preferences-ksp` artifact — consumers add `kspCommonMainMetadata("dev.parez.sidekick:preferences-ksp:<family-version>")` themselves. This avoids monorepo conflicts and matches the explicit-`ksp(…)` pattern from `teogor/prefero`.
+
+### Reading property defaults
+
+The processor reads each property's Kotlin initializer (`= …`) directly from the source file using `KSPropertyDeclaration.location` (which resolves to a `FileLocation` for normal user-written classes). It parses simple literals (`true`/`false`, integer / long / float / double / string literals, `EnumType.ENTRY` or bare `ENTRY` references) and falls back to the type-zero value (`false`, `0`, `""`, or `enumValues.first()`) when the initializer is missing or unparseable. This means `@Preference(defaultValue = "…")` is **no longer supported** — defaults live in the Kotlin code alongside the property.
 
 ## Key Libraries
 
