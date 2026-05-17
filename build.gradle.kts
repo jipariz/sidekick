@@ -22,9 +22,11 @@ val artifactIdMap = mapOf(
     ":plugins:network-monitor:api" to "network-monitor",
     ":plugins:network-monitor:plugin" to "network-monitor-plugin",
     ":plugins:network-monitor:ktor" to "network-monitor-ktor",
+    ":plugins:network-monitor:noop" to "network-monitor-noop",
     ":plugins:log-monitor:api" to "log-monitor",
     ":plugins:log-monitor:plugin" to "log-monitor-plugin",
     ":plugins:log-monitor:kermit" to "log-monitor-kermit",
+    ":plugins:log-monitor:noop" to "log-monitor-noop",
     ":plugins:custom-screens:api" to "custom-screens",
 )
 

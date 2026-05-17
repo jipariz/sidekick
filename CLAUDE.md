@@ -24,11 +24,13 @@ settings.gradle.kts
 │   ├── network-monitor/
 │   │   ├── api           — SQLDelight data layer for HTTP traffic recording + Paging
 │   │   ├── plugin        — Compose UI + NetworkMonitorPlugin (SidekickPlugin impl)
-│   │   └── ktor          — Ktor HttpClientPlugin integration (ktor-client-core is compileOnly)
+│   │   ├── ktor          — Ktor HttpClientPlugin integration (ktor-client-core is compileOnly)
+│   │   └── noop          — Release stub: same FQNs but recordX/install hooks are no-ops, no SQLDelight
 │   ├── log-monitor/
 │   │   ├── api           — SQLDelight data layer for log entries + Paging
 │   │   ├── plugin        — Compose UI + LogMonitorPlugin (SidekickPlugin impl)
-│   │   └── kermit        — Kermit LogWriter bridge that feeds entries into LogMonitorStore
+│   │   ├── kermit        — Kermit LogWriter bridge that feeds entries into LogMonitorStore
+│   │   └── noop          — Release stub: LogMonitorLogWriter discards entries, no SQLDelight
 │   └── custom-screens/
 │       └── api           — Plugin that lets host apps register arbitrary screens
 ├── demo-app              — Pokemon catalog app exercising all SDK features
@@ -75,8 +77,8 @@ Sidekick uses **per-family semver** coordinated by a **calendar-versioned BOM**.
 | Family root | Members |
 |---|---|
 | `core/` | `plugin-api`, `runtime`, `noop` |
-| `plugins/network-monitor/` | `api`, `plugin`, `ktor` |
-| `plugins/log-monitor/` | `api`, `plugin`, `kermit` |
+| `plugins/network-monitor/` | `api`, `plugin`, `ktor`, `noop` |
+| `plugins/log-monitor/` | `api`, `plugin`, `kermit`, `noop` |
 | `plugins/preferences/` | `api`, `ksp`, `gradle-plugin` (included build) |
 | `plugins/custom-screens/` | `api` |
 
@@ -185,6 +187,53 @@ Both monitor plugins use **AndroidX Paging 3.5.0** (KMP) for their list screens.
 - `debugImplementation(projects.core.runtime)` — full overlay
 - `releaseImplementation(projects.core.noop)` — no-op, zero cost
 - JVM desktop: add `jvmMain.dependencies { implementation(projects.core.runtime) }` separately (`debugImplementation` is Android-only)
+
+The monitor plugins follow the same pattern — recording stops at the Ktor / Kermit bridges and the `…Plugin` constructors, both of which the noop module replaces:
+
+```kotlin
+// commonMain — compileOnly gives commonMain the types for compilation only;
+// the real module never lands on Android release's runtime classpath, so it
+// can't collide with the noop variant.
+compileOnly(projects.plugins.networkMonitor.plugin)
+compileOnly(projects.plugins.networkMonitor.ktor)
+compileOnly(projects.plugins.logMonitor.plugin)
+compileOnly(projects.plugins.logMonitor.kermit)
+
+// Android variants:
+debugImplementation(projects.plugins.networkMonitor.plugin)
+debugImplementation(projects.plugins.networkMonitor.ktor)
+releaseImplementation(projects.plugins.networkMonitor.noop)
+debugImplementation(projects.plugins.logMonitor.plugin)
+debugImplementation(projects.plugins.logMonitor.kermit)
+releaseImplementation(projects.plugins.logMonitor.noop)
+
+// Non-Android targets have no debug/release variant — link the real modules
+// in their respective `*Main.dependencies` blocks (jvmMain, jsMain, wasmJsMain,
+// iosMain). The demo-app does this; consumers can mirror it or skip the
+// non-Android wiring if they only ship Android.
+```
+
+In release, `NetworkMonitorPlugin(...)` / `LogMonitorPlugin(...)` constructors are empty (no `store.init()` → no SQLDelight DB opens), `install(NetworkMonitorKtor) { }` registers no Ktor hooks, and `LogMonitorLogWriter` discards every entry passed to it.
+
+**Non-Android targets: consumer-driven swap.** `debugImplementation` / `releaseImplementation` are AGP-only configurations and don't extend to JVM / iOS / JS / WasmJS. For those targets the consumer is responsible for picking the real or noop module themselves. A property-gated recipe (used by `./gradlew … -Psidekick.noop=true` for prod builds):
+
+```kotlin
+val noopMonitors = (findProperty("sidekick.noop") as? String).toBoolean()
+
+jvmMain.dependencies {
+    if (noopMonitors) {
+        implementation(projects.plugins.networkMonitor.noop)
+        implementation(projects.plugins.logMonitor.noop)
+    } else {
+        implementation(projects.plugins.networkMonitor.plugin)
+        implementation(projects.plugins.networkMonitor.ktor)
+        implementation(projects.plugins.logMonitor.plugin)
+        implementation(projects.plugins.logMonitor.kermit)
+    }
+}
+```
+
+The same shape works in `iosMain.dependencies`, `jsMain.dependencies`, and `wasmJsMain.dependencies`. The demo-app keeps unconditional `implementation(real)` on every non-Android target — it's a dev-only build, so there's no prod variant to swap to.
 
 ### Theming
 `Sidekick()` accepts `useSidekickTheme: Boolean = true`:

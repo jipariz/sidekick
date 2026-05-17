@@ -28,7 +28,7 @@ Sidekick adds a floating debug panel to your app during development — network 
 
 - **One panel, many tools** — built-in network inspector, log viewer, typed preferences editor, custom Composables.
 - **Pluggable** — implement `SidekickPlugin` to add anything else.
-- **Zero release cost** — `core:noop` replaces the overlay with a passthrough composable; release binaries don't contain a single byte of Sidekick UI code.
+- **Zero release cost** — `core:noop` replaces the overlay with a passthrough composable, and `network-monitor:noop` / `log-monitor:noop` strip the SQLDelight recording layer; release binaries don't contain a single byte of Sidekick UI or database code.
 - **Compose Multiplatform** — single UI codebase across Android, iOS, Desktop, and Web.
 - **Visibility is yours to control** — Sidekick renders the panel; the host app decides when to show it (FAB, shake gesture, build-type check, anything).
 

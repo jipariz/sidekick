@@ -28,10 +28,21 @@ class SidekickPreferencesPlugin : Plugin<Project> {
             val kspOutDir = target.layout.buildDirectory.dir("generated/ksp/metadata/commonMain/kotlin")
             val stableDir = target.layout.buildDirectory.dir("generated/sidekick-preferences/commonMain/kotlin")
 
+            // Sync is destructive — it makes destination match source. If kspOutDir is empty
+            // (KSP ran incrementally and produced nothing, or Gradle cleaned the KSP output
+            // between phases) Sync would wipe stableDir, defeating the whole point of the
+            // stable dir. The onlyIf guard skips the Sync entirely in that case, leaving the
+            // last-known-good generated sources in place. Source has files → Sync runs and
+            // mirrors them (including removing stale files). Source is empty → Sync skipped
+            // and stableDir is preserved.
             val syncKspOutputs = target.tasks.register("syncSidekickPreferencesKsp", org.gradle.api.tasks.Sync::class.java) { sync ->
                 sync.from(kspOutDir)
                 sync.into(stableDir)
                 sync.dependsOn("kspCommonMainKotlinMetadata")
+                sync.onlyIf("KSP output dir is non-empty") {
+                    val src = kspOutDir.get().asFile
+                    src.exists() && src.walkTopDown().any { it.isFile }
+                }
             }
 
             kmp.sourceSets.named("commonMain").configure { commonMain ->
