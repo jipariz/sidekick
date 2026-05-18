@@ -15,19 +15,19 @@ plugins {
 
 val artifactIdMap = mapOf(
     ":core:plugin-api" to "plugin-api",
-    ":core:runtime" to "runtime",
+    ":core:shell" to "shell",
     ":core:noop" to "noop",
     ":plugins:preferences:api" to "preferences",
     ":plugins:preferences:ksp" to "preferences-ksp",
     ":plugins:network-monitor:api" to "network-monitor",
-    ":plugins:network-monitor:plugin" to "network-monitor-plugin",
+    ":plugins:network-monitor:ui" to "network-monitor-ui",
     ":plugins:network-monitor:ktor" to "network-monitor-ktor",
     ":plugins:network-monitor:noop" to "network-monitor-noop",
     ":plugins:log-monitor:api" to "log-monitor",
-    ":plugins:log-monitor:plugin" to "log-monitor-plugin",
+    ":plugins:log-monitor:ui" to "log-monitor-ui",
     ":plugins:log-monitor:kermit" to "log-monitor-kermit",
     ":plugins:log-monitor:noop" to "log-monitor-noop",
-    ":plugins:custom-screens:api" to "custom-screens",
+    ":plugins:custom-screen:api" to "custom-screen",
 )
 
 subprojects {

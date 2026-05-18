@@ -38,12 +38,12 @@ kotlin {
 sqldelight {
     databases {
         create("LogMonitorDatabase") {
-            packageName = "dev.parez.sidekick.logs.db"
+            packageName = "dev.parez.sidekick.log.db"
             generateAsync = true
         }
     }
 }
 
 android {
-    namespace = "dev.parez.sidekick.logs"
+    namespace = "dev.parez.sidekick.log"
 }

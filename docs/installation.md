@@ -4,8 +4,8 @@ Sidekick is a multi-module library published to **Maven Central** under the `dev
 
 ## Versioning at a glance
 
-- **One BOM coordinate covers everything.** The BOM is calendar-versioned (`YYYY.MM.DD`). Pin it once and every Sidekick artifact resolves through it — including `runtime` / `noop` in the Android variant-config swap, because BOM constraints propagate down the `implementation` extension chain.
-- **Plugin modules are per-family semver under the hood.** Each family (`core`, `network-monitor`, `log-monitor`, `preferences`, `custom-screens`) has its own `MAJOR.MINOR.PATCH` version that can drift independently. You don't need to know these — the BOM pins them.
+- **One BOM coordinate covers everything.** The BOM is calendar-versioned (`YYYY.MM.DD`). Pin it once and every Sidekick artifact resolves through it — including `shell` / `noop` in the Android variant-config swap, because BOM constraints propagate down the `implementation` extension chain.
+- **Plugin modules are per-family semver under the hood.** Each family (`core`, `network-monitor`, `log-monitor`, `preferences`, `custom-screen`) has its own `MAJOR.MINOR.PATCH` version that can drift independently. You don't need to know these — the BOM pins them.
 - **The Gradle plugin tracks the BOM too.** `dev.parez.sidekick.preferences`'s marker artifact is republished at the BOM's calendar version every release, so you pin the same number in `plugins { id("…") version "…" }` (or via `version.ref = "sidekick"` in the catalog). The marker resolves transparently to the impl at its current preferences-family version — you never see that number.
 
 The Maven Central badge at the top of the [README](../README.md) renders the latest BOM coordinate.
@@ -26,24 +26,24 @@ If your project uses a Gradle version catalog (`gradle/libs.versions.toml`), dro
 
 ```toml
 [versions]
-sidekick = "2026.05.16"  # BOM version (YYYY.MM.DD)
+sidekick = "2026.05.17"  # BOM version (YYYY.MM.DD)
 
 [libraries]
 sidekick-bom = { module = "dev.parez.sidekick:bom", version.ref = "sidekick" }
 # Everything below is BOM-managed — no version needed.
-sidekick-runtime    = { module = "dev.parez.sidekick:runtime" }
+sidekick-shell      = { module = "dev.parez.sidekick:shell" }
 sidekick-noop       = { module = "dev.parez.sidekick:noop" }
 sidekick-plugin-api = { module = "dev.parez.sidekick:plugin-api" }
 sidekick-network-monitor        = { module = "dev.parez.sidekick:network-monitor" }
-sidekick-network-monitor-plugin = { module = "dev.parez.sidekick:network-monitor-plugin" }
+sidekick-network-monitor-ui = { module = "dev.parez.sidekick:network-monitor-ui" }
 sidekick-network-monitor-ktor   = { module = "dev.parez.sidekick:network-monitor-ktor" }
 sidekick-network-monitor-noop   = { module = "dev.parez.sidekick:network-monitor-noop" }
 sidekick-log-monitor            = { module = "dev.parez.sidekick:log-monitor" }
-sidekick-log-monitor-plugin     = { module = "dev.parez.sidekick:log-monitor-plugin" }
+sidekick-log-monitor-ui     = { module = "dev.parez.sidekick:log-monitor-ui" }
 sidekick-log-monitor-kermit     = { module = "dev.parez.sidekick:log-monitor-kermit" }
 sidekick-log-monitor-noop       = { module = "dev.parez.sidekick:log-monitor-noop" }
 sidekick-preferences            = { module = "dev.parez.sidekick:preferences" }
-sidekick-custom-screens         = { module = "dev.parez.sidekick:custom-screens" }
+sidekick-custom-screen         = { module = "dev.parez.sidekick:custom-screen" }
 
 [plugins]
 # Preferences KSP wiring — applies the KSP processor + generated-sources srcDir.
@@ -59,7 +59,7 @@ plugins {
 }
 
 dependencies {
-    debugImplementation(libs.sidekick.runtime)
+    debugImplementation(libs.sidekick.shell)
     releaseImplementation(libs.sidekick.noop)
 
     implementation(platform(libs.sidekick.bom))
@@ -76,15 +76,15 @@ The rest of this page uses the inline `"group:artifact:version"` form so it's re
 
 ## Core
 
-Every app needs the core runtime (debug builds) and the no-op stub (release builds). How you wire them depends on whether you're in a single-module app or a multi-module one.
+Every app needs the core shell (debug builds) and the no-op stub (release builds). How you wire them depends on whether you're in a single-module app or a multi-module one.
 
 ### Single-module Android app
 
 ```kotlin
 // build.gradle.kts (Android app module)
 dependencies {
-    implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
-    debugImplementation("dev.parez.sidekick:runtime")
+    implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
+    debugImplementation("dev.parez.sidekick:shell")
     releaseImplementation("dev.parez.sidekick:noop")
 }
 ```
@@ -96,21 +96,21 @@ dependencies {
 
 ### Multi-module KMP app
 
-`debugImplementation` / `releaseImplementation` are Android Gradle Plugin concepts that don't exist on KMP library source sets. If your feature module (the one that *calls* `Sidekick()`) is a KMP library, you can't put the runtime/noop swap there — split it across two modules:
+`debugImplementation` / `releaseImplementation` are Android Gradle Plugin concepts that don't exist on KMP library source sets. If your feature module (the one that *calls* `Sidekick()`) is a KMP library, you can't put the shell/noop swap there — split it across two modules:
 
 ```kotlin
 // feature/devtools/build.gradle.kts — KMP library that calls Sidekick()
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
+            implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
             // compileOnly: the type is on the compile classpath of the library,
-            // but the runtime impl is provided per-target by the app module below.
-            compileOnly("dev.parez.sidekick:runtime")
+            // but the shell impl is provided per-target by the app module below.
+            compileOnly("dev.parez.sidekick:shell")
         }
         appleMain.dependencies {
-            // iOS has no Gradle-level debug/release split — provide the runtime here.
-            implementation("dev.parez.sidekick:runtime")
+            // iOS has no Gradle-level debug/release split — provide the shell here.
+            implementation("dev.parez.sidekick:shell")
         }
     }
 }
@@ -120,13 +120,13 @@ kotlin {
 // ATASSproApp/android/build.gradle.kts — Android application module
 dependencies {
     implementation(projects.feature.devtools)        // your feature module
-    implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
-    debugImplementation("dev.parez.sidekick:runtime")
+    implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
+    debugImplementation("dev.parez.sidekick:shell")
     releaseImplementation("dev.parez.sidekick:noop")
 }
 ```
 
-The library compiles against `runtime` types; on Android the app module swaps `runtime` (debug) for `noop` (release); on iOS the runtime ships in both configurations.
+The library compiles against `shell` types; on Android the app module swaps `shell` (debug) for `noop` (release); on iOS the shell ships in both configurations.
 
 ### Non-Android targets (Desktop / iOS / JS / Wasm)
 
@@ -136,16 +136,16 @@ The library compiles against `runtime` types; on Android the app module swaps `r
 val sidekickNoop = (findProperty("sidekick.noop") as? String).toBoolean()
 
 jvmMain.dependencies {
-    implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
+    implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
     if (sidekickNoop) {
         implementation("dev.parez.sidekick:noop")
         implementation("dev.parez.sidekick:network-monitor-noop")
         implementation("dev.parez.sidekick:log-monitor-noop")
     } else {
-        implementation("dev.parez.sidekick:runtime")
-        implementation("dev.parez.sidekick:network-monitor-plugin")
+        implementation("dev.parez.sidekick:shell")
+        implementation("dev.parez.sidekick:network-monitor-ui")
         implementation("dev.parez.sidekick:network-monitor-ktor")
-        implementation("dev.parez.sidekick:log-monitor-plugin")
+        implementation("dev.parez.sidekick:log-monitor-ui")
         implementation("dev.parez.sidekick:log-monitor-kermit")
     }
 }
@@ -163,30 +163,30 @@ The Sidekick BOM aligns the versions of every plugin module — apply it once an
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
+            implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
 
             // Type stubs only — Android's variant swap below provides the real
             // (debug) or noop (release) module on the runtime classpath. Without
             // `compileOnly`, the real plugin would collide with the noop in
             // release.
-            compileOnly("dev.parez.sidekick:network-monitor-plugin")
+            compileOnly("dev.parez.sidekick:network-monitor-ui")
             compileOnly("dev.parez.sidekick:network-monitor-ktor")
-            compileOnly("dev.parez.sidekick:log-monitor-plugin")
+            compileOnly("dev.parez.sidekick:log-monitor-ui")
             compileOnly("dev.parez.sidekick:log-monitor-kermit")
 
             // Preferences and Custom Screens have no noop module — they don't
             // record traffic and they don't allocate at construction time.
             implementation("dev.parez.sidekick:preferences")
-            implementation("dev.parez.sidekick:custom-screens")
+            implementation("dev.parez.sidekick:custom-screen")
         }
     }
 }
 
 dependencies {
-    debugImplementation("dev.parez.sidekick:network-monitor-plugin")
+    debugImplementation("dev.parez.sidekick:network-monitor-ui")
     debugImplementation("dev.parez.sidekick:network-monitor-ktor")
     releaseImplementation("dev.parez.sidekick:network-monitor-noop")
-    debugImplementation("dev.parez.sidekick:log-monitor-plugin")
+    debugImplementation("dev.parez.sidekick:log-monitor-ui")
     debugImplementation("dev.parez.sidekick:log-monitor-kermit")
     releaseImplementation("dev.parez.sidekick:log-monitor-noop")
 }
@@ -206,7 +206,7 @@ The Preferences plugin ships a KSP processor that generates boilerplate from `@S
 
 ```kotlin
 plugins {
-    id("dev.parez.sidekick.preferences") version "2026.05.16"
+    id("dev.parez.sidekick.preferences") version "2026.05.17"
 }
 ```
 

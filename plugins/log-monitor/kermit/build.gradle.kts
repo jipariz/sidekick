@@ -10,7 +10,7 @@ kotlin {
             // depending on :kermit get the plugin transitively without a
             // separate `:log-monitor:plugin` declaration.
             api(projects.plugins.logMonitor.api)
-            api(projects.plugins.logMonitor.plugin)
+            api(projects.plugins.logMonitor.ui)
             // kermit is compileOnly — consumers bring their own Kermit version
             compileOnly(libs.kermit)
         }
@@ -18,5 +18,5 @@ kotlin {
 }
 
 android {
-    namespace = "dev.parez.sidekick.logs.kermit"
+    namespace = "dev.parez.sidekick.log.kermit"
 }

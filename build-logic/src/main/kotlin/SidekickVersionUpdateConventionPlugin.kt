@@ -19,7 +19,7 @@ import java.util.Properties
  *   plugins/network-monitor    — api, plugin, ktor
  *   plugins/log-monitor        — api, plugin, kermit
  *   plugins/preferences        — api, ksp, gradle-plugin (included build)
- *   plugins/custom-screens     — api
+ *   plugins/custom-screen      — api
  *
  * Each family root owns a single `version.properties`:
  *   sdk.version       — semver (MAJOR.MINOR.PATCH)
@@ -68,7 +68,7 @@ class SidekickVersionUpdateConventionPlugin : Plugin<Project> {
         "plugins/network-monitor",
         "plugins/log-monitor",
         "plugins/preferences",
-        "plugins/custom-screens",
+        "plugins/custom-screen",
     )
 
     override fun apply(target: Project) {

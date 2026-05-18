@@ -46,7 +46,7 @@
 | [**Network Monitor**](docs/plugins/network-monitor.md) | Captures every HTTP request / response. Ktor built-in; OkHttp and others via `NetworkMonitorStore`. | ![A](https://img.shields.io/badge/-Android-3DDC84) ![i](https://img.shields.io/badge/-iOS-000) ![J](https://img.shields.io/badge/-JVM-4E8EE9) ![J](https://img.shields.io/badge/-JS-F7DF1E) ![W](https://img.shields.io/badge/-Wasm-654FF0) |
 | [**Log Monitor**](docs/plugins/log-monitor.md) | Color-coded log feed with level chips and search. Kermit bridge built-in. | ![A](https://img.shields.io/badge/-Android-3DDC84) ![i](https://img.shields.io/badge/-iOS-000) ![J](https://img.shields.io/badge/-JVM-4E8EE9) ![J](https://img.shields.io/badge/-JS-F7DF1E) ![W](https://img.shields.io/badge/-Wasm-654FF0) |
 | [**Preferences**](docs/plugins/preferences.md) | Typed settings UI generated from `@Preference` annotations via KSP. | ![A](https://img.shields.io/badge/-Android-3DDC84) ![i](https://img.shields.io/badge/-iOS-000) ![J](https://img.shields.io/badge/-JVM-4E8EE9) ![J](https://img.shields.io/badge/-JS-F7DF1E) ![W](https://img.shields.io/badge/-Wasm-654FF0)¹ |
-| [**Custom Screens**](docs/plugins/custom-screens.md) | Wrap any Composable as a debug card. Full DI access. | ![A](https://img.shields.io/badge/-Android-3DDC84) ![i](https://img.shields.io/badge/-iOS-000) ![J](https://img.shields.io/badge/-JVM-4E8EE9) ![J](https://img.shields.io/badge/-JS-F7DF1E) ![W](https://img.shields.io/badge/-Wasm-654FF0) |
+| [**Custom Screens**](docs/plugins/custom-screen.md) | Wrap any Composable as a debug card. Full DI access. | ![A](https://img.shields.io/badge/-Android-3DDC84) ![i](https://img.shields.io/badge/-iOS-000) ![J](https://img.shields.io/badge/-JVM-4E8EE9) ![J](https://img.shields.io/badge/-JS-F7DF1E) ![W](https://img.shields.io/badge/-Wasm-654FF0) |
 | [**Your plugin**](docs/plugins/custom-plugin.md) | Implement `SidekickPlugin` — full module, your own DI scope, anything goes. | depends on what you publish |
 
 <sub>¹ Wasm uses in-memory preferences (DataStore has no Wasm driver) — values do not persist across reloads.</sub>
@@ -63,16 +63,16 @@ kotlin {
             // BOM pins every Sidekick artifact. Constraints propagate to all
             // configurations that extend `implementation` — including the
             // Android `debugImplementation` / `releaseImplementation` below.
-            implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
+            implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
             // `compileOnly` here gives commonMain the type stubs without
             // putting the real plugin jars on Android release's runtime
             // classpath — they would collide with the noop variants.
-            compileOnly("dev.parez.sidekick:network-monitor-plugin")
+            compileOnly("dev.parez.sidekick:network-monitor-ui")
             compileOnly("dev.parez.sidekick:network-monitor-ktor")
-            compileOnly("dev.parez.sidekick:log-monitor-plugin")
+            compileOnly("dev.parez.sidekick:log-monitor-ui")
             compileOnly("dev.parez.sidekick:log-monitor-kermit")
             implementation("dev.parez.sidekick:preferences")
-            implementation("dev.parez.sidekick:custom-screens")
+            implementation("dev.parez.sidekick:custom-screen")
         }
     }
 }
@@ -81,16 +81,16 @@ dependencies {
     // Android only. `debugImplementation` / `releaseImplementation` are AGP
     // configurations and don't exist on JVM / iOS / JS / WasmJS — see the
     // per-platform notes below.
-    debugImplementation("dev.parez.sidekick:runtime")
+    debugImplementation("dev.parez.sidekick:shell")
     releaseImplementation("dev.parez.sidekick:noop")
 
-    // Recording plugins follow the same swap: debug gets the real api+plugin
+    // Recording plugins follow the same swap: debug gets the real api+ui
     // +ktor/kermit trio; release gets the noop, which strips SQLDelight and
     // makes every recordX/install hook a no-op.
-    debugImplementation("dev.parez.sidekick:network-monitor-plugin")
+    debugImplementation("dev.parez.sidekick:network-monitor-ui")
     debugImplementation("dev.parez.sidekick:network-monitor-ktor")
     releaseImplementation("dev.parez.sidekick:network-monitor-noop")
-    debugImplementation("dev.parez.sidekick:log-monitor-plugin")
+    debugImplementation("dev.parez.sidekick:log-monitor-ui")
     debugImplementation("dev.parez.sidekick:log-monitor-kermit")
     releaseImplementation("dev.parez.sidekick:log-monitor-noop")
 }
@@ -103,21 +103,21 @@ Drop this in `gradle/libs.versions.toml`. One version key covers every artifact 
 
 ```toml
 [versions]
-sidekick = "2026.05.16"  # BOM version (YYYY.MM.DD) — bump to track the latest release
+sidekick = "2026.05.17"  # BOM version (YYYY.MM.DD) — bump to track the latest release
 
 [libraries]
 sidekick-bom     = { module = "dev.parez.sidekick:bom", version.ref = "sidekick" }
 # Everything below is BOM-managed — no version needed.
-sidekick-runtime = { module = "dev.parez.sidekick:runtime" }
+sidekick-shell   = { module = "dev.parez.sidekick:shell" }
 sidekick-noop    = { module = "dev.parez.sidekick:noop" }
-sidekick-network-monitor-plugin = { module = "dev.parez.sidekick:network-monitor-plugin" }
+sidekick-network-monitor-ui = { module = "dev.parez.sidekick:network-monitor-ui" }
 sidekick-network-monitor-ktor   = { module = "dev.parez.sidekick:network-monitor-ktor" }
 sidekick-network-monitor-noop   = { module = "dev.parez.sidekick:network-monitor-noop" }
-sidekick-log-monitor-plugin     = { module = "dev.parez.sidekick:log-monitor-plugin" }
+sidekick-log-monitor-ui     = { module = "dev.parez.sidekick:log-monitor-ui" }
 sidekick-log-monitor-kermit     = { module = "dev.parez.sidekick:log-monitor-kermit" }
 sidekick-log-monitor-noop       = { module = "dev.parez.sidekick:log-monitor-noop" }
 sidekick-preferences            = { module = "dev.parez.sidekick:preferences" }
-sidekick-custom-screens         = { module = "dev.parez.sidekick:custom-screens" }
+sidekick-custom-screen         = { module = "dev.parez.sidekick:custom-screen" }
 
 [plugins]
 # Plugin markers are published at the BOM's calendar version too, so you
@@ -127,7 +127,7 @@ sidekick-custom-screens         = { module = "dev.parez.sidekick:custom-screens"
 sidekick-preferences = { id = "dev.parez.sidekick.preferences", version.ref = "sidekick" }
 ```
 
-Then in `build.gradle.kts`: `implementation(platform(libs.sidekick.bom))`, `implementation(libs.sidekick.network.monitor.plugin)`, `debugImplementation(libs.sidekick.runtime)`, `alias(libs.plugins.sidekick.preferences)`, etc.
+Then in `build.gradle.kts`: `implementation(platform(libs.sidekick.bom))`, `implementation(libs.sidekick.network.monitor.plugin)`, `debugImplementation(libs.sidekick.shell)`, `alias(libs.plugins.sidekick.preferences)`, etc.
 
 </details>
 
@@ -145,10 +145,10 @@ Then in `build.gradle.kts`: `implementation(platform(libs.sidekick.bom))`, `impl
             implementation("dev.parez.sidekick:network-monitor-noop")
             implementation("dev.parez.sidekick:log-monitor-noop")
         } else {
-            implementation("dev.parez.sidekick:runtime")
-            implementation("dev.parez.sidekick:network-monitor-plugin")
+            implementation("dev.parez.sidekick:shell")
+            implementation("dev.parez.sidekick:network-monitor-ui")
             implementation("dev.parez.sidekick:network-monitor-ktor")
-            implementation("dev.parez.sidekick:log-monitor-plugin")
+            implementation("dev.parez.sidekick:log-monitor-ui")
             implementation("dev.parez.sidekick:log-monitor-kermit")
         }
     }
@@ -209,12 +209,12 @@ Use any trigger — a shake gesture, a hidden tap zone, a build-type check. Side
 |---|---|
 | [Installation](docs/installation.md) | Per-platform notes, KSP setup. |
 | [Quick start](docs/quick-start.md) | Wire-up snippet, header customization, `appInfo`. |
-| [Release builds](docs/release-builds.md) | Swap `core:runtime` → `core:noop` and the monitor families to their noop variants. Zero overhead. |
+| [Release builds](docs/release-builds.md) | Swap `core:shell` → `core:noop` and the monitor families to their noop variants. Zero overhead. |
 | [Theming](docs/theming.md) | Use Sidekick's theme or inherit yours. HTTP badge colors. |
 | [Network Monitor](docs/plugins/network-monitor.md) | Ktor integration, OkHttp recipe, sanitization, retention. |
 | [Log Monitor](docs/plugins/log-monitor.md) | Kermit bridge, Timber recipe, custom `LogCollector`. |
 | [Preferences](docs/plugins/preferences.md) | `@Preference` annotations, KSP setup, DataStore migration. |
-| [Custom Screens](docs/plugins/custom-screens.md) | Wrap any Composable as a debug card. |
+| [Custom Screens](docs/plugins/custom-screen.md) | Wrap any Composable as a debug card. |
 | [Creating a Custom Plugin](docs/plugins/custom-plugin.md) | Implement `SidekickPlugin` end-to-end. |
 
 ## 🤝 Contributing

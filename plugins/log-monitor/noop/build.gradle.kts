@@ -18,5 +18,5 @@ kotlin {
 }
 
 android {
-    namespace = "dev.parez.sidekick.logs.noop"
+    namespace = "dev.parez.sidekick.log.noop"
 }

@@ -14,7 +14,7 @@ Sidekick is a **Kotlin Multiplatform debug overlay SDK** built with **Compose Mu
 settings.gradle.kts
 ├── core/
 │   ├── plugin-api        — SidekickPlugin interface, shared types, SidekickInitializer ContentProvider
-│   ├── runtime           — Full overlay: Sidekick composable, SidekickState, navigation, theme
+│   ├── shell             — Full overlay shell: Sidekick composable, SidekickState, navigation, theme
 │   └── noop              — Release stub: Sidekick() is a no-op (zero overhead)
 ├── plugins/
 │   ├── preferences/
@@ -23,22 +23,22 @@ settings.gradle.kts
 │   │   └── gradle-plugin — Applies KSP, registers the generated-sources srcDir, wires task deps. Does NOT auto-add the preferences-ksp dependency — consumers do that on `kspCommonMainMetadata` themselves.
 │   ├── network-monitor/
 │   │   ├── api           — SQLDelight data layer for HTTP traffic recording + Paging
-│   │   ├── plugin        — Compose UI + NetworkMonitorPlugin (SidekickPlugin impl)
+│   │   ├── ui            — Compose UI + NetworkMonitorPlugin (SidekickPlugin impl)
 │   │   ├── ktor          — Ktor HttpClientPlugin integration (ktor-client-core is compileOnly)
 │   │   └── noop          — Release stub: same FQNs but recordX/install hooks are no-ops, no SQLDelight
 │   ├── log-monitor/
 │   │   ├── api           — SQLDelight data layer for log entries + Paging
-│   │   ├── plugin        — Compose UI + LogMonitorPlugin (SidekickPlugin impl)
+│   │   ├── ui            — Compose UI + LogMonitorPlugin (SidekickPlugin impl)
 │   │   ├── kermit        — Kermit LogWriter bridge that feeds entries into LogMonitorStore
 │   │   └── noop          — Release stub: LogMonitorLogWriter discards entries, no SQLDelight
-│   └── custom-screens/
-│       └── api           — Plugin that lets host apps register arbitrary screens
+│   └── custom-screen/
+│       └── api           — CustomScreenPlugin: wraps any Composable as a SidekickPlugin
 ├── demo-app              — Pokemon catalog app exercising all SDK features
 ├── build-logic/          — Convention plugin: sidekick.kmp.library (SidekickKmpLibraryPlugin)
 └── iosApp/               — Xcode project wrapping demo-app for iOS
 ```
 
-Use typesafe project accessors: `projects.core.runtime`, `projects.plugins.preferences.api`, etc.
+Use typesafe project accessors: `projects.core.shell`, `projects.plugins.preferences.api`, etc.
 
 ## Build Commands
 
@@ -59,7 +59,7 @@ Use typesafe project accessors: `projects.core.runtime`, `projects.plugins.prefe
 ./gradlew allTests
 
 # Run tests for a specific module
-./gradlew :core:runtime:allTests
+./gradlew :core:shell:allTests
 ./gradlew :demo-app:jvmTest --tests "dev.parez.sidekick.SomeTest"
 
 # Publish to Maven Local
@@ -76,11 +76,11 @@ Sidekick uses **per-family semver** coordinated by a **calendar-versioned BOM**.
 
 | Family root | Members |
 |---|---|
-| `core/` | `plugin-api`, `runtime`, `noop` |
+| `core/` | `plugin-api`, `shell`, `noop` |
 | `plugins/network-monitor/` | `api`, `plugin`, `ktor`, `noop` |
 | `plugins/log-monitor/` | `api`, `plugin`, `kermit`, `noop` |
 | `plugins/preferences/` | `api`, `ksp`, `gradle-plugin` (included build) |
-| `plugins/custom-screens/` | `api` |
+| `plugins/custom-screen/` | `api` |
 
 Each family root owns a single `version.properties` (e.g. `plugins/network-monitor/version.properties`) with two keys:
 - `sdk.version` — semver `MAJOR.MINOR.PATCH`
@@ -88,7 +88,7 @@ Each family root owns a single `version.properties` (e.g. `plugins/network-monit
 
 `SidekickVersionReadConventionPlugin` (build-logic) walks up from each module's projectDir to find the nearest family `version.properties` and applies its `sdk.version` to `project.version`. The BOM (`bom/build.gradle.kts`) declares `api(projects.X)` constraints — Gradle resolves each module's `project.version` transitively into the BOM POM's `dependencyManagement` block. The BOM itself is calendar-versioned: `sidekick.bomVersion` in `gradle.properties` holds `YYYY.MM.DD`.
 
-**Why per-family, not per-module?** Modules within a family have tight intra-family deps (e.g. `network-monitor:plugin` imports types from `network-monitor:api`). Per-module versions would let `:plugin@X` claim compatibility with `:api@X` even when an internal `:api` refactor invalidated the binding. Per-family ensures every sibling at the same version pairs cleanly with every other.
+**Why per-family, not per-module?** Modules within a family have tight intra-family deps (e.g. `network-monitor:ui` imports types from `network-monitor:api`). Per-module versions would let `:ui@X` claim compatibility with `:api@X` even when an internal `:api` refactor invalidated the binding. Per-family ensures every sibling at the same version pairs cleanly with every other.
 
 ### Day-to-day: bumping module versions
 
@@ -146,6 +146,7 @@ This split (override in the included gradle-plugin's `build.gradle.kts`, in the 
 - **Included builds don't inherit `gradle.properties`.** When the publish step runs from `plugins/preferences/gradle-plugin/`, the root `gradle.properties` is invisible. The build script must read its own `version.properties` (or its family file via `../version.properties`) directly. Originally we tried passing `-Psidekick.version=…` from the workflow shell as a workaround, but the inline-read approach is cleaner.
 - **Doc-comment lexer doesn't honor backticks.** Kotlin's block-comment scanner matches `*/` literally even inside backticked code in KDoc. A KDoc that mentions `src/*Main/` will close the comment prematurely. Use `src/<sourceSet>Main/` or similar.
 - **Tag re-creation after a failed release.** If a publish run fails partway (one bundle uploaded, the other didn't), drop the partial staging in Portal, fix the issue on a PR, merge, then `git push --delete origin v<x>; git tag -d v<x>` and re-tag at the new HEAD. Don't try to amend the original tag — `git tag -f` works locally but tag-force-push is blocked on protected refs and confuses Central if the original deployment already landed.
+- **`publishToMavenLocal` skips gradle-plugin markers.** Running the task from the root only publishes each module's main publication; the included `plugins/preferences/gradle-plugin` build's per-plugin marker publications (`sidekickPreferencesPluginMarkerMaven`, `sidekickPluginMarkerMaven`) aren't wired into the root's task graph, so they stay unpublished. Consumers that pin `plugins { id("dev.parez.sidekick.preferences") version "<bom>" }` then fail to resolve the marker. Workaround: invoke the marker tasks explicitly from the gradle-plugin's included build (`(cd plugins/preferences/gradle-plugin && ../../../gradlew publishSidekickPreferencesPluginMarkerMavenPublicationToMavenLocal publishSidekickPluginMarkerMavenPublicationToMavenLocal)`). The Central Portal path is unaffected — Vanniktech bundles the markers into its zip regardless.
 
 ## Architecture
 
@@ -160,7 +161,7 @@ Uses **Material 3 Adaptive** (`ListDetailPaneScaffold`). Plugin list/detail navi
 
 1. **Plugin modules** — each stateful plugin owns an isolated `koinApplication {}` singleton (e.g. `NetworkMonitorKoinContext`, `LogMonitorKoinContext` in the respective `:plugins:*/api` modules). The context is never shared with the host app. Pattern:
    - The `api` module registers a `CoroutineScope` + the data store as `single {}` in a core Koin module.
-   - The `plugin` module calls `<Name>KoinContext.loadViewModelModule(module)` once on plugin instantiation to register its ViewModel.
+   - The `ui` module calls `<Name>KoinContext.loadViewModelModule(module)` once on plugin instantiation to register its ViewModel.
    - `Content()` wraps its composable tree in `KoinIsolatedContext(context = <Name>KoinContext.koinApp)` so `koinViewModel()` resolves from the plugin's private graph.
    - Other sibling modules (e.g. `network-monitor:ktor`, `log-monitor:kermit`) access the shared singleton via a `getDefaultStore()` helper on the context object — avoiding a direct Koin dependency in those modules.
 
@@ -184,9 +185,9 @@ Both monitor plugins use **AndroidX Paging 3.5.0** (KMP) for their list screens.
 `SidekickInitializer` is a `ContentProvider` in `:core:plugin-api` that auto-initializes `ApplicationContextHolder` at app startup — no manual setup required in consuming apps. `ApplicationContextHolder.isInitialized` guards against uninitialized access for consumers that don't go through the normal ContentProvider path.
 
 ### Debug vs Release
-- `debugImplementation(projects.core.runtime)` — full overlay
+- `debugImplementation(projects.core.shell)` — full overlay shell
 - `releaseImplementation(projects.core.noop)` — no-op, zero cost
-- JVM desktop: add `jvmMain.dependencies { implementation(projects.core.runtime) }` separately (`debugImplementation` is Android-only)
+- JVM desktop: add `jvmMain.dependencies { implementation(projects.core.shell) }` separately (`debugImplementation` is Android-only)
 
 The monitor plugins follow the same pattern — recording stops at the Ktor / Kermit bridges and the `…Plugin` constructors, both of which the noop module replaces:
 
@@ -194,16 +195,16 @@ The monitor plugins follow the same pattern — recording stops at the Ktor / Ke
 // commonMain — compileOnly gives commonMain the types for compilation only;
 // the real module never lands on Android release's runtime classpath, so it
 // can't collide with the noop variant.
-compileOnly(projects.plugins.networkMonitor.plugin)
+compileOnly(projects.plugins.networkMonitor.ui)
 compileOnly(projects.plugins.networkMonitor.ktor)
-compileOnly(projects.plugins.logMonitor.plugin)
+compileOnly(projects.plugins.logMonitor.ui)
 compileOnly(projects.plugins.logMonitor.kermit)
 
 // Android variants:
-debugImplementation(projects.plugins.networkMonitor.plugin)
+debugImplementation(projects.plugins.networkMonitor.ui)
 debugImplementation(projects.plugins.networkMonitor.ktor)
 releaseImplementation(projects.plugins.networkMonitor.noop)
-debugImplementation(projects.plugins.logMonitor.plugin)
+debugImplementation(projects.plugins.logMonitor.ui)
 debugImplementation(projects.plugins.logMonitor.kermit)
 releaseImplementation(projects.plugins.logMonitor.noop)
 
@@ -225,9 +226,9 @@ jvmMain.dependencies {
         implementation(projects.plugins.networkMonitor.noop)
         implementation(projects.plugins.logMonitor.noop)
     } else {
-        implementation(projects.plugins.networkMonitor.plugin)
+        implementation(projects.plugins.networkMonitor.ui)
         implementation(projects.plugins.networkMonitor.ktor)
-        implementation(projects.plugins.logMonitor.plugin)
+        implementation(projects.plugins.logMonitor.ui)
         implementation(projects.plugins.logMonitor.kermit)
     }
 }
@@ -267,10 +268,10 @@ The processor reads each property's Kotlin initializer (`= …`) directly from t
 
 | Library | Purpose | Module(s) |
 |---------|---------|-----------|
-| M3 Adaptive | List-detail navigation | runtime, network-monitor, log-monitor, demo-app |
-| Koin | DI (isolated plugin contexts + demo-app) | network-monitor/api+plugin, log-monitor/api+plugin, demo-app |
+| M3 Adaptive | List-detail navigation | shell, network-monitor, log-monitor, demo-app |
+| Koin | DI (isolated plugin contexts + demo-app) | network-monitor/api+ui, log-monitor/api+ui, demo-app |
 | SQLDelight | HTTP traffic + log entry DB (generateAsync = true) | network-monitor/api, log-monitor/api |
-| AndroidX Paging | Paged list flows in monitor plugins | network-monitor/api+plugin, log-monitor/api+plugin |
+| AndroidX Paging | Paged list flows in monitor plugins | network-monitor/api+ui, log-monitor/api+ui |
 | Ktor | HTTP client + interceptor | network-monitor/ktor, demo-app |
 | Kermit | Multiplatform logging bridge | log-monitor/kermit, demo-app |
 | DataStore | Preferences persistence | preferences/api |

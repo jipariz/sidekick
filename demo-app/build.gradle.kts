@@ -60,8 +60,8 @@ kotlin {
                 implementation(compose.ui)
                 implementation(compose.materialIconsExtended)
                 implementation(projects.plugins.preferences.api)
-                implementation(projects.plugins.customScreens.api)
-                // compileOnly: same rationale as `core/runtime` below — give
+                implementation(projects.plugins.customScreen.api)
+                // compileOnly: same rationale as `core/shell` below — give
                 // commonMain the type stubs (`NetworkMonitorPlugin`,
                 // `LogMonitorPlugin`, `installSidekick`, `LogMonitorLogWriter`,
                 // …) without putting the real plugins on Android release's
@@ -70,9 +70,9 @@ kotlin {
                 // `implementation` below; Android picks real (debug) or noop
                 // (release) via the variant swap in the `dependencies { }`
                 // block further down.
-                compileOnly(projects.plugins.networkMonitor.plugin)
+                compileOnly(projects.plugins.networkMonitor.ui)
                 compileOnly(projects.plugins.networkMonitor.ktor)
-                compileOnly(projects.plugins.logMonitor.plugin)
+                compileOnly(projects.plugins.logMonitor.ui)
                 compileOnly(projects.plugins.logMonitor.kermit)
                 implementation(libs.kermit)
                 implementation(libs.ktor.client.core)
@@ -81,13 +81,13 @@ kotlin {
                 implementation(libs.ktor.serialization.kotlinxJson)
                 implementation(libs.coil.compose)
                 implementation(libs.coil.network.ktor)
-                // compileOnly: provides the Sidekick() / SidekickShell() / SidekickState
-                // type stubs to commonMain. Per-platform source sets add the runtime jar
-                // via implementation below; Android picks runtime (debug) or noop
+                // compileOnly: provides the Sidekick() / SidekickState type stubs
+                // to commonMain. Per-platform source sets add the shell jar
+                // via implementation below; Android picks shell (debug) or noop
                 // (release) via the variant swap further down. Without `compileOnly`,
-                // runtime ends up on Android release's runtime classpath next to noop
+                // shell ends up on Android release's runtime classpath next to noop
                 // and AGP fails the build (`checkReleaseDuplicateClasses` / dex merger).
-                compileOnly(projects.core.runtime)
+                compileOnly(projects.core.shell)
                 implementation(libs.koin.core)
                 implementation(libs.koin.compose)
                 implementation(libs.koin.compose.viewmodel)
@@ -117,10 +117,10 @@ kotlin {
             implementation(libs.kotlinx.coroutinesSwing)
             implementation(libs.ktor.client.cio)
             implementation(libs.sqlite.bundled)
-            implementation(projects.core.runtime)
-            implementation(projects.plugins.networkMonitor.plugin)
+            implementation(projects.core.shell)
+            implementation(projects.plugins.networkMonitor.ui)
             implementation(projects.plugins.networkMonitor.ktor)
-            implementation(projects.plugins.logMonitor.plugin)
+            implementation(projects.plugins.logMonitor.ui)
             implementation(projects.plugins.logMonitor.kermit)
         }
         jsMain {
@@ -135,10 +135,10 @@ kotlin {
             implementation(
                 npm("sqlite-wasm-worker", layout.projectDirectory.dir("sqlite-worker").asFile)
             )
-            implementation(projects.core.runtime)
-            implementation(projects.plugins.networkMonitor.plugin)
+            implementation(projects.core.shell)
+            implementation(projects.plugins.networkMonitor.ui)
             implementation(projects.plugins.networkMonitor.ktor)
-            implementation(projects.plugins.logMonitor.plugin)
+            implementation(projects.plugins.logMonitor.ui)
             implementation(projects.plugins.logMonitor.kermit)
         }
         wasmJsMain {
@@ -150,34 +150,34 @@ kotlin {
             implementation(
                 npm("sqlite-wasm-worker", layout.projectDirectory.dir("sqlite-worker").asFile)
             )
-            implementation(projects.core.runtime)
-            implementation(projects.plugins.networkMonitor.plugin)
+            implementation(projects.core.shell)
+            implementation(projects.plugins.networkMonitor.ui)
             implementation(projects.plugins.networkMonitor.ktor)
-            implementation(projects.plugins.logMonitor.plugin)
+            implementation(projects.plugins.logMonitor.ui)
             implementation(projects.plugins.logMonitor.kermit)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
-            implementation(projects.core.runtime)
-            implementation(projects.plugins.networkMonitor.plugin)
+            implementation(projects.core.shell)
+            implementation(projects.plugins.networkMonitor.ui)
             implementation(projects.plugins.networkMonitor.ktor)
-            implementation(projects.plugins.logMonitor.plugin)
+            implementation(projects.plugins.logMonitor.ui)
             implementation(projects.plugins.logMonitor.kermit)
         }
     }
 }
 
 dependencies {
-    debugImplementation(projects.core.runtime)
+    debugImplementation(projects.core.shell)
     releaseImplementation(projects.core.noop)
     // Monitor plugins: debug Android keeps the real recording trio (api + plugin
     // + ktor/kermit). Release Android swaps the whole family for the noop
     // module, which exposes the same FQNs but with empty bodies — no SQLDelight
     // DB opens, no HTTP/log entries persist.
-    debugImplementation(projects.plugins.networkMonitor.plugin)
+    debugImplementation(projects.plugins.networkMonitor.ui)
     debugImplementation(projects.plugins.networkMonitor.ktor)
     releaseImplementation(projects.plugins.networkMonitor.noop)
-    debugImplementation(projects.plugins.logMonitor.plugin)
+    debugImplementation(projects.plugins.logMonitor.ui)
     debugImplementation(projects.plugins.logMonitor.kermit)
     releaseImplementation(projects.plugins.logMonitor.noop)
     add("kspCommonMainMetadata", projects.plugins.preferences.ksp)

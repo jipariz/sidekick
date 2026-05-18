@@ -25,9 +25,9 @@ import java.util.Properties
  * - `dev.parez.sidekick.preferences` is applied (which brings KSP, wires
  *   commonMain/jsMain/wasmJsMain srcDirs, and registers the preferences
  *   processor).
- * - `dev.parez.sidekick:runtime` is added to `commonMain`, so the `Sidekick()`
- *   and `SidekickShell()` composables resolve everywhere.
- * - For Android consumers, `runtime` is swapped with `noop` in release
+ * - `dev.parez.sidekick:shell` is added to `commonMain`, so the `Sidekick()`
+ *   composable resolves everywhere.
+ * - For Android consumers, `shell` is swapped with `noop` in release
  *   variants via `debugImplementation` / `releaseImplementation`.
  * - The plugin modules you opted into via the `sidekick { ... }` block are
  *   added to `commonMain` with the right Maven coordinates.
@@ -59,21 +59,21 @@ class SidekickGradlePlugin : Plugin<Project> {
 
         kmp.sourceSets.named("commonMain").configure { commonMain ->
             commonMain.dependencies {
-                // compileOnly: provides the Sidekick(), SidekickShell(), and
-                // SidekickState type stubs for commonMain compilation, but
-                // stays out of every variant's runtime classpath. Per-platform
-                // source sets add the runtime jar via implementation below;
-                // Android picks runtime (debug) or noop (release) via the
-                // variant swap. Without `compileOnly` here, runtime ends up in
+                // compileOnly: provides the Sidekick() and SidekickState type
+                // stubs for commonMain compilation, but stays out of every
+                // variant's runtime classpath. Per-platform
+                // source sets add the shell jar via implementation below;
+                // Android picks shell (debug) or noop (release) via the
+                // variant swap. Without `compileOnly` here, shell ends up in
                 // Android release's runtime classpath alongside noop and AGP
                 // fails the build with `checkReleaseDuplicateClasses`.
-                compileOnly("dev.parez.sidekick:runtime:$version")
+                compileOnly("dev.parez.sidekick:shell:$version")
 
                 if (sidekick.preferencesEnabled) {
                     implementation("dev.parez.sidekick:preferences:$version")
                 }
                 if (sidekick.networkMonitorEnabled) {
-                    implementation("dev.parez.sidekick:network-monitor-plugin:$version")
+                    implementation("dev.parez.sidekick:network-monitor-ui:$version")
                     implementation("dev.parez.sidekick:network-monitor-ktor:$version")
                 }
                 if (sidekick.logMonitorEnabled) {
@@ -82,18 +82,18 @@ class SidekickGradlePlugin : Plugin<Project> {
                     implementation("dev.parez.sidekick:log-monitor-kermit:$version")
                 }
                 if (sidekick.customScreensEnabled) {
-                    implementation("dev.parez.sidekick:custom-screens:$version")
+                    implementation("dev.parez.sidekick:custom-screen:$version")
                 }
             }
         }
 
-        // Non-Android targets: real runtime in each target's runtime classpath.
+        // Non-Android targets: real shell in each target's runtime classpath.
         // Adding to the intermediate `iosMain` source set covers all 3 iOS
         // leaf targets (arm64, x64, simulatorArm64) via the default hierarchy.
         // findByName silently skips targets the consumer hasn't declared.
         listOf("jvmMain", "iosMain", "jsMain", "wasmJsMain").forEach { sourceSetName ->
             kmp.sourceSets.findByName(sourceSetName)?.dependencies {
-                implementation("dev.parez.sidekick:runtime:$version")
+                implementation("dev.parez.sidekick:shell:$version")
             }
         }
 
@@ -103,7 +103,7 @@ class SidekickGradlePlugin : Plugin<Project> {
         val isAndroidApp = target.plugins.hasPlugin("com.android.application")
         val isAndroidLib = target.plugins.hasPlugin("com.android.library")
         if (isAndroidApp || isAndroidLib) {
-            target.dependencies.add("debugImplementation", "dev.parez.sidekick:runtime:$version")
+            target.dependencies.add("debugImplementation", "dev.parez.sidekick:shell:$version")
             target.dependencies.add("releaseImplementation", "dev.parez.sidekick:noop:$version")
         }
     }
@@ -140,12 +140,12 @@ open class SidekickExtension {
      *  this method enables the runtime UI module. */
     fun preferences() { preferencesEnabled = true }
 
-    /** Adds `dev.parez.sidekick:network-monitor-plugin` and `network-monitor-ktor` to `commonMain`. */
+    /** Adds `dev.parez.sidekick:network-monitor-ui` and `network-monitor-ktor` to `commonMain`. */
     fun networkMonitor() { networkMonitorEnabled = true }
 
-    /** Adds `dev.parez.sidekick:log-monitor-kermit` (which re-exports `log-monitor-plugin`) to `commonMain`. */
+    /** Adds `dev.parez.sidekick:log-monitor-kermit` (which re-exports `log-monitor-ui`) to `commonMain`. */
     fun logMonitor() { logMonitorEnabled = true }
 
-    /** Adds `dev.parez.sidekick:custom-screens` to `commonMain`. */
+    /** Adds `dev.parez.sidekick:custom-screen` to `commonMain`. */
     fun customScreens() { customScreensEnabled = true }
 }

@@ -40,15 +40,15 @@ Expose typed app settings inside the Sidekick panel — flip feature flags, chan
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
+            implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
             implementation("dev.parez.sidekick:preferences")
         }
     }
 }
 
 dependencies {
-    implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
-    debugImplementation("dev.parez.sidekick:runtime")   // version from BOM
+    implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
+    debugImplementation("dev.parez.sidekick:shell")     // version from BOM
     releaseImplementation("dev.parez.sidekick:noop")    // version from BOM
 }
 ```
@@ -61,7 +61,7 @@ The `dev.parez.sidekick.preferences` Gradle plugin bundles the KSP plugin applic
 
 ```kotlin
 plugins {
-    id("dev.parez.sidekick.preferences") version "2026.05.16"
+    id("dev.parez.sidekick.preferences") version "2026.05.17"
 }
 
 dependencies {
@@ -349,5 +349,5 @@ class MyPreferencesPlugin : PreferencesPlugin(
 
 ## See also
 
-- [Custom Screens](custom-screens.md)
+- [Custom Screens](custom-screen.md)
 - [Custom plugin](custom-plugin.md)

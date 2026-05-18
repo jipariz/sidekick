@@ -113,11 +113,11 @@ If the new BOM version differs from the current one:
    Sidekick BOM <new>
 
    Pins:
-   - core:plugin-api / runtime / noop @ <core sdk.version>
+   - core:plugin-api / shell / noop @ <core sdk.version>
    - network-monitor / -plugin / -ktor @ <network-monitor sdk.version>
    - log-monitor / -plugin / -kermit @ <log-monitor sdk.version>
    - preferences / -ksp / gradle-plugin (dev.parez.sidekick.preferences) @ <preferences sdk.version>
-   - custom-screens @ <custom-screens sdk.version>
+   - custom-screen @ <custom-screen sdk.version>
    ```
 3. `git tag -a v<new> -m "<annotation>"`
 4. `git push origin v<new>`
@@ -156,13 +156,13 @@ Wait for the user to confirm they've promoted both before continuing.
 | network-monitor | <network-monitor sdk.version> |
 | log-monitor | <log-monitor sdk.version> |
 | preferences | <preferences sdk.version> |
-| custom-screens | <custom-screens sdk.version> |
+| custom-screen | <custom-screen sdk.version> |
 
 ## Quick install
 
 ```kotlin
 dependencies {
-    debugImplementation("dev.parez.sidekick:runtime:<core sdk.version>")
+    debugImplementation("dev.parez.sidekick:shell:<core sdk.version>")
     releaseImplementation("dev.parez.sidekick:noop:<core sdk.version>")
 }
 
@@ -170,12 +170,12 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(platform("dev.parez.sidekick:bom:<new>"))
-            implementation("dev.parez.sidekick:network-monitor-plugin")
+            implementation("dev.parez.sidekick:network-monitor-ui")
             implementation("dev.parez.sidekick:network-monitor-ktor")
-            implementation("dev.parez.sidekick:log-monitor-plugin")
+            implementation("dev.parez.sidekick:log-monitor-ui")
             implementation("dev.parez.sidekick:log-monitor-kermit")
             implementation("dev.parez.sidekick:preferences")
-            implementation("dev.parez.sidekick:custom-screens")
+            implementation("dev.parez.sidekick:custom-screen")
         }
     }
 }

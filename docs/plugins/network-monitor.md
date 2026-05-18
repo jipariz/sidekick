@@ -26,7 +26,7 @@ Capture every HTTP request and response your app makes, with searchable list, me
 | Module | Purpose |
 |---|---|
 | `:plugins:network-monitor:api` | SQLDelight data layer + `NetworkMonitorStore` (Paging-backed). |
-| `:plugins:network-monitor:plugin` | Compose UI + `NetworkMonitorPlugin` (the `SidekickPlugin` impl). |
+| `:plugins:network-monitor:ui` | Compose UI + `NetworkMonitorPlugin` (the `SidekickPlugin` impl). |
 | `:plugins:network-monitor:ktor` | `NetworkMonitorKtor` Ktor `HttpClientPlugin` (optional). |
 | `:plugins:network-monitor:noop` | Release stub for all three above — same FQNs, empty bodies. No SQLDelight database, every `recordX` / `install` hook is a no-op. Swap in via `releaseImplementation` on Android or a build property on other targets. See [Release builds](../release-builds.md). |
 
@@ -39,23 +39,23 @@ Capture every HTTP request and response your app makes, with searchable list, me
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
+            implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
             // `compileOnly` keeps the real jars off Android release's runtime
             // classpath, where they would collide with the noop variant.
-            compileOnly("dev.parez.sidekick:network-monitor-plugin")
+            compileOnly("dev.parez.sidekick:network-monitor-ui")
             compileOnly("dev.parez.sidekick:network-monitor-ktor") // Ktor integration
         }
     }
 }
 
 dependencies {
-    implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
-    debugImplementation("dev.parez.sidekick:runtime")
+    implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
+    debugImplementation("dev.parez.sidekick:shell")
     releaseImplementation("dev.parez.sidekick:noop")
-    // Release Android: swap the recording trio (api + plugin + ktor) for the
+    // Release Android: swap the recording trio (api + ui + ktor) for the
     // single `network-monitor-noop` module, which exposes the same FQNs but
     // strips SQLDelight and makes recordX / install hooks empty.
-    debugImplementation("dev.parez.sidekick:network-monitor-plugin")
+    debugImplementation("dev.parez.sidekick:network-monitor-ui")
     debugImplementation("dev.parez.sidekick:network-monitor-ktor")
     releaseImplementation("dev.parez.sidekick:network-monitor-noop")
 }

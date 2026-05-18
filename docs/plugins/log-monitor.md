@@ -25,7 +25,7 @@ View your app's logs without ADB or platform-specific consoles. Level filters, f
 | Module | Purpose |
 |---|---|
 | `:plugins:log-monitor:api` | Core data model, `LogMonitorStore`, `LogCollector` interface. |
-| `:plugins:log-monitor:plugin` | Compose UI + `LogMonitorPlugin` (the `SidekickPlugin` impl). |
+| `:plugins:log-monitor:ui` | Compose UI + `LogMonitorPlugin` (the `SidekickPlugin` impl). |
 | `:plugins:log-monitor:kermit` | Kermit `LogWriter` bridge. |
 | `:plugins:log-monitor:noop` | Release stub for all three above — same FQNs, empty bodies. No SQLDelight database, `LogMonitorLogWriter.log()` discards entries, `LogMonitorStore.record()` is a no-op. Swap in via `releaseImplementation` on Android or a build property on other targets. See [Release builds](../release-builds.md). |
 
@@ -38,23 +38,23 @@ View your app's logs without ADB or platform-specific consoles. Level filters, f
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
+            implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
             // `compileOnly` keeps the real jars off Android release's runtime
             // classpath, where they would collide with the noop variant.
-            compileOnly("dev.parez.sidekick:log-monitor-plugin")
+            compileOnly("dev.parez.sidekick:log-monitor-ui")
             compileOnly("dev.parez.sidekick:log-monitor-kermit") // optional — Kermit bridge
         }
     }
 }
 
 dependencies {
-    implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
-    debugImplementation("dev.parez.sidekick:runtime")
+    implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
+    debugImplementation("dev.parez.sidekick:shell")
     releaseImplementation("dev.parez.sidekick:noop")
-    // Release Android: swap the recording trio (api + plugin + kermit) for the
+    // Release Android: swap the recording trio (api + ui + kermit) for the
     // single `log-monitor-noop` module, which exposes the same FQNs but strips
     // SQLDelight and makes record / log calls empty.
-    debugImplementation("dev.parez.sidekick:log-monitor-plugin")
+    debugImplementation("dev.parez.sidekick:log-monitor-ui")
     debugImplementation("dev.parez.sidekick:log-monitor-kermit")
     releaseImplementation("dev.parez.sidekick:log-monitor-noop")
 }
