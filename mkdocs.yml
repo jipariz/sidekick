@@ -61,7 +61,7 @@ nav:
       - Network Monitor: plugins/network-monitor.md
       - Log Monitor: plugins/log-monitor.md
       - Preferences: plugins/preferences.md
-      - Custom Screens: plugins/custom-screens.md
+      - Custom Screens: plugins/custom-screen.md
       - Creating a Custom Plugin: plugins/custom-plugin.md
   - Theming: theming.md
   - Claude Code Skills: claude-code-skills.md

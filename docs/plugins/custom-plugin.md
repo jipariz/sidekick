@@ -1,6 +1,6 @@
 # Creating a Custom Plugin
 
-Build your own first-class Sidekick plugin by implementing the `SidekickPlugin` interface from `:core:plugin-api`. Use this when you want a self-contained module with its own DI scope, data layer, and UI — for example, a Room-backed event log, a feature-flag editor with a remote backend, or a runtime DSL inspector. For simpler one-off screens, prefer [Custom Screens](custom-screens.md).
+Build your own first-class Sidekick plugin by implementing the `SidekickPlugin` interface from `:core:plugin-api`. Use this when you want a self-contained module with its own DI scope, data layer, and UI — for example, a Room-backed event log, a feature-flag editor with a remote backend, or a runtime DSL inspector. For simpler one-off screens, prefer [Custom Screens](custom-screen.md).
 
 ## Platforms
 
@@ -37,7 +37,7 @@ Your plugin module should compile against `plugin-api`:
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
+            implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
             implementation("dev.parez.sidekick:plugin-api")  // version from BOM
         }
     }
@@ -119,5 +119,5 @@ Use the [`/create-plugin`](../claude-code-skills.md#create-plugin) skill to scaf
 
 ## See also
 
-- [Custom Screens](custom-screens.md) — simpler wrapper when you just want a Composable in the panel.
+- [Custom Screens](custom-screen.md) — simpler wrapper when you just want a Composable in the panel.
 - [Network Monitor](network-monitor.md) and [Log Monitor](log-monitor.md) for reference implementations.

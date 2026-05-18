@@ -6,13 +6,13 @@ Sidekick uses **per-family semver** coordinated by a calendar-versioned BOM. The
 
 | Family root | Modules sharing one version |
 |---|---|
-| `core/` | `plugin-api`, `runtime`, `noop` |
-| `plugins/network-monitor/` | `api`, `plugin`, `ktor`, `noop` |
-| `plugins/log-monitor/` | `api`, `plugin`, `kermit`, `noop` |
+| `core/` | `plugin-api`, `shell`, `noop` |
+| `plugins/network-monitor/` | `api`, `ui`, `ktor`, `noop` |
+| `plugins/log-monitor/` | `api`, `ui`, `kermit`, `noop` |
 | `plugins/preferences/` | `api`, `ksp`, `gradle-plugin` (included build) |
-| `plugins/custom-screens/` | `api` |
+| `plugins/custom-screen/` | `api` |
 
-Each family root owns a single `version.properties` (e.g. `plugins/network-monitor/version.properties`) that every member module reads from. This is intentional — modules within a family share internal API surface and must move together; per-module versions would let `:network-monitor:plugin` and `:network-monitor:api` drift, silently breaking ABI assumptions.
+Each family root owns a single `version.properties` (e.g. `plugins/network-monitor/version.properties`) that every member module reads from. This is intentional — modules within a family share internal API surface and must move together; per-module versions would let `:network-monitor:ui` and `:network-monitor:api` drift, silently breaking ABI assumptions.
 
 The Sidekick BOM (`dev.parez.sidekick:bom`) is calendar-versioned (`YYYY.MM.DD`) and pins every family's current version transitively.
 
@@ -44,6 +44,16 @@ The BOM's calendar version lives at `gradle.properties:sidekick.bomVersion`. To 
 2. Commit + open PR + merge.
 3. Tag the merge commit `v<bomVersion>` and push. The publish workflow fires automatically.
 4. After both staging deployments land at https://central.sonatype.com → Deployments, promote them manually.
+
+> **Maven Local snapshot gotcha:** `./gradlew publishToMavenLocal` from the root publishes every module's main publication, but the **plugin-marker publications** for the included `plugins/preferences/gradle-plugin` build are skipped because Gradle's `publishToMavenLocal` task in that subbuild only depends on the main `pluginMaven` publication. Without the markers, a consumer's `plugins { id("dev.parez.sidekick.preferences") version "<bom>" }` fails to resolve. To get full local-publish parity:
+>
+> ```bash
+> ./gradlew publishToMavenLocal --no-configuration-cache
+> (cd plugins/preferences/gradle-plugin && ../../../gradlew \
+>     publishToMavenLocal \
+>     publishSidekickPreferencesPluginMarkerMavenPublicationToMavenLocal \
+>     publishSidekickPluginMarkerMavenPublicationToMavenLocal --no-configuration-cache)
+> ```
 
 ## Running tests
 

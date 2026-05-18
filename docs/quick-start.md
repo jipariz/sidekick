@@ -118,5 +118,5 @@ Use `.withExtras("key" to "value", ...)` to append custom badges (e.g. environme
 - [Network Monitor](plugins/network-monitor.md) — capture HTTP traffic
 - [Log Monitor](plugins/log-monitor.md) — view app logs
 - [Preferences](plugins/preferences.md) — expose typed settings
-- [Custom Screens](plugins/custom-screens.md) — add your own debug screens
+- [Custom Screens](plugins/custom-screen.md) — add your own debug screens
 - [Theming](theming.md) — control the panel's color scheme

@@ -2,10 +2,10 @@
 
 Sidekick strips itself from production builds via dedicated noop modules. There are two layers to swap:
 
-1. **`core:runtime` → `core:noop`** — replaces the `Sidekick()` composable with an empty body. No panel, no overlay UI.
+1. **`core:shell` → `core:noop`** — replaces the `Sidekick()` composable with an empty body. No panel, no overlay UI.
 2. **`network-monitor:{plugin,ktor}` → `network-monitor:noop`** and **`log-monitor:{plugin,kermit}` → `log-monitor:noop`** — replaces the recording side with empty stubs. No SQLDelight database opens, no HTTP/log entries are persisted, every `recordX` / `install` / `log` call is a no-op.
 
-The public ABI is identical across `runtime`/`noop` and across each `{api,plugin,ktor|kermit}`/`noop` family — same FQNs, same signatures. Consumer code compiles unchanged in both variants.
+The public ABI is identical across `shell`/`noop` and across each `{api,plugin,ktor|kermit}`/`noop` family — same FQNs, same signatures. Consumer code compiles unchanged in both variants.
 
 ## Android (single-module app)
 
@@ -16,25 +16,25 @@ The public ABI is identical across `runtime`/`noop` and across each `{api,plugin
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
+            implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
             // `compileOnly` keeps the real plugin jars off the Android release
             // runtime classpath, where they would collide with the noop variant.
-            compileOnly("dev.parez.sidekick:network-monitor-plugin")
+            compileOnly("dev.parez.sidekick:network-monitor-ui")
             compileOnly("dev.parez.sidekick:network-monitor-ktor")
-            compileOnly("dev.parez.sidekick:log-monitor-plugin")
+            compileOnly("dev.parez.sidekick:log-monitor-ui")
             compileOnly("dev.parez.sidekick:log-monitor-kermit")
         }
     }
 }
 
 dependencies {
-    debugImplementation("dev.parez.sidekick:runtime")
+    debugImplementation("dev.parez.sidekick:shell")
     releaseImplementation("dev.parez.sidekick:noop")
 
-    debugImplementation("dev.parez.sidekick:network-monitor-plugin")
+    debugImplementation("dev.parez.sidekick:network-monitor-ui")
     debugImplementation("dev.parez.sidekick:network-monitor-ktor")
     releaseImplementation("dev.parez.sidekick:network-monitor-noop")
-    debugImplementation("dev.parez.sidekick:log-monitor-plugin")
+    debugImplementation("dev.parez.sidekick:log-monitor-ui")
     debugImplementation("dev.parez.sidekick:log-monitor-kermit")
     releaseImplementation("dev.parez.sidekick:log-monitor-noop")
 }
@@ -54,16 +54,16 @@ The recommended pattern is a property-gated swap in each leaf source set. Run pr
 val sidekickNoop = (findProperty("sidekick.noop") as? String).toBoolean()
 
 jvmMain.dependencies {
-    implementation(platform("dev.parez.sidekick:bom:2026.05.16"))
+    implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
     if (sidekickNoop) {
         implementation("dev.parez.sidekick:noop")
         implementation("dev.parez.sidekick:network-monitor-noop")
         implementation("dev.parez.sidekick:log-monitor-noop")
     } else {
-        implementation("dev.parez.sidekick:runtime")
-        implementation("dev.parez.sidekick:network-monitor-plugin")
+        implementation("dev.parez.sidekick:shell")
+        implementation("dev.parez.sidekick:network-monitor-ui")
         implementation("dev.parez.sidekick:network-monitor-ktor")
-        implementation("dev.parez.sidekick:log-monitor-plugin")
+        implementation("dev.parez.sidekick:log-monitor-ui")
         implementation("dev.parez.sidekick:log-monitor-kermit")
     }
 }

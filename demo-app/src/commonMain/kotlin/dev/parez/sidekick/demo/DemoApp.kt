@@ -41,11 +41,11 @@ import dev.parez.sidekick.Sidekick
 import dev.parez.sidekick.demo.di.LibraryKoinContext
 import dev.parez.sidekick.demo.theme.AppTypography
 import dev.parez.sidekick.demo.theme.colorSchemeFor
-import dev.parez.sidekick.logs.LogMonitorPlugin
-import dev.parez.sidekick.logs.LogMonitorStore
-import dev.parez.sidekick.logs.kermit.LogMonitorLogWriter
+import dev.parez.sidekick.log.LogMonitorPlugin
+import dev.parez.sidekick.log.LogMonitorStore
+import dev.parez.sidekick.log.kermit.LogMonitorLogWriter
 import dev.parez.sidekick.network.NetworkMonitorPlugin
-import dev.parez.sidekick.screens.CustomScreenPlugin
+import dev.parez.sidekick.screen.CustomScreenPlugin
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay

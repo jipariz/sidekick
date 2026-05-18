@@ -14,19 +14,19 @@ version = findProperty("sidekick.bomVersion") as String
 dependencies {
     constraints {
         api(projects.core.pluginApi)
-        api(projects.core.runtime)
+        api(projects.core.shell)
         api(projects.core.noop)
         api(projects.plugins.preferences.api)
         api(projects.plugins.preferences.ksp)
         api(projects.plugins.networkMonitor.api)
-        api(projects.plugins.networkMonitor.plugin)
+        api(projects.plugins.networkMonitor.ui)
         api(projects.plugins.networkMonitor.ktor)
         api(projects.plugins.networkMonitor.noop)
         api(projects.plugins.logMonitor.api)
-        api(projects.plugins.logMonitor.plugin)
+        api(projects.plugins.logMonitor.ui)
         api(projects.plugins.logMonitor.kermit)
         api(projects.plugins.logMonitor.noop)
-        api(projects.plugins.customScreens.api)
+        api(projects.plugins.customScreen.api)
     }
 }
 

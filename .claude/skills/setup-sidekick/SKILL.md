@@ -4,7 +4,7 @@ description: >
   Interactive setup wizard for adding Sidekick to a consumer app. Handles
   fresh installation (core dependencies, Sidekick composable wiring with FAB
   visibility toggle), plugin selection (network-monitor, log-monitor,
-  preferences, custom-screens), and migration of an existing DataStore-based
+  preferences, custom-screen), and migration of an existing DataStore-based
   preferences class to the Preferences plugin with KSP code generation.
   Trigger with: "set up Sidekick", "add Sidekick", "install Sidekick",
   "migrate preferences to Sidekick", or just "/setup-sidekick".
@@ -17,9 +17,11 @@ allowed-tools: Read Write Edit Bash Glob Grep AskUserQuestion
 You are setting up Sidekick in a consumer project. Work through the phases
 below in order. Adapt to what you find — skip steps that are already done.
 
-The host owns visibility: Sidekick exposes a `Sidekick(plugins = …)` composable
-that renders the debug panel; the host wraps it in a FAB + `AnimatedVisibility`
-pair. There is no `SidekickShell` wrapper. Do not invent one.
+The host owns visibility: the published Sidekick SDK exposes only the
+`Sidekick(plugins = …)` composable; the host wraps it in a FAB +
+`AnimatedVisibility` pair. The Sidekick demo-app ships a copy-paste-ready
+`SidekickShell(...)` composable in its own source tree as a sample, but it is
+not part of the SDK — do not import it from `dev.parez.sidekick:shell`.
 
 ---
 
@@ -32,10 +34,10 @@ Otherwise, search for `build.gradle.kts` files that look like app modules
 Read the file and extract:
 
 - **Build type** — is this a Sidekick mono-repo sub-module (consume via
-  `projects.core.runtime`) or an external KMP project that depends on Sidekick
-  via Maven coordinates (`dev.parez.sidekick:runtime:<version>`)? Default to
+  `projects.core.shell`) or an external KMP project that depends on Sidekick
+  via Maven coordinates (`dev.parez.sidekick:shell:<version>`)? Default to
   Maven coordinates unless the project is inside the Sidekick repo (look for a
-  sibling `core/runtime/` directory at the repo root) — most consumers are
+  sibling `core/shell/` directory at the repo root) — most consumers are
   external.
 - **Targets declared** — `androidTarget`, `jvm()`, `js`, `wasmJs`, iOS.
 - **Existing Sidekick dependencies** — any `dev.parez.sidekick:*` or `projects.core.*`.
@@ -113,34 +115,34 @@ version is `0.1.0-SNAPSHOT`. **Add to `gradle/libs.versions.toml`:**
 sidekick = "0.1.0-SNAPSHOT"
 
 [libraries]
-sidekick-runtime                = { module = "dev.parez.sidekick:runtime",                version.ref = "sidekick" }
+sidekick-shell                  = { module = "dev.parez.sidekick:shell",                version.ref = "sidekick" }
 sidekick-noop                   = { module = "dev.parez.sidekick:noop",                   version.ref = "sidekick" }
 sidekick-preferences            = { module = "dev.parez.sidekick:preferences",            version.ref = "sidekick" }
 sidekick-preferences-ksp        = { module = "dev.parez.sidekick:preferences-ksp",        version.ref = "sidekick" }
-sidekick-network-monitor-plugin = { module = "dev.parez.sidekick:network-monitor-plugin", version.ref = "sidekick" }
+sidekick-network-monitor-ui = { module = "dev.parez.sidekick:network-monitor-ui", version.ref = "sidekick" }
 sidekick-network-monitor-ktor   = { module = "dev.parez.sidekick:network-monitor-ktor",   version.ref = "sidekick" }
-sidekick-log-monitor-plugin     = { module = "dev.parez.sidekick:log-monitor-plugin",     version.ref = "sidekick" }
+sidekick-log-monitor-ui     = { module = "dev.parez.sidekick:log-monitor-ui",     version.ref = "sidekick" }
 sidekick-log-monitor-kermit     = { module = "dev.parez.sidekick:log-monitor-kermit",     version.ref = "sidekick" }
-sidekick-custom-screens         = { module = "dev.parez.sidekick:custom-screens",         version.ref = "sidekick" }
+sidekick-custom-screen         = { module = "dev.parez.sidekick:custom-screen",         version.ref = "sidekick" }
 
 [plugins]
 sidekick-preferences = { id = "dev.parez.sidekick.preferences", version.ref = "sidekick" }
 ```
 
 > **In-repo consumers only:** instead of the Maven coordinates above, you may
-> use typesafe project accessors (`projects.core.runtime`, `projects.plugins.preferences.api`, etc.) — but only when the consuming module is part of the
+> use typesafe project accessors (`projects.core.shell`, `projects.plugins.preferences.api`, etc.) — but only when the consuming module is part of the
 > Sidekick mono-repo's `settings.gradle.kts`.
 
 ### 3b. Core dependency (debug/release swap)
 
-The runtime overlay is in `dev.parez.sidekick:runtime`; the release stub is
+The full overlay shell is in `dev.parez.sidekick:shell`; the release stub is
 `dev.parez.sidekick:noop`. Both expose an identical `Sidekick(plugins = …)`
 symbol, so `commonMain` code compiles against either.
 
 **On Android-only projects:**
 ```kotlin
 dependencies {
-    debugImplementation(libs.sidekick.runtime)
+    debugImplementation(libs.sidekick.shell)
     releaseImplementation(libs.sidekick.noop)
 }
 ```
@@ -154,7 +156,7 @@ kotlin {
             // Pull the full overlay in commonMain so every non-Android target
             // (JVM, iOS, Wasm, JS) gets the real implementation. Android
             // overrides this in its own variant block below.
-            implementation(libs.sidekick.runtime)
+            implementation(libs.sidekick.shell)
         }
     }
 }
@@ -163,12 +165,12 @@ dependencies {
     // Android variant-specific: full overlay in debug, no-op stub in release.
     // The Sidekick() call site in commonMain compiles against the same
     // signature regardless of which artifact wins on Android.
-    debugImplementation(libs.sidekick.runtime)
+    debugImplementation(libs.sidekick.shell)
     releaseImplementation(libs.sidekick.noop)
 }
 ```
 
-If the project is **JVM-only / desktop-only** (no Android), use `jvmMain.dependencies` and accept that the runtime ships in release JVM builds too — there's no separate JVM release variant.
+If the project is **JVM-only / desktop-only** (no Android), use `jvmMain.dependencies` and accept that the shell ships in release JVM builds too — there's no separate JVM release variant.
 
 ### 3c. Plugin dependencies
 
@@ -399,8 +401,8 @@ Find the root composable (identified in Phase 1). Read it, then edit it to:
    ```kotlin
    import co.touchlab.kermit.Logger
    import co.touchlab.kermit.platformLogWriter
-   import dev.parez.sidekick.logs.LogMonitorPlugin
-   import dev.parez.sidekick.logs.kermit.LogMonitorLogWriter   // note .kermit segment
+   import dev.parez.sidekick.log.LogMonitorPlugin
+   import dev.parez.sidekick.log.kermit.LogMonitorLogWriter   // note .kermit segment
    import dev.parez.sidekick.network.NetworkMonitorPlugin
    ```
 
@@ -456,7 +458,8 @@ Find the root composable (identified in Phase 1). Read it, then edit it to:
 
 Do **not** introduce a new outer wrapper composable — keep `Sidekick()`
 inside the host's `MaterialTheme` so theming is inherited automatically when
-`useSidekickTheme = false`. There is no `SidekickShell`; do not invent one.
+`useSidekickTheme = false`. The SDK exposes only `Sidekick()`; the demo-app's
+`SidekickShell` is a copy-paste sample, not an SDK type.
 
 ### 3g. Install `NetworkMonitorKtor` on the HttpClient (Network Monitor + Ktor only)
 
@@ -508,8 +511,10 @@ Tell the user:
   Gradle plugin handles this; do not bypass it.
 - Do **not** overwrite existing plugin registrations in the existing plugin
   list passed to `Sidekick(...)`.
-- Do **not** invent or reference `SidekickShell` — the real API is
-  `Sidekick(plugins = …)` and the host owns the FAB / visibility.
+- Do **not** import `SidekickShell` from any `dev.parez.sidekick:*` artifact —
+  the real SDK API is `Sidekick(plugins = …)` and the host owns the FAB /
+  visibility. (The demo-app has a same-named sample composable, but it is not
+  published; consumers copy-paste it if useful.)
 - Do **not** migrate enum types whose values are stored via a manual `.value`
   string property (not `.name`) — these require a custom mapping that KSP
   cannot infer.

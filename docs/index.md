@@ -39,7 +39,7 @@ Sidekick adds a floating debug panel to your app during development — network 
 | [Network Monitor](plugins/network-monitor.md) | Captures and displays all HTTP traffic via Ktor (or any client via `NetworkMonitorStore`). |
 | [Log Monitor](plugins/log-monitor.md) | Displays app logs with level filtering and search (Kermit built-in, any SDK via `LogCollector`). |
 | [Preferences](plugins/preferences.md) | Exposes typed settings in the panel — KSP code generation or manual DataStore bridging. |
-| [Custom Screens](plugins/custom-screens.md) | Wraps any Composable as a first-class debug screen. |
+| [Custom Screens](plugins/custom-screen.md) | Wraps any Composable as a first-class debug screen. |
 
 ## Quick Example
 
