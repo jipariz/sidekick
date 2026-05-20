@@ -43,6 +43,18 @@ class SidekickPreferencesPlugin : Plugin<Project> {
                     val src = kspOutDir.get().asFile
                     src.exists() && src.walkTopDown().any { it.isFile }
                 }
+                // Under Kotlin 2.3 / Gradle 9.x, the commonMain metadata compile pass
+                // scans every commonMain srcDir, so if BOTH the KSP auto-dir (kspOutDir)
+                // and our stable mirror (stableDir) contain the generated files, every
+                // class redeclares itself. Move-semantics: wipe kspOutDir contents after
+                // the mirror is in place. KSP's metadata task is configured below to
+                // never be UP-TO-DATE, so kspOutDir gets repopulated each build.
+                sync.doLast {
+                    val src = kspOutDir.get().asFile
+                    if (src.exists()) {
+                        src.walkTopDown().filter { it.isFile }.toList().forEach { it.delete() }
+                    }
+                }
             }
 
             kmp.sourceSets.named("commonMain").configure { commonMain ->
