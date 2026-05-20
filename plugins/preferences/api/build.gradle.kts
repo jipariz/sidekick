@@ -1,8 +1,10 @@
 plugins {
     id("sidekick.kmp.library")
 }
-
 kotlin {
+    androidLibrary {
+        namespace = "dev.parez.sidekick.preferences"
+    }
     sourceSets {
         commonMain.dependencies {
             api(projects.core.pluginApi)
@@ -14,8 +16,4 @@ kotlin {
             implementation(libs.androidx.datastore.prefs)
         }
     }
-}
-
-android {
-    namespace = "dev.parez.sidekick.preferences"
 }

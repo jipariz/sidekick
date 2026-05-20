@@ -33,9 +33,12 @@ settings.gradle.kts
 │   │   └── noop          — Release stub: LogMonitorLogWriter discards entries, no SQLDelight
 │   └── custom-screen/
 │       └── api           — CustomScreenPlugin: wraps any Composable as a SidekickPlugin
-├── demo-app              — Pokemon catalog app exercising all SDK features
+├── composeApp/           — Pokemon catalog KMP module exercising all SDK features
+├── androidApp/           — Thin com.android.application shell that depends on :composeApp
+│                           (AGP 9 disallows com.android.application + kotlin.multiplatform
+│                           in the same subproject, hence the split)
 ├── build-logic/          — Convention plugin: sidekick.kmp.library (SidekickKmpLibraryPlugin)
-└── iosApp/               — Xcode project wrapping demo-app for iOS
+└── iosApp/               — Xcode project wrapping composeApp for iOS
 ```
 
 Use typesafe project accessors: `projects.core.shell`, `projects.plugins.preferences.api`, etc.
@@ -44,23 +47,23 @@ Use typesafe project accessors: `projects.core.shell`, `projects.plugins.prefere
 
 ```bash
 # Demo app — Android
-./gradlew :demo-app:assembleDebug
+./gradlew :androidApp:assembleDebug
 
 # Demo app — Desktop (JVM)
-./gradlew :demo-app:run
+./gradlew :composeApp:run
 
 # Demo app — Web (Wasm)
-./gradlew :demo-app:wasmJsBrowserDevelopmentRun
+./gradlew :composeApp:wasmJsBrowserDevelopmentRun
 
 # Demo app — Web (JS)
-./gradlew :demo-app:jsBrowserDevelopmentRun
+./gradlew :composeApp:jsBrowserDevelopmentRun
 
 # Run all tests across all modules
 ./gradlew allTests
 
 # Run tests for a specific module
 ./gradlew :core:shell:allTests
-./gradlew :demo-app:jvmTest --tests "dev.parez.sidekick.SomeTest"
+./gradlew :composeApp:jvmTest --tests "dev.parez.sidekick.SomeTest"
 
 # Publish to Maven Local
 ./gradlew publishToMavenLocal --no-configuration-cache
@@ -77,8 +80,8 @@ Sidekick uses **per-family semver** coordinated by a **calendar-versioned BOM**.
 | Family root | Members |
 |---|---|
 | `core/` | `plugin-api`, `shell`, `noop` |
-| `plugins/network-monitor/` | `api`, `plugin`, `ktor`, `noop` |
-| `plugins/log-monitor/` | `api`, `plugin`, `kermit`, `noop` |
+| `plugins/network-monitor/` | `api`, `ui`, `ktor`, `noop` |
+| `plugins/log-monitor/` | `api`, `ui`, `kermit`, `noop` |
 | `plugins/preferences/` | `api`, `ksp`, `gradle-plugin` (included build) |
 | `plugins/custom-screen/` | `api` |
 
@@ -147,6 +150,11 @@ This split (override in the included gradle-plugin's `build.gradle.kts`, in the 
 - **Doc-comment lexer doesn't honor backticks.** Kotlin's block-comment scanner matches `*/` literally even inside backticked code in KDoc. A KDoc that mentions `src/*Main/` will close the comment prematurely. Use `src/<sourceSet>Main/` or similar.
 - **Tag re-creation after a failed release.** If a publish run fails partway (one bundle uploaded, the other didn't), drop the partial staging in Portal, fix the issue on a PR, merge, then `git push --delete origin v<x>; git tag -d v<x>` and re-tag at the new HEAD. Don't try to amend the original tag — `git tag -f` works locally but tag-force-push is blocked on protected refs and confuses Central if the original deployment already landed.
 - **`publishToMavenLocal` skips gradle-plugin markers.** Running the task from the root only publishes each module's main publication; the included `plugins/preferences/gradle-plugin` build's per-plugin marker publications (`sidekickPreferencesPluginMarkerMaven`, `sidekickPluginMarkerMaven`) aren't wired into the root's task graph, so they stay unpublished. Consumers that pin `plugins { id("dev.parez.sidekick.preferences") version "<bom>" }` then fail to resolve the marker. Workaround: invoke the marker tasks explicitly from the gradle-plugin's included build (`(cd plugins/preferences/gradle-plugin && ../../../gradlew publishSidekickPreferencesPluginMarkerMavenPublicationToMavenLocal publishSidekickPluginMarkerMavenPublicationToMavenLocal)`). The Central Portal path is unaffected — Vanniktech bundles the markers into its zip regardless.
+- **AGP 9 + `androidLibrary` DSL accessor shadowing under SQLDelight.** When `sidekick.kmp.library` is applied alongside `app.cash.sqldelight`, the AGP 9 `kotlin { android { … } }` accessor is shadowed by KMP's deprecated `android(name: String, …): KotlinAndroidTarget` member function (Gradle's static accessor generator picks the member over the runtime-injected `android` extension). Use the older-spelling `androidLibrary { … }` accessor instead — same `KotlinMultiplatformAndroidLibraryExtension` type, unambiguous in both single-plugin and SQLDelight-co-applied modules. AGP marks `androidLibrary` deprecated as of 9.1.0-alpha09 but it still works in 9.2.x.
+- **AGP 9's KMP library plugin drops `publishLibraryVariants("release", "debug")`.** The new `KotlinMultiplatformAndroidLibraryExtension` doesn't expose it — Android publishes one variant only. The `debugImplementation(real)` / `releaseImplementation(noop)` Android-only recipe Sidekick relied on is gone; both real and noop now ride on a single Android coordinate, and consumers pick via a property-gated swap in each `*Main.dependencies` block (see `### Debug vs Release`). This was the load-bearing public-API change of the AGP 9 migration.
+- **`applyDefaultHierarchyTemplate` does not match AGP 9's Android target.** `withAndroidTarget()` in the hierarchy template was added for the legacy `KotlinAndroidTarget` produced by `com.android.library` + `org.jetbrains.kotlin.multiplatform`. AGP 9's `com.android.kotlin.multiplatform.library` produces a `KotlinMultiplatformAndroidLibraryTarget` instead, and the template silently skips it. Wire the `nonIosMain` intermediate manually in modules that need it: `val nonIosMain by creating { dependsOn(commonMain) }; named("androidMain") { dependsOn(nonIosMain) }; …`.
+- **Room 3 KMP `expect object` requires an explicit override declaration under Kotlin 2.3.** `expect object PokemonDatabaseConstructor : RoomDatabaseConstructor<PokemonDatabase>` without a body now fails the metadata compile (`is not abstract and does not implement abstract member: fun initialize(): T`). Add `{ override fun initialize(): PokemonDatabase }` to the expect declaration — the actual generated by Room's KSP per target then matches up correctly.
+- **Preferences plugin's KSP src-dir mirror needs move-semantics under Kotlin 2.3 / Gradle 9.4.** `compileCommonMainKotlinMetadata` now scans every commonMain srcDir, so KSP's auto-registered output dir AND the `syncSidekickPreferencesKsp` mirror both surface the same generated classes. The `Sync` task in `SidekickPreferencesPlugin` therefore wipes the source dir after mirroring (move-semantics) — `kspCommonMainKotlinMetadata` is already configured no-cache / no-up-to-date so the source repopulates each build.
 
 ## Architecture
 
@@ -154,7 +162,7 @@ This split (override in the included gradle-plugin's `build.gradle.kts`, in the 
 Plugins implement `SidekickPlugin` (from `:core:plugin-api`): `id`, `title`, `icon: ImageVector`, `@Composable fun Content()`. Host apps pass a `List<SidekickPlugin>` to `Sidekick()`. The composable renders the debug panel; the host app is responsible for showing/hiding it (FAB, gesture, etc.).
 
 ### Navigation
-Uses **Material 3 Adaptive** (`ListDetailPaneScaffold`). Plugin list/detail navigation is state-based in `SidekickState` using `selectedPluginId: String?`. The demo-app uses `ListDetailPaneScaffold` + `rememberListDetailPaneScaffoldNavigator` for adaptive list-detail layout.
+Uses **Material 3 Adaptive** (`ListDetailPaneScaffold`). Plugin list/detail navigation is state-based in `SidekickState` using `selectedPluginId: String?`. The composeApp uses `ListDetailPaneScaffold` + `rememberListDetailPaneScaffoldNavigator` for adaptive list-detail layout.
 
 ### Dependency Injection
 **Koin** is used at two levels:
@@ -165,7 +173,7 @@ Uses **Material 3 Adaptive** (`ListDetailPaneScaffold`). Plugin list/detail navi
    - `Content()` wraps its composable tree in `KoinIsolatedContext(context = <Name>KoinContext.koinApp)` so `koinViewModel()` resolves from the plugin's private graph.
    - Other sibling modules (e.g. `network-monitor:ktor`, `log-monitor:kermit`) access the shared singleton via a `getDefaultStore()` helper on the context object — avoiding a direct Koin dependency in those modules.
 
-2. **demo-app** — uses `KoinIsolatedContext` with its own `AppModule` (Pokémon repository, ViewModels). Isolated from any host-app Koin instance.
+2. **composeApp** — uses `KoinIsolatedContext` with its own `AppModule` (Pokémon repository, ViewModels). Isolated from any host-app Koin instance.
 
 ViewModels are provided via `koin-compose-viewmodel`.
 
@@ -185,56 +193,59 @@ Both monitor plugins use **AndroidX Paging 3.5.0** (KMP) for their list screens.
 `SidekickInitializer` is a `ContentProvider` in `:core:plugin-api` that auto-initializes `ApplicationContextHolder` at app startup — no manual setup required in consuming apps. `ApplicationContextHolder.isInitialized` guards against uninitialized access for consumers that don't go through the normal ContentProvider path.
 
 ### Debug vs Release
-- `debugImplementation(projects.core.shell)` — full overlay shell
-- `releaseImplementation(projects.core.noop)` — no-op, zero cost
-- JVM desktop: add `jvmMain.dependencies { implementation(projects.core.shell) }` separately (`debugImplementation` is Android-only)
 
-The monitor plugins follow the same pattern — recording stops at the Ktor / Kermit bridges and the `…Plugin` constructors, both of which the noop module replaces:
+**AGP 9 change (BREAKING):** `com.android.kotlin.multiplatform.library` no longer exposes
+`publishLibraryVariants("release", "debug")`. Android consumers can no longer pick
+real-vs-noop via `debugImplementation` / `releaseImplementation` — the library
+publishes a single Android variant. The recipe is now consumer-driven on **every
+target including Android**, mirroring what non-Android already required.
 
 ```kotlin
+val noopMonitors = (findProperty("sidekick.noop") as? String).toBoolean()
+
 // commonMain — compileOnly gives commonMain the types for compilation only;
-// the real module never lands on Android release's runtime classpath, so it
-// can't collide with the noop variant.
+// the real module never lands on the runtime classpath when the noop swap is
+// active, so it can't collide with the noop variant.
+compileOnly(projects.core.shell)
 compileOnly(projects.plugins.networkMonitor.ui)
 compileOnly(projects.plugins.networkMonitor.ktor)
 compileOnly(projects.plugins.logMonitor.ui)
 compileOnly(projects.plugins.logMonitor.kermit)
 
-// Android variants:
-debugImplementation(projects.plugins.networkMonitor.ui)
-debugImplementation(projects.plugins.networkMonitor.ktor)
-releaseImplementation(projects.plugins.networkMonitor.noop)
-debugImplementation(projects.plugins.logMonitor.ui)
-debugImplementation(projects.plugins.logMonitor.kermit)
-releaseImplementation(projects.plugins.logMonitor.noop)
-
-// Non-Android targets have no debug/release variant — link the real modules
-// in their respective `*Main.dependencies` blocks (jvmMain, jsMain, wasmJsMain,
-// iosMain). The demo-app does this; consumers can mirror it or skip the
-// non-Android wiring if they only ship Android.
-```
-
-In release, `NetworkMonitorPlugin(...)` / `LogMonitorPlugin(...)` constructors are empty (no `store.init()` → no SQLDelight DB opens), `install(NetworkMonitorKtor) { }` registers no Ktor hooks, and `LogMonitorLogWriter` discards every entry passed to it.
-
-**Non-Android targets: consumer-driven swap.** `debugImplementation` / `releaseImplementation` are AGP-only configurations and don't extend to JVM / iOS / JS / WasmJS. For those targets the consumer is responsible for picking the real or noop module themselves. A property-gated recipe (used by `./gradlew … -Psidekick.noop=true` for prod builds):
-
-```kotlin
-val noopMonitors = (findProperty("sidekick.noop") as? String).toBoolean()
-
-jvmMain.dependencies {
+// Per-target — pick real OR noop based on the sidekick.noop Gradle property.
+// Repeat the same shape for iosMain, jsMain, wasmJsMain.
+androidMain.dependencies {
     if (noopMonitors) {
+        implementation(projects.core.noop)
         implementation(projects.plugins.networkMonitor.noop)
         implementation(projects.plugins.logMonitor.noop)
     } else {
+        implementation(projects.core.shell)
         implementation(projects.plugins.networkMonitor.ui)
         implementation(projects.plugins.networkMonitor.ktor)
         implementation(projects.plugins.logMonitor.ui)
         implementation(projects.plugins.logMonitor.kermit)
     }
 }
+jvmMain.dependencies { /* same shape */ }
+iosMain.dependencies { /* same shape */ }
+jsMain.dependencies { /* same shape */ }
+wasmJsMain.dependencies { /* same shape */ }
 ```
 
-The same shape works in `iosMain.dependencies`, `jsMain.dependencies`, and `wasmJsMain.dependencies`. The demo-app keeps unconditional `implementation(real)` on every non-Android target — it's a dev-only build, so there's no prod variant to swap to.
+Drive release builds with `./gradlew … -Psidekick.noop=true`. The composeApp here keeps
+unconditional `implementation(real)` on every target — it's a dev-only build, so there's
+no prod variant to swap to.
+
+In the noop variant, `NetworkMonitorPlugin(...)` / `LogMonitorPlugin(...)` constructors
+are empty (no `store.init()` → no SQLDelight DB opens), `install(NetworkMonitorKtor) { }`
+registers no Ktor hooks, and `LogMonitorLogWriter` discards every entry passed to it.
+
+**Historical note:** before the AGP 9 migration, Android picked real-vs-noop via
+`debugImplementation(real)` / `releaseImplementation(noop)` from the library's
+debug/release variant publication. That mechanism is gone in AGP 9's KMP library
+plugin (see `SidekickKmpLibraryPlugin` for the rationale comment).
+
 
 ### Theming
 `Sidekick()` accepts `useSidekickTheme: Boolean = true`:
@@ -243,7 +254,14 @@ The same shape works in `iosMain.dependencies`, `jsMain.dependencies`, and `wasm
 
 ## Build-Logic Convention Plugin
 
-`sidekick.kmp.library` (`SidekickKmpLibraryPlugin` in `build-logic/`) auto-configures: `kotlin-multiplatform`, `com.android.library`, `compose`, `kotlin.plugin.compose`, `maven-publish`. Sets all KMP targets, Java 11, `publishLibraryVariants("release", "debug")` for Android AAR publishing, and injects Compose runtime/foundation/material3/ui into `commonMain`. Used by all `core/*` and `plugins/**` modules.
+`sidekick.kmp.library` (`SidekickKmpLibraryPlugin` in `build-logic/`) auto-configures:
+`kotlin-multiplatform`, `com.android.kotlin.multiplatform.library` (the AGP 9+
+replacement for the old `com.android.library` + `kotlin.multiplatform` combo,
+which AGP 9 explicitly disallows), `compose`, `kotlin.plugin.compose`,
+`maven-publish`. Sets all KMP targets, configures `compileSdk` / `minSdk` via the
+`KotlinMultiplatformAndroidLibraryExtension` (`androidLibrary { … }`), and injects
+Compose runtime/foundation/material3/ui into `commonMain`. Used by all `core/*`
+and `plugins/**` modules.
 
 ## Dependency Management
 
@@ -268,13 +286,13 @@ The processor reads each property's Kotlin initializer (`= …`) directly from t
 
 | Library | Purpose | Module(s) |
 |---------|---------|-----------|
-| M3 Adaptive | List-detail navigation | shell, network-monitor, log-monitor, demo-app |
-| Koin | DI (isolated plugin contexts + demo-app) | network-monitor/api+ui, log-monitor/api+ui, demo-app |
+| M3 Adaptive | List-detail navigation | shell, network-monitor, log-monitor, composeApp |
+| Koin | DI (isolated plugin contexts + composeApp) | network-monitor/api+ui, log-monitor/api+ui, composeApp |
 | SQLDelight | HTTP traffic + log entry DB (generateAsync = true) | network-monitor/api, log-monitor/api |
 | AndroidX Paging | Paged list flows in monitor plugins | network-monitor/api+ui, log-monitor/api+ui |
-| Ktor | HTTP client + interceptor | network-monitor/ktor, demo-app |
-| Kermit | Multiplatform logging bridge | log-monitor/kermit, demo-app |
+| Ktor | HTTP client + interceptor | network-monitor/ktor, composeApp |
+| Kermit | Multiplatform logging bridge | log-monitor/kermit, composeApp |
 | DataStore | Preferences persistence | preferences/api |
 | KSP + KotlinPoet | Code generation for preferences | preferences/ksp |
-| Room 3 | Local cache | demo-app |
-| Coil 3 | Image loading | demo-app |
+| Room 3 | Local cache | composeApp |
+| Coil 3 | Image loading | composeApp |

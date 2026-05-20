@@ -1,8 +1,10 @@
 plugins {
     id("sidekick.kmp.library")
 }
-
 kotlin {
+    androidLibrary {
+        namespace = "dev.parez.sidekick.network.ui"
+    }
     sourceSets {
         commonMain.dependencies {
             api(projects.plugins.networkMonitor.api)
@@ -23,8 +25,4 @@ kotlin {
             implementation(libs.koin.android)
         }
     }
-}
-
-android {
-    namespace = "dev.parez.sidekick.network.ui"
 }

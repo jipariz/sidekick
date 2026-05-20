@@ -1,8 +1,10 @@
 plugins {
     id("sidekick.kmp.library")
 }
-
 kotlin {
+    androidLibrary {
+        namespace = "dev.parez.sidekick.log.noop"
+    }
     sourceSets {
         commonMain.dependencies {
             api(projects.core.pluginApi)
@@ -15,8 +17,4 @@ kotlin {
             compileOnly(libs.kermit)
         }
     }
-}
-
-android {
-    namespace = "dev.parez.sidekick.log.noop"
 }

@@ -2,8 +2,10 @@ plugins {
     id("sidekick.kmp.library")
     alias(libs.plugins.sqldelight)
 }
-
 kotlin {
+    androidLibrary {
+        namespace = "dev.parez.sidekick.network"
+    }
     sourceSets {
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutinesCore)
@@ -32,7 +34,6 @@ kotlin {
         }
     }
 }
-
 sqldelight {
     databases {
         create("NetworkMonitorDatabase") {
@@ -40,8 +41,4 @@ sqldelight {
             generateAsync = true
         }
     }
-}
-
-android {
-    namespace = "dev.parez.sidekick.network"
 }

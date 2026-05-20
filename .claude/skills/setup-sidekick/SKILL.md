@@ -19,7 +19,7 @@ below in order. Adapt to what you find — skip steps that are already done.
 
 The host owns visibility: the published Sidekick SDK exposes only the
 `Sidekick(plugins = …)` composable; the host wraps it in a FAB +
-`AnimatedVisibility` pair. The Sidekick demo-app ships a copy-paste-ready
+`AnimatedVisibility` pair. The Sidekick composeApp ships a copy-paste-ready
 `SidekickShell(...)` composable in its own source tree as a sample, but it is
 not part of the SDK — do not import it from `dev.parez.sidekick:shell`.
 
@@ -458,7 +458,7 @@ Find the root composable (identified in Phase 1). Read it, then edit it to:
 
 Do **not** introduce a new outer wrapper composable — keep `Sidekick()`
 inside the host's `MaterialTheme` so theming is inherited automatically when
-`useSidekickTheme = false`. The SDK exposes only `Sidekick()`; the demo-app's
+`useSidekickTheme = false`. The SDK exposes only `Sidekick()`; the composeApp's
 `SidekickShell` is a copy-paste sample, not an SDK type.
 
 ### 3g. Install `NetworkMonitorKtor` on the HttpClient (Network Monitor + Ktor only)
@@ -513,7 +513,7 @@ Tell the user:
   list passed to `Sidekick(...)`.
 - Do **not** import `SidekickShell` from any `dev.parez.sidekick:*` artifact —
   the real SDK API is `Sidekick(plugins = …)` and the host owns the FAB /
-  visibility. (The demo-app has a same-named sample composable, but it is not
+  visibility. (The composeApp has a same-named sample composable, but it is not
   published; consumers copy-paste it if useful.)
 - Do **not** migrate enum types whose values are stored via a manual `.value`
   string property (not `.name`) — these require a custom mapping that KSP
