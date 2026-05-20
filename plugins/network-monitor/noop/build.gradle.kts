@@ -1,8 +1,10 @@
 plugins {
     id("sidekick.kmp.library")
 }
-
 kotlin {
+    androidLibrary {
+        namespace = "dev.parez.sidekick.network.noop"
+    }
     sourceSets {
         commonMain.dependencies {
             api(projects.core.pluginApi)
@@ -16,8 +18,4 @@ kotlin {
             compileOnly("io.ktor:ktor-client-core:3.1.3")
         }
     }
-}
-
-android {
-    namespace = "dev.parez.sidekick.network.noop"
 }

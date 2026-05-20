@@ -4,6 +4,9 @@ plugins {
 }
 
 kotlin {
+    androidLibrary {
+        namespace = "dev.parez.sidekick.log"
+    }
     sourceSets {
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutinesCore)
@@ -14,12 +17,10 @@ kotlin {
             api(libs.androidx.paging.common)
         }
         androidMain.dependencies {
-            implementation(libs.koin.android)
-        }
-        androidMain.dependencies {
             // ApplicationContextHolder lives in core:plugin-api androidMain
             implementation(projects.core.pluginApi)
             implementation(libs.sqldelight.driver.android)
+            implementation(libs.koin.android)
         }
         iosMain.dependencies {
             implementation(libs.sqldelight.driver.native)
@@ -42,8 +43,4 @@ sqldelight {
             generateAsync = true
         }
     }
-}
-
-android {
-    namespace = "dev.parez.sidekick.log"
 }

@@ -1,10 +1,10 @@
-import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
-
 plugins {
     id("sidekick.kmp.library")
 }
-
 kotlin {
+    androidLibrary {
+        namespace = "dev.parez.sidekick.network.ktor"
+    }
     sourceSets {
         commonMain.dependencies {
             api(projects.plugins.networkMonitor.api)
@@ -14,8 +14,4 @@ kotlin {
             compileOnly("io.ktor:ktor-client-core:3.1.3")
         }
     }
-}
-
-android {
-    namespace = "dev.parez.sidekick.network.ktor"
 }

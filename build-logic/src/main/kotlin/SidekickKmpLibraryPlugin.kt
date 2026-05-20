@@ -1,20 +1,24 @@
-import com.android.build.gradle.LibraryExtension
+import com.android.build.api.dsl.KotlinMultiplatformAndroidLibraryExtension
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
-import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.plugins.ExtensionAware
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.getByType
 import org.jetbrains.compose.ComposeExtension
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.gradle.api.artifacts.VersionCatalogsExtension
 
 class SidekickKmpLibraryPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
         pluginManager.apply("org.jetbrains.kotlin.multiplatform")
-        pluginManager.apply("com.android.library")
+        // AGP 9+ replacement for the old `com.android.library` + `kotlin.multiplatform`
+        // combo, which is no longer compatible per AGP 9.0 release notes. The new
+        // plugin extends KotlinMultiplatformExtension with an `android { … }`
+        // block (was `androidLibrary { … }` before AGP 8.12.0, deprecated since
+        // AGP 9.1.0-alpha09) that consolidates compileSdk / minSdk / namespace.
+        pluginManager.apply("com.android.kotlin.multiplatform.library")
         pluginManager.apply("org.jetbrains.compose")
         pluginManager.apply("org.jetbrains.kotlin.plugin.compose")
         // vanniktech.maven.publish brings in `maven-publish` + `signing` and adds
@@ -29,25 +33,29 @@ class SidekickKmpLibraryPlugin : Plugin<Project> {
         val compileSdkVersion = libs.findVersion("android-compileSdk").get().requiredVersion.toInt()
         val minSdkVersion = libs.findVersion("android-minSdk").get().requiredVersion.toInt()
 
-        extensions.configure<LibraryExtension> {
-            compileSdk = compileSdkVersion
-            defaultConfig {
-                minSdk = minSdkVersion
-            }
-            compileOptions {
-                sourceCompatibility = JavaVersion.VERSION_11
-                targetCompatibility = JavaVersion.VERSION_11
-            }
-        }
-
         val compose = extensions.getByType<ComposeExtension>().dependencies
 
         extensions.configure<KotlinMultiplatformExtension> {
-            androidTarget {
-                compilerOptions {
-                    jvmTarget.set(JvmTarget.JVM_11)
-                }
-                publishLibraryVariants("release", "debug")
+            // The Android KMP target extension is added to KotlinMultiplatformExtension by
+            // the `com.android.kotlin.multiplatform.library` plugin. AGP 8.12.0 introduced
+            // the `android { … }` accessor as a replacement for the older `androidLibrary { … }`,
+            // and `androidLibrary` was marked deprecated in AGP 9.1.0-alpha09. We stick
+            // with `androidLibrary` for now because in build scripts that also apply
+            // `app.cash.sqldelight`, the new `android { … }` accessor is shadowed by
+            // KMP's deprecated `android(name: String, …): KotlinAndroidTarget` member function
+            // — Gradle's static accessor generator picks the member over the runtime extension.
+            // `androidLibrary { … }` is unambiguous in both cases.
+            (this as ExtensionAware).extensions.configure<KotlinMultiplatformAndroidLibraryExtension>("androidLibrary") {
+                this.compileSdk = compileSdkVersion
+                this.minSdk = minSdkVersion
+                // NOTE: AGP 9.x KotlinMultiplatformAndroidLibraryExtension does NOT
+                // support `publishLibraryVariants("release", "debug")` — that was the
+                // legacy `com.android.library` + `kotlin.multiplatform` combo. The new
+                // KMP library plugin publishes a single Android variant. Consumers must
+                // pick real-vs-noop via a property-gated dependency swap (mirroring the
+                // non-Android targets pattern documented in CLAUDE.md), not
+                // debugImplementation/releaseImplementation. This is a documented public
+                // API change as of the AGP 9 migration.
             }
             iosArm64()
             iosSimulatorArm64()

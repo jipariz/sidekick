@@ -49,4 +49,5 @@ include(":plugins:log-monitor:kermit")
 include(":plugins:log-monitor:noop")
 include(":plugins:custom-screen:api")
 include(":bom")
-include(":demo-app")
+// TEMP: demo-app excluded during AGP 9 spike; will be split into composeApp + androidApp.
+// include(":demo-app")

@@ -1,7 +1,8 @@
 plugins {
     id("sidekick.kmp.library")
 }
-
-android {
-    namespace = "dev.parez.sidekick.plugin"
+kotlin {
+    androidLibrary {
+        namespace = "dev.parez.sidekick.plugin"
+    }
 }

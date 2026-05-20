@@ -1,8 +1,10 @@
 plugins {
     id("sidekick.kmp.library")
 }
-
 kotlin {
+    androidLibrary {
+        namespace = "dev.parez.sidekick.shell"
+    }
     sourceSets {
         commonMain.dependencies {
             api(projects.core.pluginApi)
@@ -16,8 +18,4 @@ kotlin {
             implementation(libs.compose.ui.backhandler)
         }
     }
-}
-
-android {
-    namespace = "dev.parez.sidekick.shell"
 }
