@@ -23,3 +23,5 @@ site/
 audit/
 # Claude Code dynamic-loop lock file
 .claude/scheduled_tasks.lock
+# Claude Code agent worktrees (ephemeral per-agent git worktrees)
+.claude/worktrees/
