@@ -92,7 +92,7 @@ Alternative approaches (use what fits your CI):
 | `LogMonitorLogWriter` | ❌ Still records. | ✅ `log()` discards entries. |
 | SQLDelight `NetworkMonitorDatabase` / `LogMonitorDatabase` classes | ❌ Generated and dexed. | ✅ Absent from the binary entirely. |
 
-For Android release builds with both swaps wired, `NetworkMonitorDatabase` and `LogMonitorDatabase` symbols are absent from the merged DEX. (Verified by inspecting the composeApp's release APK: 0 references in release vs 20 in debug for each.)
+For Android release builds with both swaps wired, `NetworkMonitorDatabase` and `LogMonitorDatabase` symbols are absent from the merged DEX. (Verified by inspecting `demo/androidApp`'s release APK: 0 references in release vs 20 in debug for each.)
 
 ## Verifying the swap
 
