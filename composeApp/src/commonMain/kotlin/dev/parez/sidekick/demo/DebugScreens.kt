@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 internal fun BuildInfoScreen() {
     val rows = listOf(
-        "Module" to ":demo-app",
+        "Module" to ":composeApp",
         "Kotlin" to "2.3.20",
         "Compose" to "1.10.3",
         "Min SDK" to "24",

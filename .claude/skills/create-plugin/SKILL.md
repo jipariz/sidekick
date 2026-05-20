@@ -99,7 +99,7 @@ Run `./gradlew projects` and confirm `:plugins:<kebab>:api` appears in the outpu
 Tell the user:
 - Which files were created
 - The Gradle module path (`:plugins:<kebab>:api`)
-- How to depend on it: `implementation(projects.plugins.<camelCase>.api)` in `demo-app/build.gradle.kts`
+- How to depend on it: `implementation(projects.plugins.<camelCase>.api)` in `composeApp/build.gradle.kts`
 - That they can swap the placeholder icon and implement `Content()` to build out the plugin UI
 
 ---
@@ -393,6 +393,6 @@ Tell the user:
 ## Rules
 - Do NOT create a KSP submodule unless the user explicitly asks for annotation-based code generation.
 - Do NOT modify the convention plugin (`SidekickKmpLibraryPlugin`) or any existing module.
-- Do NOT add the new plugin to `demo-app` automatically — just tell the user how to do it.
+- Do NOT add the new plugin to `composeApp` automatically — just tell the user how to do it.
 - The Android namespace must follow the pattern `dev.parez.sidekick.<package-segment>` (no hyphens, all lowercase).
 - For the stateful path, `koin-core` must be `api` (not `implementation`) in the `api` module so sibling modules (e.g. a Ktor interceptor) can reach `<Pascal>KoinContext` without adding Koin themselves.

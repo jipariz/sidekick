@@ -33,7 +33,7 @@ import dev.parez.sidekick.plugin.rememberSidekickAppInfo
  * ships only the [Sidekick] composable — the host owns the FAB, visibility
  * state, and any trigger gesture. Copy this file into your own app as a
  * starting point, then customize the trigger / animation / placement to taste.
- * The demo-app's main entry point ([DemoApp]) shows a richer variant with a
+ * The composeApp's main entry point ([DemoApp]) shows a richer variant with a
  * first-launch Reveal hint and slide+fade transitions.
  *
  * ```kotlin

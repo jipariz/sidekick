@@ -1,29 +1,20 @@
-// FIXME(AGP 9 migration WIP) — known build issues on this branch:
+// AGP 9 migration notes (also documented in CLAUDE.md → Debug vs Release):
 //
-//  1. compileNonIosMainKotlinMetadata fails because Room 3.0.0-alpha03's per-target
-//     KSP output (`build/generated/ksp/<target>/...`) isn't visible to the
-//     intermediate `nonIosMain` metadata compile under Kotlin 2.3.20 + Gradle 9.4 +
-//     AGP 9.2.1. Same shape as the preferences plugin issue patched in
-//     plugins/preferences/gradle-plugin: per-target KSP generated code does not
-//     surface to commonMain/intermediate metadata passes. Likely needs a similar
-//     "move semantics" / consolidated-stableDir pattern, or a Room version bump.
-//
-//  2. compileWebMainKotlinMetadata can't resolve `kotlinx.browser` in
-//     src/webMain/kotlin/dev/parez/sidekick/demo/main.kt. `webMain` is the standard
-//     intermediate between commonMain and (jsMain + wasmJsMain) — under Kotlin
-//     2.3.20 the stdlib parts that contain `kotlinx.browser` apparently aren't
-//     reachable from webMain. Workaround options: move main.kt back to both jsMain
-//     and wasmJsMain, or add the right kotlin-browser dep on webMain.
-//
-//  3. The Android `debugImplementation` / `releaseImplementation` noop swap is
-//     gone: AGP 9's KotlinMultiplatformAndroidLibraryExtension does not expose
-//     `publishLibraryVariants("release", "debug")` (see commit 1's body). All
-//     targets in this composeApp pull the real shell + monitor modules
-//     unconditionally. Consumers needing release-stripped builds should mirror
-//     the property-gated recipe documented in CLAUDE.md for non-Android targets.
-//
-// commit 1 of this branch (AGP 9 library-side migration) is the load-bearing
-// change; this commit is the demo-app split scaffolding that AGP 9 also requires.
+//  - This is a KMP library via `com.android.kotlin.multiplatform.library`. The
+//    `:composeApp:` Gradle path produces the shared code; the thin Android shell
+//    lives in `:androidApp:` because AGP 9 forbids the legacy `com.android.application`
+//    + `kotlin.multiplatform` combo in one subproject.
+//  - The Android `debugImplementation` / `releaseImplementation` noop swap is gone:
+//    AGP 9's KotlinMultiplatformAndroidLibraryExtension does not expose
+//    `publishLibraryVariants("release", "debug")`. Consumers needing release-stripped
+//    builds should mirror the property-gated recipe in CLAUDE.md. This demo is
+//    dev-only and uses the real shell + monitor modules unconditionally.
+//  - Web entry point lives in jsMain AND wasmJsMain (duplicated 12-line `main.kt`),
+//    not in a `webMain` intermediate — under Kotlin 2.3.20 + the standard hierarchy
+//    template, `webMain` doesn't expose `kotlinx.browser`.
+//  - The `nonIosMain` intermediate is wired manually (`sourceSets { … dependsOn(nonIosMain) }`)
+//    because `withAndroidTarget()` in `applyDefaultHierarchyTemplate` does not match
+//    AGP 9's `KotlinMultiplatformAndroidLibraryTarget`.
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
@@ -61,20 +52,25 @@ kotlin {
         }
     }
 
-    // Room 3.0.0-alpha03 does not yet publish iOS variants. Carve out a
+    // Room 3.0.0-alpha05 still doesn't publish iOS variants. Carve out a
     // `nonIosMain` intermediate source set that all non-iOS leaves inherit
     // from, and put the Pokemon Room cache there; iOS gets an in-memory
     // fallback (see composeApp/src/iosMain/kotlin/.../db/InMemoryPokemonCache.kt).
+    //
+    // Under AGP 9's `com.android.kotlin.multiplatform.library`, the Android
+    // target is no longer a `KotlinAndroidTarget` — `withAndroidTarget()` does
+    // not match it. Build the nonIos hierarchy manually so it covers the new
+    // Android KMP library target too.
     @OptIn(ExperimentalKotlinGradlePluginApi::class)
-    applyDefaultHierarchyTemplate {
-        common {
-            group("nonIos") {
-                withAndroidTarget()
-                withJvm()
-                withJs()
-                withWasmJs()
-            }
-        }
+    applyDefaultHierarchyTemplate()
+
+    sourceSets {
+        val commonMain by getting
+        val nonIosMain by creating { dependsOn(commonMain) }
+        named("androidMain") { dependsOn(nonIosMain) }
+        named("jvmMain") { dependsOn(nonIosMain) }
+        named("jsMain") { dependsOn(nonIosMain) }
+        named("wasmJsMain") { dependsOn(nonIosMain) }
     }
 
     sourceSets {

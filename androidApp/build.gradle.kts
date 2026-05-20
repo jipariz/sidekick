@@ -31,4 +31,11 @@ android {
 
 dependencies {
     implementation(projects.composeApp)
+    // composeApp re-exports the shell + plugin-api types via the KMP library's
+    // androidMain, but AGP applications don't pull transitive Compose / activity
+    // deps from a KMP library's compileClasspath the same way. Add the Activity
+    // / Compose / Sidekick plugin-api deps directly here for the MainActivity.
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.appcompat)
+    implementation(projects.core.pluginApi)
 }
