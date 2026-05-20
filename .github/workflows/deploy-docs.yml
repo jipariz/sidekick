@@ -29,10 +29,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build WasmJS demo
-        run: ./gradlew :composeApp:wasmJsBrowserDistribution --no-daemon
+        run: ./gradlew :demo:webApp:wasmJsBrowserDistribution --no-daemon
 
       - name: Inject coi-serviceworker for SharedArrayBuffer support
-        working-directory: composeApp/build/dist/wasmJs/productionExecutable
+        working-directory: demo/webApp/build/dist/wasmJs/productionExecutable
         run: |
           # GitHub Pages cannot set COOP/COEP headers, so we use
           # coi-serviceworker to enable SharedArrayBuffer client-side
@@ -44,7 +44,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: demo-dist
-          path: composeApp/build/dist/wasmJs/productionExecutable/
+          path: demo/webApp/build/dist/wasmJs/productionExecutable/
           retention-days: 1
 
   build-docs:

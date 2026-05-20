@@ -3083,7 +3083,7 @@ sql.js@1.10.3:
   resolved "https://registry.yarnpkg.com/sql.js/-/sql.js-1.10.3.tgz#cd05043a9e2667010cd0520180577c90df8dd990"
   integrity sha512-H46aWtQkdyjZwFQgraUruy5h/DyJBbAK3EA/WEMqiqF6PGPfKBSKBj/er3dVyYqVIoYfRf5TFM/loEjtQIrqJg==
 
-"sqlite-wasm-worker@file:../../composeApp/sqlite-worker":
+"sqlite-wasm-worker@file:../../demo/webApp/sqlite-worker":
   version "0.0.0"
   dependencies:
     "@sqlite.org/sqlite-wasm" "^3.50.1-build1"

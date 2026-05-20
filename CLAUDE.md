@@ -33,12 +33,19 @@ settings.gradle.kts
 │   │   └── noop          — Release stub: LogMonitorLogWriter discards entries, no SQLDelight
 │   └── custom-screen/
 │       └── api           — CustomScreenPlugin: wraps any Composable as a SidekickPlugin
-├── composeApp/           — Pokemon catalog KMP module exercising all SDK features
-├── androidApp/           — Thin com.android.application shell that depends on :composeApp
-│                           (AGP 9 disallows com.android.application + kotlin.multiplatform
-│                           in the same subproject, hence the split)
-├── build-logic/          — Convention plugin: sidekick.kmp.library (SidekickKmpLibraryPlugin)
-└── iosApp/               — Xcode project wrapping composeApp for iOS
+├── demo/                  — Pokemon catalog sample exercising all SDK features.
+│   │                        Follows the new KMP default structure (kmp.new):
+│   │                        one shared library + one app module per target.
+│   ├── shared/           — KMP library with all cross-platform code + per-target
+│   │                       expect/actuals (Android: Room cache; iOS: in-memory
+│   │                       cache; etc.). Built with com.android.kotlin.multiplatform.library.
+│   ├── androidApp/       — com.android.application shell. Depends on :demo:shared.
+│   ├── desktopApp/       — Kotlin/JVM + Compose Desktop. Owns Main.kt + compose.desktop {…}.
+│   ├── webApp/           — KMP module with js + wasmJs targets. Owns the web Main.kt
+│   │                       + sqlite-worker NPM bundle + webpack.config.d/.
+│   └── iosApp/           — Xcode project. Consumes :demo:shared via
+│                           embedAndSignAppleFrameworkForXcode. NOT a Gradle module.
+└── build-logic/          — Convention plugin: sidekick.kmp.library (SidekickKmpLibraryPlugin)
 ```
 
 Use typesafe project accessors: `projects.core.shell`, `projects.plugins.preferences.api`, etc.
@@ -47,23 +54,23 @@ Use typesafe project accessors: `projects.core.shell`, `projects.plugins.prefere
 
 ```bash
 # Demo app — Android
-./gradlew :androidApp:assembleDebug
+./gradlew :demo:androidApp:assembleDebug
 
-# Demo app — Desktop (JVM)
-./gradlew :composeApp:run
+# Demo app — Desktop (JVM, Compose)
+./gradlew :demo:desktopApp:run
 
 # Demo app — Web (Wasm)
-./gradlew :composeApp:wasmJsBrowserDevelopmentRun
+./gradlew :demo:webApp:wasmJsBrowserDevelopmentRun
 
 # Demo app — Web (JS)
-./gradlew :composeApp:jsBrowserDevelopmentRun
+./gradlew :demo:webApp:jsBrowserDevelopmentRun
 
 # Run all tests across all modules
 ./gradlew allTests
 
 # Run tests for a specific module
 ./gradlew :core:shell:allTests
-./gradlew :composeApp:jvmTest --tests "dev.parez.sidekick.SomeTest"
+./gradlew :demo:shared:jvmTest --tests "dev.parez.sidekick.SomeTest"
 
 # Publish to Maven Local
 ./gradlew publishToMavenLocal --no-configuration-cache
@@ -162,7 +169,7 @@ This split (override in the included gradle-plugin's `build.gradle.kts`, in the 
 Plugins implement `SidekickPlugin` (from `:core:plugin-api`): `id`, `title`, `icon: ImageVector`, `@Composable fun Content()`. Host apps pass a `List<SidekickPlugin>` to `Sidekick()`. The composable renders the debug panel; the host app is responsible for showing/hiding it (FAB, gesture, etc.).
 
 ### Navigation
-Uses **Material 3 Adaptive** (`ListDetailPaneScaffold`). Plugin list/detail navigation is state-based in `SidekickState` using `selectedPluginId: String?`. The composeApp uses `ListDetailPaneScaffold` + `rememberListDetailPaneScaffoldNavigator` for adaptive list-detail layout.
+Uses **Material 3 Adaptive** (`ListDetailPaneScaffold`). Plugin list/detail navigation is state-based in `SidekickState` using `selectedPluginId: String?`. The demo/shared uses `ListDetailPaneScaffold` + `rememberListDetailPaneScaffoldNavigator` for adaptive list-detail layout.
 
 ### Dependency Injection
 **Koin** is used at two levels:
@@ -173,7 +180,7 @@ Uses **Material 3 Adaptive** (`ListDetailPaneScaffold`). Plugin list/detail navi
    - `Content()` wraps its composable tree in `KoinIsolatedContext(context = <Name>KoinContext.koinApp)` so `koinViewModel()` resolves from the plugin's private graph.
    - Other sibling modules (e.g. `network-monitor:ktor`, `log-monitor:kermit`) access the shared singleton via a `getDefaultStore()` helper on the context object — avoiding a direct Koin dependency in those modules.
 
-2. **composeApp** — uses `KoinIsolatedContext` with its own `AppModule` (Pokémon repository, ViewModels). Isolated from any host-app Koin instance.
+2. **demo/shared** — uses `KoinIsolatedContext` with its own `AppModule` (Pokémon repository, ViewModels). Isolated from any host-app Koin instance.
 
 ViewModels are provided via `koin-compose-viewmodel`.
 
@@ -233,7 +240,7 @@ jsMain.dependencies { /* same shape */ }
 wasmJsMain.dependencies { /* same shape */ }
 ```
 
-Drive release builds with `./gradlew … -Psidekick.noop=true`. The composeApp here keeps
+Drive release builds with `./gradlew … -Psidekick.noop=true`. The demo/shared here keeps
 unconditional `implementation(real)` on every target — it's a dev-only build, so there's
 no prod variant to swap to.
 
@@ -286,13 +293,13 @@ The processor reads each property's Kotlin initializer (`= …`) directly from t
 
 | Library | Purpose | Module(s) |
 |---------|---------|-----------|
-| M3 Adaptive | List-detail navigation | shell, network-monitor, log-monitor, composeApp |
-| Koin | DI (isolated plugin contexts + composeApp) | network-monitor/api+ui, log-monitor/api+ui, composeApp |
+| M3 Adaptive | List-detail navigation | shell, network-monitor, log-monitor, demo/shared |
+| Koin | DI (isolated plugin contexts + demo/shared) | network-monitor/api+ui, log-monitor/api+ui, demo/shared |
 | SQLDelight | HTTP traffic + log entry DB (generateAsync = true) | network-monitor/api, log-monitor/api |
 | AndroidX Paging | Paged list flows in monitor plugins | network-monitor/api+ui, log-monitor/api+ui |
-| Ktor | HTTP client + interceptor | network-monitor/ktor, composeApp |
-| Kermit | Multiplatform logging bridge | log-monitor/kermit, composeApp |
+| Ktor | HTTP client + interceptor | network-monitor/ktor, demo/shared |
+| Kermit | Multiplatform logging bridge | log-monitor/kermit, demo/shared |
 | DataStore | Preferences persistence | preferences/api |
 | KSP + KotlinPoet | Code generation for preferences | preferences/ksp |
-| Room 3 | Local cache | composeApp |
-| Coil 3 | Image loading | composeApp |
+| Room 3 | Local cache | demo/shared |
+| Coil 3 | Image loading | demo/shared |

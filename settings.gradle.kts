@@ -49,8 +49,10 @@ include(":plugins:log-monitor:kermit")
 include(":plugins:log-monitor:noop")
 include(":plugins:custom-screen:api")
 include(":bom")
-// AGP 9 dropped `com.android.application` + `kotlin.multiplatform` in the same
-// subproject. The demo lives in two modules now: composeApp holds all KMP code
-// (incl. its Android library target), androidApp is the thin .apk shell.
-include(":composeApp")
-include(":androidApp")
+// Demo app — new KMP default structure (kmp.new / Kotlin 2026.05 blog post):
+// the demo lives under demo/ with one shared KMP library + per-platform app
+// modules. iosApp is a sibling Xcode project (no Gradle module).
+include(":demo:shared")
+include(":demo:androidApp")
+include(":demo:desktopApp")
+include(":demo:webApp")
