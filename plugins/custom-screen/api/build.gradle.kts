@@ -8,7 +8,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(projects.core.pluginApi)
-            implementation(compose.materialIconsExtended)
+            implementation(libs.compose.material.iconsExtended)
         }
     }
 }

@@ -24,6 +24,9 @@ internal fun SidekickPluginScreen(plugin: SidekickPlugin, state: SidekickState) 
     val backNavigator = remember(state) { { state.backToList() } }
     // System / gesture back returns to the plugin list on Android; no-op on
     // other targets, which is fine — they have their own back affordances.
+    // TODO: migrate to androidx.navigationevent.NavigationEventHandler once we
+    // wire LocalNavigationEventDispatcherOwner at the Sidekick root composable.
+    @Suppress("DEPRECATION")
     BackHandler(onBack = backNavigator)
     CompositionLocalProvider(LocalSidekickBackNavigator provides backNavigator) {
         Box(modifier = Modifier.fillMaxSize()) {

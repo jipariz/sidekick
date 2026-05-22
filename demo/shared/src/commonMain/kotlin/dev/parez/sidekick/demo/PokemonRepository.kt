@@ -22,19 +22,19 @@ class PokemonRepository(
     suspend fun fetchNextPage(limit: Int = 20) {
         fetchMutex.withLock {
             if (!hasMore) return
-            Logger.d("Repository") { "fetchNextPage: offset=$nextOffset, limit=$limit" }
+            Logger.d(tag = "Repository") { "fetchNextPage: offset=$nextOffset, limit=$limit" }
             val response = api.fetchList(nextOffset, limit)
             cache.saveListEntries(response.results)
-            Logger.i("Repository") { "fetchNextPage: cached ${response.results.size} entries" }
+            Logger.i(tag = "Repository") { "fetchNextPage: cached ${response.results.size} entries" }
             nextOffset += limit
             hasMore = response.next != null
         }
     }
 
     suspend fun fetchDetail(id: Int) {
-        Logger.d("Repository") { "fetchDetail: id=$id" }
+        Logger.d(tag = "Repository") { "fetchDetail: id=$id" }
         val detail = api.fetchDetail(id)
         cache.saveDetail(detail)
-        Logger.i("Repository") { "fetchDetail: cached ${detail.name}" }
+        Logger.i(tag = "Repository") { "fetchDetail: cached ${detail.name}" }
     }
 }

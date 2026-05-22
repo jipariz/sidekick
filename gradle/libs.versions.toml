@@ -3,32 +3,33 @@ agp = "9.2.1"
 android-compileSdk = "36"
 android-minSdk = "24"
 android-targetSdk = "36"
-androidx-activity = "1.11.0"
+androidx-activity = "1.13.0"
 androidx-appcompat = "1.7.1"
-androidx-core = "1.17.0"
+androidx-core = "1.18.0"
 androidx-espresso = "3.7.0"
-androidx-lifecycle = "2.9.5"
+androidx-lifecycle = "2.10.0"
 androidx-testExt = "1.3.0"
-composeHotReload = "1.0.0-rc02"
-composeMultiplatform = "1.10.3"
+composeHotReload = "1.1.1"
+composeMultiplatform = "1.11.0"
+composeMaterial3 = "1.11.0-alpha07"
 junit = "4.13.2"
-kotlin = "2.3.20"
-kotlinx-coroutines = "1.10.2"
-ksp = "2.3.6"
-androidx-datastore = "1.3.0-alpha07"
-kotlinpoet = "2.2.0"
-sqldelight = "2.1.0"
-ktor = "3.1.3"
-kotlinxSerialization = "1.8.1"
-coil = "3.2.0"
-koin = "4.1.1"
-kermit = "2.0.5"
+kotlin = "2.3.21"
+kotlinx-coroutines = "1.11.0"
+ksp = "2.3.8"
+androidx-datastore = "1.3.0-alpha09"
+kotlinpoet = "2.3.0"
+sqldelight = "2.3.2"
+ktor = "3.5.0"
+kotlinxSerialization = "1.11.0"
+coil = "3.5.0-beta01"
+koin = "4.2.1"
+kermit = "2.1.0"
 compose-adaptive = "1.2.0"
 material3AdaptiveNavigationSuite = "1.9.0"
 room3 = "3.0.0-alpha05"
-sqlite = "2.7.0-alpha03"
-reveal = "4.1.0"
-vanniktechMavenPublish = "0.30.0"
+sqlite = "2.7.0-alpha05"
+reveal = "4.2.0"
+vanniktechMavenPublish = "0.36.0"
 androidxPaging = "3.5.0"
 
 [libraries]
@@ -74,6 +75,23 @@ room3-compiler                    = { module = "androidx.room3:room3-compiler", 
 sqlite-bundled                    = { module = "androidx.sqlite:sqlite-bundled",                          version.ref = "sqlite" }
 sqlite-web                        = { module = "androidx.sqlite:sqlite-web",                              version.ref = "sqlite" }
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
+# Compose Multiplatform per-artifact entries. CMP 1.11.0 deprecated the
+# `compose.runtime` / `compose.foundation` / `compose.material3` / `compose.ui`
+# / `compose.preview` / `compose.materialIconsExtended` String accessors with
+# the message "Specify dependency directly." — these catalog entries are the
+# replacement.
+#
+# Most artifacts track `composeMultiplatform` exactly, but two are out-of-band:
+#  - material3 lags behind (CMP 1.11.0 pairs with material3 1.11.0-alpha07);
+#    bump composeMaterial3 manually with the plugin to keep this aligned.
+#  - material-icons-extended is pinned at 1.7.3 — JetBrains is freezing this
+#    artifact and steering users toward Material Symbols.
+compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatform" }
+compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatform" }
+compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "composeMaterial3" }
+compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
+compose-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
+compose-material-iconsExtended = { module = "org.jetbrains.compose.material:material-icons-extended", version = "1.7.3" }
 compose-adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version.ref = "compose-adaptive" }
 compose-adaptive-navigation = { module = "org.jetbrains.compose.material3.adaptive:adaptive-navigation", version.ref = "compose-adaptive" }
 compose-adaptive-layout = { module = "org.jetbrains.compose.material3.adaptive:adaptive-layout", version.ref = "compose-adaptive" }

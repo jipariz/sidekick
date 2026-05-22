@@ -316,7 +316,6 @@ private fun TypeBadge(def: PreferenceDefinition<*>, modifier: Modifier = Modifie
         is FloatPref   -> Triple(MaterialTheme.colorScheme.tertiaryContainer,  MaterialTheme.colorScheme.onTertiaryContainer,  "FLOAT")
         is DoublePref  -> Triple(MaterialTheme.colorScheme.tertiaryContainer,  MaterialTheme.colorScheme.onTertiaryContainer,  "DOUBLE")
         is EnumPref    -> Triple(MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.onTertiaryContainer, "ENUM")
-        else           -> Triple(MaterialTheme.colorScheme.surfaceVariant,     MaterialTheme.colorScheme.onSurfaceVariant,     "VAL")
     }
     Surface(color = bg, shape = MaterialTheme.shapes.extraSmall, modifier = modifier) {
         Text(

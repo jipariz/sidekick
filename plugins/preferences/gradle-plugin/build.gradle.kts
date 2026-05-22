@@ -1,6 +1,5 @@
 import com.vanniktech.maven.publish.GradlePlugin
 import com.vanniktech.maven.publish.JavadocJar
-import com.vanniktech.maven.publish.SonatypeHost
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.tasks.WriteProperties
 import java.util.Properties
@@ -105,8 +104,8 @@ gradlePlugin {
 // upload API rejected with 404.
 mavenPublishing {
     coordinates("dev.parez.sidekick", "sidekick-preferences-gradle-plugin", project.version.toString())
-    configure(GradlePlugin(javadocJar = JavadocJar.Empty(), sourcesJar = true))
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL, automaticRelease = false)
+    configure(GradlePlugin(javadocJar = JavadocJar.Empty()))
+    publishToMavenCentral(automaticRelease = false)
 
     val hasSigningKey = providers.environmentVariable("ORG_GRADLE_PROJECT_signingInMemoryKey").isPresent ||
         providers.gradleProperty("signingInMemoryKey").isPresent

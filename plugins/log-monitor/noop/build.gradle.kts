@@ -10,7 +10,7 @@ kotlin {
             api(projects.core.pluginApi)
             api(libs.androidx.paging.common)
             api(libs.koin.core)
-            api(compose.materialIconsExtended)
+            api(libs.compose.material.iconsExtended)
             implementation(libs.kotlinx.coroutinesCore)
             // kermit is compileOnly — mirrors the real :kermit module so consumers
             // bring their own Kermit version.

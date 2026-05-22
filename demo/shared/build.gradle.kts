@@ -50,6 +50,12 @@ kotlin {
     @OptIn(ExperimentalKotlinGradlePluginApi::class)
     applyDefaultHierarchyTemplate()
 
+    // PokemonDatabase + Room's generated PokemonDatabaseConstructor use
+    // `expect`/`actual` classes. The classes-in-Beta warning is informational.
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+
     sourceSets {
         val commonMain by getting
         val nonIosMain by creating { dependsOn(commonMain) }
@@ -62,11 +68,11 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(compose.runtime)
-                implementation(compose.foundation)
-                implementation(compose.material3)
-                implementation(compose.ui)
-                implementation(compose.materialIconsExtended)
+                implementation(libs.compose.runtime)
+                implementation(libs.compose.foundation)
+                implementation(libs.compose.material3)
+                implementation(libs.compose.ui)
+                implementation(libs.compose.material.iconsExtended)
                 implementation(projects.plugins.preferences.api)
                 implementation(projects.plugins.customScreen.api)
                 implementation(projects.core.shell)
@@ -100,7 +106,7 @@ kotlin {
             }
         }
         androidMain.dependencies {
-            implementation(compose.preview)
+            implementation(libs.compose.ui.tooling.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.sqlite.bundled)

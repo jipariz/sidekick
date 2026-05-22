@@ -5,7 +5,6 @@ import org.gradle.api.Project
 import org.gradle.api.plugins.ExtensionAware
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.getByType
-import org.jetbrains.compose.ComposeExtension
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.gradle.api.artifacts.VersionCatalogsExtension
@@ -32,8 +31,6 @@ class SidekickKmpLibraryPlugin : Plugin<Project> {
         val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
         val compileSdkVersion = libs.findVersion("android-compileSdk").get().requiredVersion.toInt()
         val minSdkVersion = libs.findVersion("android-minSdk").get().requiredVersion.toInt()
-
-        val compose = extensions.getByType<ComposeExtension>().dependencies
 
         extensions.configure<KotlinMultiplatformExtension> {
             // The Android KMP target extension is added to KotlinMultiplatformExtension by
@@ -68,11 +65,21 @@ class SidekickKmpLibraryPlugin : Plugin<Project> {
                 browser()
             }
 
+            // CMP 1.11.0 deprecated `compose.runtime` / `.foundation` / `.material3` / `.ui`
+            // String accessors with "Specify dependency directly." — pull from the version
+            // catalog instead.
             sourceSets.commonMain.dependencies {
-                implementation(compose.runtime)
-                implementation(compose.foundation)
-                implementation(compose.material3)
-                implementation(compose.ui)
+                implementation(libs.findLibrary("compose-runtime").get())
+                implementation(libs.findLibrary("compose-foundation").get())
+                implementation(libs.findLibrary("compose-material3").get())
+                implementation(libs.findLibrary("compose-ui").get())
+            }
+
+            // Sidekick uses `expect class` / `expect object` (Room database
+            // constructors, SQLite drivers, …) by design. The classes-in-Beta
+            // warning is informational, not a defect.
+            compilerOptions {
+                freeCompilerArgs.add("-Xexpect-actual-classes")
             }
         }
 

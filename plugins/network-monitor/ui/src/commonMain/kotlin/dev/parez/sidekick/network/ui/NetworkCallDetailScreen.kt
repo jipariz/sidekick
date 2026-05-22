@@ -28,8 +28,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -119,7 +119,7 @@ internal fun NetworkCallDetailPane(
         StatusSummaryStrip(call)
 
         // ── Tabs ──────────────────────────────────────────────────────────────
-        TabRow(selectedTabIndex = selectedTab) {
+        PrimaryTabRow(selectedTabIndex = selectedTab) {
             Tab(
                 selected = selectedTab == 0,
                 onClick = { selectedTab = 0 },
@@ -345,6 +345,10 @@ private fun MonoText(
 
 @Composable
 private fun CopyableMonoBlock(text: String) {
+    // TODO: migrate to LocalClipboard once Compose Multiplatform ships a
+    // commonMain ClipEntry text helper (1.11.0 only exposes the suspend
+    // Clipboard.setClipEntry, with no per-platform ClipEntry factory in common).
+    @Suppress("DEPRECATION")
     val clipboard = LocalClipboardManager.current
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -371,6 +375,10 @@ private fun CopyableMonoBlock(text: String) {
 
 @Composable
 private fun CopyableCodeBlock(text: String) {
+    // TODO: migrate to LocalClipboard once Compose Multiplatform ships a
+    // commonMain ClipEntry text helper (1.11.0 only exposes the suspend
+    // Clipboard.setClipEntry, with no per-platform ClipEntry factory in common).
+    @Suppress("DEPRECATION")
     val clipboard = LocalClipboardManager.current
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerLowest,

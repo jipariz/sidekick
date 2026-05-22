@@ -45,12 +45,12 @@ class PokemonDetailViewModel(
     }
 
     fun fetchDetail() {
-        Logger.i("DetailVM") { "fetchDetail: id=$id" }
+        Logger.i(tag = "DetailVM") { "fetchDetail: id=$id" }
         viewModelScope.launch {
             runCatching { repository.fetchDetail(id) }
-                .onSuccess { Logger.d("DetailVM") { "fetchDetail: success for id=$id" } }
+                .onSuccess { Logger.d(tag = "DetailVM") { "fetchDetail: success for id=$id" } }
                 .onFailure {
-                    Logger.e("DetailVM", it) { "fetchDetail failed for id=$id" }
+                    Logger.e(it, tag = "DetailVM") { "fetchDetail failed for id=$id" }
                     error.value = it.message ?: "Unknown error"
                 }
         }

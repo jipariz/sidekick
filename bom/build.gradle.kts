@@ -1,5 +1,4 @@
 import com.vanniktech.maven.publish.JavaPlatform
-import com.vanniktech.maven.publish.SonatypeHost
 
 plugins {
     `java-platform`
@@ -33,7 +32,7 @@ dependencies {
 mavenPublishing {
     coordinates("dev.parez.sidekick", "bom", project.version.toString())
     configure(JavaPlatform())
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL, automaticRelease = false)
+    publishToMavenCentral(automaticRelease = false)
 
     val hasSigningKey = providers.environmentVariable("ORG_GRADLE_PROJECT_signingInMemoryKey").isPresent ||
         providers.gradleProperty("signingInMemoryKey").isPresent

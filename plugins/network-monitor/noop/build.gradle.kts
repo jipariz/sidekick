@@ -10,12 +10,12 @@ kotlin {
             api(projects.core.pluginApi)
             api(libs.androidx.paging.common)
             api(libs.koin.core)
-            api(compose.materialIconsExtended)
+            api(libs.compose.material.iconsExtended)
             implementation(libs.kotlinx.coroutinesCore)
             // ktor-client-core is compileOnly here — mirrors the :ktor module so
             // the noop NetworkMonitorKtor ClientPlugin compiles without forcing
             // consumers to expose a Ktor version transitively.
-            compileOnly("io.ktor:ktor-client-core:3.1.3")
+            compileOnly(libs.ktor.client.core)
         }
     }
 }

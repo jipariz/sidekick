@@ -11,7 +11,7 @@ kotlin {
             // Optional log-monitor integration: auto-emits HTTP logs with networkCallId metadata
             implementation(projects.plugins.logMonitor.api)
             // ktor-client-core is compileOnly — consumers bring their own Ktor version
-            compileOnly("io.ktor:ktor-client-core:3.1.3")
+            compileOnly(libs.ktor.client.core)
         }
     }
 }
