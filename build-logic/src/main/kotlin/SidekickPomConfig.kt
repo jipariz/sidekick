@@ -1,5 +1,4 @@
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
-import com.vanniktech.maven.publish.SonatypeHost
 import org.gradle.api.Project
 
 /**
@@ -18,7 +17,7 @@ import org.gradle.api.Project
  * For KMP library modules, `SidekickKmpLibraryPlugin` already calls this.
  */
 fun MavenPublishBaseExtension.configureSidekickPublication(project: Project) {
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL, automaticRelease = false)
+    publishToMavenCentral(automaticRelease = false)
 
     val hasSigningKey = project.providers.environmentVariable("ORG_GRADLE_PROJECT_signingInMemoryKey").isPresent ||
         project.providers.gradleProperty("signingInMemoryKey").isPresent

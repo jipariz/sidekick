@@ -1,6 +1,5 @@
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinJvm
-import com.vanniktech.maven.publish.SonatypeHost
 
 plugins {
     alias(libs.plugins.kotlinJvm)
@@ -20,8 +19,8 @@ dependencies {
 
 mavenPublishing {
     coordinates("dev.parez.sidekick", "preferences-ksp", project.version.toString()) // version from sidekick.version.read
-    configure(KotlinJvm(javadocJar = JavadocJar.Empty(), sourcesJar = true))
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL, automaticRelease = false)
+    configure(KotlinJvm(javadocJar = JavadocJar.Empty()))
+    publishToMavenCentral(automaticRelease = false)
 
     val hasSigningKey = providers.environmentVariable("ORG_GRADLE_PROJECT_signingInMemoryKey").isPresent ||
         providers.gradleProperty("signingInMemoryKey").isPresent
