@@ -13,6 +13,13 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+# Opt JavaScript actions (actions/checkout, setup-java, setup-python,
+# upload-artifact, …) into Node 24 ahead of GitHub's June 2nd, 2026 forced
+# migration. Silences the "Node.js 20 actions are deprecated" workflow
+# warning emitted on every run.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   build-demo:
     name: Build web demo
