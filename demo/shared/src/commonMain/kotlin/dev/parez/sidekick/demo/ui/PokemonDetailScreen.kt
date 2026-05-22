@@ -96,17 +96,11 @@ fun PokemonDetailScreen(
             ) {
                 PokeballLoader(modifier = Modifier.size(96.dp))
             }
-            is DetailUiState.Error -> Box(
-                Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    state.message,
-                    color = MaterialTheme.colorScheme.error,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(32.dp),
-                )
-            }
+            is DetailUiState.Error -> TeamRocketError(
+                message = state.message,
+                onRetry = viewModel::onRetry,
+                modifier = Modifier.padding(padding),
+            )
             is DetailUiState.Content -> DetailContent(
                 detail = state.detail,
                 shinySprites = shinySprites,

@@ -38,4 +38,10 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.appcompat)
     implementation(projects.core.pluginApi)
+    // @Preview annotation + on-device renderer for Studio's "Run on Device"
+    // preview action. `ui-tooling-preview` exposes the annotation; `ui-tooling`
+    // is debug-only and ships the runtime needed to actually render previews
+    // when deployed.
+    implementation(libs.compose.ui.tooling.preview)
+    debugImplementation(libs.compose.ui.tooling)
 }

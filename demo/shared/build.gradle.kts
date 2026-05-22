@@ -106,6 +106,10 @@ kotlin {
                 implementation(libs.compose.adaptive.navigation3)
                 implementation(libs.compose.material3.adaptive.navigation.suite)
                 implementation(libs.navigation3.runtime)
+                // `@Preview` lives in commonMain since CMP 1.5; promote the
+                // tooling-preview dep out of androidMain so previews show in
+                // common files like `TeamRocketError`.
+                implementation(libs.compose.ui.tooling.preview)
                 // Room 3 publishes KMP variants for every target we build
                 // (Android, JVM, iosArm64, iosSimulatorArm64, js, wasmJs) as of
                 // 3.0.0-alpha05 — previously iOS was carved out via nonIosMain.
@@ -118,7 +122,6 @@ kotlin {
             }
         }
         androidMain.dependencies {
-            implementation(libs.compose.ui.tooling.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.sqlite.bundled)
@@ -185,6 +188,12 @@ dependencies {
     add("kspWasmJs", libs.room3.compiler)
     add("kspIosArm64", libs.room3.compiler)
     add("kspIosSimulatorArm64", libs.room3.compiler)
+    // AGP 9's `com.android.kotlin.multiplatform.library` doesn't expose a
+    // `debugImplementation` configuration, so `ui-tooling` (the renderer for
+    // `@Preview` in commonMain) is attached to the Android runtime classpath
+    // instead — the wiring recommended in the official KMP docs:
+    // https://kotlinlang.org/docs/multiplatform/compose-previews.html
+    add("androidRuntimeClasspath", libs.compose.ui.tooling)
 }
 
 room3 {

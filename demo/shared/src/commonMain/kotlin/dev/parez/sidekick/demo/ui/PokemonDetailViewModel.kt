@@ -55,4 +55,9 @@ class PokemonDetailViewModel(
                 }
         }
     }
+
+    fun onRetry() {
+        error.value = null
+        fetchDetail()
+    }
 }
