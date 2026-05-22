@@ -113,7 +113,7 @@ class SidekickPreferencesProcessor(
             typeDecl.classKind == ClassKind.ENUM_CLASS
 
         val enumValues: List<String> = if (isEnum) {
-            (typeDecl as KSClassDeclaration).declarations
+            typeDecl.declarations
                 .filterIsInstance<KSClassDeclaration>()
                 .filter { it.classKind == ClassKind.ENUM_ENTRY }
                 .map { it.simpleName.asString() }

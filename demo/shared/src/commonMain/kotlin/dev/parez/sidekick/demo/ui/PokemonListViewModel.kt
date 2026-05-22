@@ -42,7 +42,7 @@ class PokemonListViewModel(
         isLoadingMore,
         error,
     ) { items, query, loading, err ->
-        Logger.d("ListVM") { "combine: items=${items.size}, query=$query, loading=$loading, err=$err" }
+        Logger.d(tag = "ListVM") { "combine: items=${items.size}, query=$query, loading=$loading, err=$err" }
         if (items.isEmpty() && loading && err == null) {
             ListUiState.Loading
         } else if (items.isEmpty() && err != null) {
@@ -72,13 +72,13 @@ class PokemonListViewModel(
     fun loadNextPage() {
         if (isLoadingMore.value) return
         viewModelScope.launch {
-            Logger.i("ListVM") { "loadNextPage: starting" }
+            Logger.i(tag = "ListVM") { "loadNextPage: starting" }
             isLoadingMore.value = true
             error.value = null
             runCatching { repository.fetchNextPage(PAGE_SIZE) }
-                .onSuccess { Logger.d("ListVM") { "loadNextPage: success" } }
+                .onSuccess { Logger.d(tag = "ListVM") { "loadNextPage: success" } }
                 .onFailure {
-                    Logger.e("ListVM", it) { "loadNextPage failed" }
+                    Logger.e(it, tag = "ListVM") { "loadNextPage failed" }
                     error.value = it.message ?: "Unknown error"
                 }
             isLoadingMore.value = false

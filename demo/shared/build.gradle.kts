@@ -50,6 +50,12 @@ kotlin {
     @OptIn(ExperimentalKotlinGradlePluginApi::class)
     applyDefaultHierarchyTemplate()
 
+    // PokemonDatabase + Room's generated PokemonDatabaseConstructor use
+    // `expect`/`actual` classes. The classes-in-Beta warning is informational.
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+
     sourceSets {
         val commonMain by getting
         val nonIosMain by creating { dependsOn(commonMain) }

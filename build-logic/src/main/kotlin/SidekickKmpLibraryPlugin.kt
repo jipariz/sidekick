@@ -74,6 +74,13 @@ class SidekickKmpLibraryPlugin : Plugin<Project> {
                 implementation(compose.material3)
                 implementation(compose.ui)
             }
+
+            // Sidekick uses `expect class` / `expect object` (Room database
+            // constructors, SQLite drivers, …) by design. The classes-in-Beta
+            // warning is informational, not a defect.
+            compilerOptions {
+                freeCompilerArgs.add("-Xexpect-actual-classes")
+            }
         }
 
         extensions.configure<MavenPublishBaseExtension> {
