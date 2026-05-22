@@ -23,7 +23,6 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -153,7 +152,7 @@ private fun ContentState(
                     contentAlignment = Alignment.Center,
                 ) {
                     when {
-                        state.isLoadingMore -> CircularProgressIndicator(modifier = Modifier.size(32.dp))
+                        state.isLoadingMore -> PokeballLoader(modifier = Modifier.size(40.dp))
                         state.error != null -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 state.error,
@@ -233,7 +232,7 @@ private fun PokemonCard(
 @Composable
 private fun LoadingState(modifier: Modifier = Modifier) {
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator()
+        PokeballLoader(modifier = Modifier.size(96.dp))
     }
 }
 
