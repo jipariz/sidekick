@@ -9,7 +9,7 @@ kotlin {
         commonMain.dependencies {
             api(projects.plugins.networkMonitor.api)
             api(projects.core.pluginApi)
-            implementation(compose.materialIconsExtended)
+            implementation(libs.compose.material.iconsExtended)
             implementation(libs.kotlinx.coroutinesCore)
             implementation(libs.compose.adaptive)
             implementation(libs.compose.adaptive.layout)

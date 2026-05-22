@@ -9,7 +9,7 @@ kotlin {
         commonMain.dependencies {
             api(projects.core.pluginApi)
             implementation(libs.kotlinx.coroutinesCore)
-            implementation(compose.materialIconsExtended)
+            implementation(libs.compose.material.iconsExtended)
             implementation(libs.androidx.lifecycle.runtimeCompose)
         }
         androidMain.dependencies {

@@ -11,10 +11,10 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(projects.core.pluginApi)
-            // Mirror shell's api(compose.materialIconsExtended) so commonMain
+            // Mirror shell's api(material-icons-extended) so commonMain
             // call sites that reference Icons.Default.* still compile when the
             // Android release variant resolves to noop.
-            api(compose.materialIconsExtended)
+            api(libs.compose.material.iconsExtended)
         }
     }
 }
