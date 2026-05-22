@@ -12,3 +12,4 @@ interface PokemonCache {
 }
 
 expect fun createPokemonCache(): PokemonCache
+

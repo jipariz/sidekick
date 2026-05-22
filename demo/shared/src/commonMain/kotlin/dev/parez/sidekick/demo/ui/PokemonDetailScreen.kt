@@ -19,7 +19,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -95,19 +94,13 @@ fun PokemonDetailScreen(
                 Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center,
             ) {
-                CircularProgressIndicator()
+                PokeballLoader(modifier = Modifier.size(96.dp))
             }
-            is DetailUiState.Error -> Box(
-                Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    state.message,
-                    color = MaterialTheme.colorScheme.error,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(32.dp),
-                )
-            }
+            is DetailUiState.Error -> TeamRocketError(
+                message = state.message,
+                onRetry = viewModel::onRetry,
+                modifier = Modifier.padding(padding),
+            )
             is DetailUiState.Content -> DetailContent(
                 detail = state.detail,
                 shinySprites = shinySprites,

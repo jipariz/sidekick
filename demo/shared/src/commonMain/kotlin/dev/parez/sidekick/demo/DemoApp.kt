@@ -1,31 +1,22 @@
 package dev.parez.sidekick.demo
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BugReport
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -37,8 +28,12 @@ import com.svenjacobs.reveal.RevealCanvas
 import com.svenjacobs.reveal.RevealShape
 import com.svenjacobs.reveal.rememberRevealCanvasState
 import com.svenjacobs.reveal.rememberRevealState
-import dev.parez.sidekick.Sidekick
+import androidx.navigation3.runtime.rememberNavBackStack
 import dev.parez.sidekick.demo.di.LibraryKoinContext
+import dev.parez.sidekick.demo.navigation.BrowserHistoryEffect
+import dev.parez.sidekick.demo.navigation.DemoSavedStateConfiguration
+import dev.parez.sidekick.demo.navigation.PokemonListKey
+import dev.parez.sidekick.demo.navigation.SidekickKey
 import dev.parez.sidekick.demo.theme.AppTypography
 import dev.parez.sidekick.demo.theme.colorSchemeFor
 import dev.parez.sidekick.log.LogMonitorPlugin
@@ -94,7 +89,15 @@ fun DemoApp() {
         }
 
         MaterialTheme(colorScheme = colorScheme, typography = AppTypography) {
-            var sidekickVisible by remember { mutableStateOf(false) }
+            // Single source of truth for the demo's navigation — list, detail,
+            // and the Sidekick overlay are all entries on this stack. On web,
+            // `BrowserHistoryEffect` binds it to the browser History API so URL
+            // + back/forward stay in sync.
+            val backStack = rememberNavBackStack(DemoSavedStateConfiguration, PokemonListKey)
+            BrowserHistoryEffect(backStack)
+            val sidekickActive by remember(backStack) {
+                derivedStateOf { backStack.lastOrNull() is SidekickKey }
+            }
             val revealCanvasState = rememberRevealCanvasState()
             val revealState = rememberRevealState()
             val revealScope = rememberCoroutineScope()
@@ -118,9 +121,9 @@ fun DemoApp() {
                 ) {
                     Scaffold(
                         floatingActionButton = {
-                            if (!sidekickVisible) {
+                            if (!sidekickActive) {
                                 SmallFloatingActionButton(
-                                    onClick = { sidekickVisible = true },
+                                    onClick = { backStack.add(SidekickKey) },
                                     modifier = Modifier
                                         .padding(16.dp)
                                         .revealable(
@@ -129,7 +132,7 @@ fun DemoApp() {
                                             borderStroke = BorderStroke(2.dp, Color.DarkGray),
                                             onClick = OnClick.Listener {
                                                 revealScope.launch { revealState.hide() }
-                                                sidekickVisible = true
+                                                backStack.add(SidekickKey)
                                             },
                                         ),
                                 ) {
@@ -138,31 +141,12 @@ fun DemoApp() {
                             }
                         },
                     ) {
-                        Box(Modifier.fillMaxSize()) {
-                            PokemonCatalog(
-                                showNumbers = showNumbers,
-                                shinySprites = shinySprites,
-                            )
-
-                            AnimatedVisibility(
-                                visible = sidekickVisible,
-                                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-                                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
-                            ) {
-                                Sidekick(
-                                    useSidekickTheme = false,
-                                    plugins = plugins,
-                                    actions = {
-                                        IconButton(
-                                            onClick = { sidekickVisible = false },
-                                            modifier = Modifier.padding(16.dp),
-                                        ) {
-                                            Icon(Icons.Filled.Close, contentDescription = "Close Sidekick")
-                                        }
-                                    },
-                                )
-                            }
-                        }
+                        PokemonCatalog(
+                            backStack = backStack,
+                            showNumbers = showNumbers,
+                            shinySprites = shinySprites,
+                            plugins = plugins,
+                        )
                     }
                 }
             }
