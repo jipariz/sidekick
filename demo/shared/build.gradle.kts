@@ -58,11 +58,20 @@ kotlin {
 
     sourceSets {
         val commonMain by getting
+        // Two orthogonal intermediates collapse the per-target carve-outs:
+        //   nonIosMain  — has Room (Room 3 doesn't publish for iOS yet)
+        //   nonWebMain  — holds the no-op BrowserHistoryEffect actual
+        // android/jvm see both; ios sees only nonWebMain; web sees only nonIosMain.
+        //
+        // `webMain` is auto-created by applyDefaultHierarchyTemplate() and is
+        // already the parent of jsMain + wasmJsMain — we just hook it under
+        // nonIosMain so Room (declared on nonIosMain) keeps flowing into web.
         val nonIosMain by creating { dependsOn(commonMain) }
-        named("androidMain") { dependsOn(nonIosMain) }
-        named("jvmMain") { dependsOn(nonIosMain) }
-        named("jsMain") { dependsOn(nonIosMain) }
-        named("wasmJsMain") { dependsOn(nonIosMain) }
+        val nonWebMain by creating { dependsOn(commonMain) }
+        named("androidMain") { dependsOn(nonIosMain); dependsOn(nonWebMain) }
+        named("jvmMain") { dependsOn(nonIosMain); dependsOn(nonWebMain) }
+        named("iosMain") { dependsOn(nonWebMain) }
+        named("webMain") { dependsOn(nonIosMain) }
     }
 
     sourceSets {
@@ -94,15 +103,18 @@ kotlin {
                 implementation(libs.compose.adaptive)
                 implementation(libs.compose.adaptive.layout)
                 implementation(libs.compose.adaptive.navigation)
+                implementation(libs.compose.adaptive.navigation3)
                 implementation(libs.compose.material3.adaptive.navigation.suite)
+                implementation(libs.navigation3.runtime)
+                // Room 3 publishes KMP variants for every target we build
+                // (Android, JVM, iosArm64, iosSimulatorArm64, js, wasmJs) as of
+                // 3.0.0-alpha05 — previously iOS was carved out via nonIosMain.
+                implementation(libs.room3.runtime)
+                // Force-bump over the 1.0.1 (Kotlin 2.2.20 abi) that
+                // adaptive-navigation3:1.3.0-beta01 transitively pulls.
+                implementation(libs.navigationevent.compose)
                 implementation(libs.reveal.core)
                 implementation(libs.reveal.shapes)
-            }
-        }
-        val nonIosMain by getting {
-            dependencies {
-                // Room 3 only publishes for the nonIos targets.
-                implementation(libs.room3.runtime)
             }
         }
         androidMain.dependencies {
@@ -114,6 +126,25 @@ kotlin {
         jvmMain.dependencies {
             implementation(libs.ktor.client.cio)
             implementation(libs.sqlite.bundled)
+        }
+        val webMain by getting {
+            dependencies {
+                // Wires androidx.navigation3 backstack ↔ browser History API.
+                implementation(libs.navigation3.browser)
+                // The adaptive-navigation3 1.3.0-beta01 graph still pulls
+                // Kotlin-2.2-era (abi 2.2.0) AOSP klibs (lifecycle, savedstate,
+                // navigationevent). Those reference `externrefToBoolean`, a
+                // Wasm internal that Kotlin 2.3 no longer exports — the page
+                // throws "function import requires a callable" at instantiation.
+                // Force every offending artifact up to its abi-2.3 release.
+                implementation(libs.androidx.lifecycle.runtime.aosp)
+                implementation(libs.androidx.lifecycle.common.aosp)
+                implementation(libs.androidx.lifecycle.runtimeCompose.aosp)
+                implementation(libs.androidx.savedstate.aosp)
+                implementation(libs.androidx.savedstate.compose.aosp)
+                implementation(libs.androidx.navigationevent.aosp)
+                implementation(libs.androidx.navigationevent.compose.aosp)
+            }
         }
         jsMain {
             kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/js/jsMain/kotlin"))
@@ -131,6 +162,17 @@ kotlin {
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
+            // Bundled SQLite ships per-target binaries for iosArm64 and
+            // iosSimulatorArm64 — same artifact android/jvm use.
+            implementation(libs.sqlite.bundled)
+        }
+        // KMP KSP doesn't auto-register generated dirs for native source sets,
+        // mirroring the js/wasmJs pattern above.
+        val iosArm64Main by getting {
+            kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/iosArm64/iosArm64Main/kotlin"))
+        }
+        val iosSimulatorArm64Main by getting {
+            kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/iosSimulatorArm64/iosSimulatorArm64Main/kotlin"))
         }
     }
 }
@@ -141,6 +183,8 @@ dependencies {
     add("kspJvm", libs.room3.compiler)
     add("kspJs", libs.room3.compiler)
     add("kspWasmJs", libs.room3.compiler)
+    add("kspIosArm64", libs.room3.compiler)
+    add("kspIosSimulatorArm64", libs.room3.compiler)
 }
 
 room3 {
