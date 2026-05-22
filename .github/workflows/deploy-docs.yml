@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build-demo:
-    name: Build WasmJS demo
+    name: Build web demo
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,11 +28,14 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build WasmJS demo
-        run: ./gradlew :demo:webApp:wasmJsBrowserDistribution --no-daemon
+      # composeCompatibilityBrowserDistribution emits a single dist containing
+      # both wasm and JS bundles + a tiny `webApp.js` loader shim that probes
+      # wasm-GC support and falls back to the JS variant on older browsers.
+      - name: Build web demo (wasm + JS compatibility dist)
+        run: ./gradlew :demo:webApp:composeCompatibilityBrowserDistribution --no-daemon
 
       - name: Inject coi-serviceworker for SharedArrayBuffer support
-        working-directory: demo/webApp/build/dist/wasmJs/productionExecutable
+        working-directory: demo/webApp/build/dist/composeWebCompatibility/productionExecutable
         run: |
           # GitHub Pages cannot set COOP/COEP headers, so we use
           # coi-serviceworker to enable SharedArrayBuffer client-side
@@ -44,7 +47,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: demo-dist
-          path: demo/webApp/build/dist/wasmJs/productionExecutable/
+          path: demo/webApp/build/dist/composeWebCompatibility/productionExecutable/
           retention-days: 1
 
   build-docs:
