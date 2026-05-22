@@ -76,7 +76,17 @@ internal fun PokemonCatalog(
                     showNumbers = showNumbers,
                     shinySprites = shinySprites,
                     onSelect = { entry ->
-                        backStack.add(PokemonDetailKey(entry.id, entry.name))
+                        val key = PokemonDetailKey(entry.id, entry.name)
+                        // In two-pane mode the list stays visible alongside the
+                        // detail, so picking another Pokémon should swap the
+                        // detail in place rather than stack on top — that way
+                        // back always returns to the list, not to the previous
+                        // detail.
+                        if (backStack.lastOrNull() is PokemonDetailKey) {
+                            backStack[backStack.lastIndex] = key
+                        } else {
+                            backStack.add(key)
+                        }
                     },
                 )
             }
