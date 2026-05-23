@@ -1,5 +1,11 @@
 package dev.parez.sidekick.demo
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -8,15 +14,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CatchingPokemon
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.CatchingPokemon
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDragHandle
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
+import androidx.compose.material3.adaptive.layout.PaneExpansionAnchor
 import androidx.compose.material3.adaptive.layout.calculatePaneScaffoldDirective
+import androidx.compose.material3.adaptive.layout.rememberPaneExpansionState
 import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
 import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneStrategy
 import androidx.compose.runtime.Composable
@@ -42,7 +51,18 @@ import dev.parez.sidekick.plugin.SidekickPlugin
  * [backStack] is the single source of truth — pushing a [PokemonDetailKey]
  * opens the detail pane, popping returns to the list. On wide windows the
  * [ListDetailSceneStrategy] keeps both panes visible; on narrow windows it
- * collapses to one. On web, the same backstack is bound to browser history via
+ * collapses to one, with `PaneMotionDefaults` animating the resize.
+ *
+ * Three fanciness knobs on top of the basic recipe:
+ *  - `shouldHandleSinglePaneLayout = true` keeps the scaffold in charge of
+ *    every window size so pane transitions stay smooth.
+ *  - `paneExpansionDragHandle` exposes a Material 3 [VerticalDragHandle] so
+ *    users can drag the divider between list and detail on wide windows.
+ *  - The `SidekickKey` entry overrides the default crossfade with a
+ *    slide-from-bottom transition (a nod to the old `AnimatedVisibility`
+ *    we used before Sidekick became a nav3 destination).
+ *
+ * On web, the same backstack is bound to browser history via
  * [dev.parez.sidekick.demo.navigation.BrowserHistoryEffect].
  */
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
@@ -60,63 +80,103 @@ internal fun PokemonCatalog(
         calculatePaneScaffoldDirective(windowAdaptiveInfo)
             .copy(horizontalPartitionSpacerSize = 0.dp)
     }
-    val sceneStrategy = rememberListDetailSceneStrategy<NavKey>(directive = directive)
+    // Proportion-based anchors so the divider position scales with window
+    // width instead of staying at a fixed dp offset — without this the
+    // divider visibly jumps as the user resizes the host window.
+    val paneExpansionState = rememberPaneExpansionState(
+        anchors = listOf(
+            PaneExpansionAnchor.Proportion(0.35f),
+            PaneExpansionAnchor.Proportion(0.5f),
+            PaneExpansionAnchor.Proportion(0.65f),
+        ),
+        initialAnchoredIndex = 1,
+    )
+    val sceneStrategy = rememberListDetailSceneStrategy<NavKey>(
+        // Keep the adaptive scaffold in charge of every window size so the
+        // `PaneMotionDefaults` animations play on one-pane ↔ two-pane resizes.
+        // Default `false` would hand single-pane mode off to NavDisplay's
+        // plain `SinglePaneScene` crossfade.
+        shouldHandleSinglePaneLayout = true,
+        directive = directive,
+        paneExpansionState = paneExpansionState,
+        paneExpansionDragHandle = { state ->
+            val interactionSource = remember { MutableInteractionSource() }
+            VerticalDragHandle(
+                modifier = Modifier.paneExpansionDraggable(
+                    state = state,
+                    minTouchTargetSize = 48.dp,
+                    interactionSource = interactionSource,
+                    semanticsProperties = null,
+                ),
+                interactionSource = interactionSource,
+            )
+        },
+    )
 
     NavDisplay(
         backStack = backStack,
         onBack = { backStack.removeLastOrNull() },
         sceneStrategies = listOf(sceneStrategy),
         entryProvider = entryProvider {
-            entry<PokemonListKey>(
-                metadata = ListDetailSceneStrategy.listPane(
-                    detailPlaceholder = { DetailPlaceholder() },
-                ),
-            ) {
-                PokemonListScreen(
-                    showNumbers = showNumbers,
-                    shinySprites = shinySprites,
-                    onSelect = { entry ->
-                        val key = PokemonDetailKey(entry.id, entry.name)
-                        // In two-pane mode the list stays visible alongside the
-                        // detail, so picking another Pokémon should swap the
-                        // detail in place rather than stack on top — that way
-                        // back always returns to the list, not to the previous
-                        // detail.
-                        if (backStack.lastOrNull() is PokemonDetailKey) {
-                            backStack[backStack.lastIndex] = key
-                        } else {
-                            backStack.add(key)
-                        }
+                entry<PokemonListKey>(
+                    metadata = ListDetailSceneStrategy.listPane(
+                        detailPlaceholder = { DetailPlaceholder() },
+                    ),
+                ) {
+                    PokemonListScreen(
+                        showNumbers = showNumbers,
+                        shinySprites = shinySprites,
+                        onSelect = { entry ->
+                            val key = PokemonDetailKey(entry.id, entry.name)
+                            // In two-pane mode the list stays visible alongside the
+                            // detail, so picking another Pokémon should swap the
+                            // detail in place rather than stack on top — that way
+                            // back always returns to the list, not to the previous
+                            // detail.
+                            if (backStack.lastOrNull() is PokemonDetailKey) {
+                                backStack[backStack.lastIndex] = key
+                            } else {
+                                backStack.add(key)
+                            }
+                        },
+                    )
+                }
+                entry<PokemonDetailKey>(
+                    metadata = ListDetailSceneStrategy.detailPane(),
+                ) { key ->
+                    PokemonDetailScreen(
+                        id = key.id,
+                        name = key.name,
+                        onBack = { backStack.removeLastOrNull() },
+                        shinySprites = shinySprites,
+                    )
+                }
+                // No list/detail metadata — falls through to the default
+                // single-pane scene; the per-entry transition spec replaces the
+                // default crossfade with a slide-up-from-bottom on push and a
+                // slide-down on pop, matching the old AnimatedVisibility feel.
+                entry<SidekickKey>(
+                    metadata = NavDisplay.transitionSpec {
+                        slideInVertically(initialOffsetY = { it }) + fadeIn() togetherWith
+                            fadeOut()
+                    } + NavDisplay.popTransitionSpec {
+                        fadeIn() togetherWith
+                            slideOutVertically(targetOffsetY = { it }) + fadeOut()
                     },
-                )
-            }
-            entry<PokemonDetailKey>(
-                metadata = ListDetailSceneStrategy.detailPane(),
-            ) { key ->
-                PokemonDetailScreen(
-                    id = key.id,
-                    name = key.name,
-                    onBack = { backStack.removeLastOrNull() },
-                    shinySprites = shinySprites,
-                )
-            }
-            // No list/detail metadata — falls through to the default single-pane
-            // scene, so Sidekick renders full-bleed on top of whichever pane
-            // was previously active.
-            entry<SidekickKey> {
-                Sidekick(
-                    useSidekickTheme = false,
-                    plugins = plugins,
-                    actions = {
-                        IconButton(
-                            onClick = { backStack.removeLastOrNull() },
-                            modifier = Modifier.padding(16.dp),
-                        ) {
-                            Icon(Icons.Filled.Close, contentDescription = "Close Sidekick")
-                        }
-                    },
-                )
-            }
+                ) {
+                    Sidekick(
+                        useSidekickTheme = false,
+                        plugins = plugins,
+                        actions = {
+                            IconButton(
+                                onClick = { backStack.removeLastOrNull() },
+                                modifier = Modifier.padding(16.dp),
+                            ) {
+                                Icon(Icons.Filled.Close, contentDescription = "Close Sidekick")
+                            }
+                        },
+                    )
+                }
         },
     )
 }
