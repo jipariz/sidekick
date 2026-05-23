@@ -23,7 +23,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDragHandle
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
+import androidx.compose.material3.adaptive.layout.PaneExpansionAnchor
 import androidx.compose.material3.adaptive.layout.calculatePaneScaffoldDirective
+import androidx.compose.material3.adaptive.layout.rememberPaneExpansionState
 import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
 import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneStrategy
 import androidx.compose.runtime.Composable
@@ -78,6 +80,17 @@ internal fun PokemonCatalog(
         calculatePaneScaffoldDirective(windowAdaptiveInfo)
             .copy(horizontalPartitionSpacerSize = 0.dp)
     }
+    // Proportion-based anchors so the divider position scales with window
+    // width instead of staying at a fixed dp offset — without this the
+    // divider visibly jumps as the user resizes the host window.
+    val paneExpansionState = rememberPaneExpansionState(
+        anchors = listOf(
+            PaneExpansionAnchor.Proportion(0.35f),
+            PaneExpansionAnchor.Proportion(0.5f),
+            PaneExpansionAnchor.Proportion(0.65f),
+        ),
+        initialAnchoredIndex = 1,
+    )
     val sceneStrategy = rememberListDetailSceneStrategy<NavKey>(
         // Keep the adaptive scaffold in charge of every window size so the
         // `PaneMotionDefaults` animations play on one-pane ↔ two-pane resizes.
@@ -85,6 +98,7 @@ internal fun PokemonCatalog(
         // plain `SinglePaneScene` crossfade.
         shouldHandleSinglePaneLayout = true,
         directive = directive,
+        paneExpansionState = paneExpansionState,
         paneExpansionDragHandle = { state ->
             val interactionSource = remember { MutableInteractionSource() }
             VerticalDragHandle(

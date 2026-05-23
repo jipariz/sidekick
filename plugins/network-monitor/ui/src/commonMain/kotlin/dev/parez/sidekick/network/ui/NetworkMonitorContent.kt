@@ -17,6 +17,8 @@ import androidx.compose.material3.adaptive.layout.AnimatedPane
 import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffold
 import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
 import androidx.compose.material3.adaptive.layout.PaneAdaptedValue
+import androidx.compose.material3.adaptive.layout.PaneExpansionAnchor
+import androidx.compose.material3.adaptive.layout.rememberPaneExpansionState
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -68,9 +70,21 @@ internal fun NetworkMonitorContent(
     val extraVisible =
         navigator.scaffoldValue[ListDetailPaneScaffoldRole.Extra] == PaneAdaptedValue.Expanded
 
+    // Proportion-based anchors keep the divider in step with window resizes;
+    // dp-absolute defaults would drift the divider visually as the host shrinks.
+    val paneExpansionState = rememberPaneExpansionState(
+        anchors = listOf(
+            PaneExpansionAnchor.Proportion(0.3f),
+            PaneExpansionAnchor.Proportion(0.5f),
+            PaneExpansionAnchor.Proportion(0.7f),
+        ),
+        initialAnchoredIndex = 1,
+    )
+
     ListDetailPaneScaffold(
         directive = navigator.scaffoldDirective,
         value = navigator.scaffoldValue,
+        paneExpansionState = paneExpansionState,
         paneExpansionDragHandle = { state ->
             val interactionSource = remember { MutableInteractionSource() }
             VerticalDragHandle(
