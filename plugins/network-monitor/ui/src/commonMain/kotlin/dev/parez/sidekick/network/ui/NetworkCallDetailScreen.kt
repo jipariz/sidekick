@@ -14,9 +14,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Error
@@ -41,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
@@ -50,13 +54,22 @@ import dev.parez.sidekick.network.CallStatus
 import dev.parez.sidekick.network.NetworkCall
 
 /**
- * Detail pane for the Network Monitor. Works in both single-pane (compact) and
- * two-pane (medium/expanded) layouts.
+ * Detail pane for the Network Monitor. Works in three layouts:
+ *  - **Compact (single-pane)**: list collapses, detail shows with both
+ *    Request / Response tabs.
+ *  - **Medium (two-pane)**: list + detail; tabs still drive Request / Response.
+ *  - **Expanded (three-pane)**: list + detail + extra. Response moves to the
+ *    extra pane ([NetworkCallResponsePane]) and this pane drops the tabs,
+ *    rendering Request only — controlled by [hideResponseTab].
  *
- * @param showBackButton When true (compact mode) shows a back arrow in the TopAppBar.
- *                       When false (two-pane) shows nothing (caller manages the panel).
- * @param onBack         Called when the back arrow is tapped (compact) or when the pane
- *                       should be dismissed (two-pane close button, if added).
+ * @param showBackButton  When true (compact mode) shows a back arrow in the TopAppBar.
+ *                        When false (two/three-pane) shows nothing.
+ * @param onBack          Called when the back arrow is tapped (compact) or when
+ *                        the pane should be dismissed.
+ * @param hideResponseTab When true, the Request/Response tab row is omitted and
+ *                        only the Request body is rendered. Set by
+ *                        `NetworkMonitorContent` when the scaffold's extra pane
+ *                        is visible so Response lives there instead.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,31 +77,51 @@ internal fun NetworkCallDetailPane(
     call: NetworkCall,
     showBackButton: Boolean = true,
     onBack: () -> Unit,
+    hideResponseTab: Boolean = false,
 ) {
     var selectedTab by remember(call.id) { mutableIntStateOf(0) }
+    // When the extra pane appears mid-flow (e.g. user resizes window from
+    // two-pane to three-pane), clamp the tab back to Request so the (now hidden)
+    // Response selection doesn't render against the wrong children.
+    if (hideResponseTab && selectedTab != 0) selectedTab = 0
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        Text(
-                            text = urlHost(call.url),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontFamily = FontFamily.Monospace,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+                    if (hideResponseTab) {
+                        // 3-pane mode: this pane is dedicated to the request. Use a
+                        // directional "outgoing" identity (CloudUpload + REQUEST
+                        // overline + tonal accent) so it reads as the sender side
+                        // at a glance, alongside the response pane.
+                        PaneIdentity(
+                            icon = Icons.Default.CloudUpload,
+                            iconContainer = MaterialTheme.colorScheme.primaryContainer,
+                            iconTint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            label = "Request",
+                            primary = urlHost(call.url),
+                            secondary = urlPath(call.url).takeIf { it.isNotEmpty() },
                         )
-                        val path = urlPath(call.url)
-                        if (path.isNotEmpty()) {
+                    } else {
+                        Column {
                             Text(
-                                text = path,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                text = urlHost(call.url),
+                                style = MaterialTheme.typography.titleSmall,
                                 fontFamily = FontFamily.Monospace,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
+                            val path = urlPath(call.url)
+                            if (path.isNotEmpty()) {
+                                Text(
+                                    text = path,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontFamily = FontFamily.Monospace,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
                         }
                     }
                 },
@@ -112,24 +145,41 @@ internal fun NetworkCallDetailPane(
         .padding(it)
         .fillMaxSize()
     ) {
-        // ── TopAppBar ─────────────────────────────────────────────────────────
-
-
         // ── Status summary strip ──────────────────────────────────────────────
-        StatusSummaryStrip(call)
+        // Show only when the response is rendered in this pane (tabs or compact).
+        // In 3-pane mode the response lives next door, so its summary goes there.
+        if (!hideResponseTab) {
+            StatusSummaryStrip(call)
+        }
 
         // ── Tabs ──────────────────────────────────────────────────────────────
-        PrimaryTabRow(selectedTabIndex = selectedTab) {
-            Tab(
-                selected = selectedTab == 0,
-                onClick = { selectedTab = 0 },
-                text = { Text("Request") },
-            )
-            Tab(
-                selected = selectedTab == 1,
-                onClick = { selectedTab = 1 },
-                text = { Text("Response") },
-            )
+        if (!hideResponseTab) {
+            PrimaryTabRow(selectedTabIndex = selectedTab) {
+                Tab(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    icon = {
+                        Icon(
+                            Icons.Default.CloudUpload,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    },
+                    text = { Text("Request") },
+                )
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    icon = {
+                        Icon(
+                            Icons.Default.CloudDownload,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    },
+                    text = { Text("Response") },
+                )
+            }
         }
 
         // ── Tab content ───────────────────────────────────────────────────────
@@ -139,6 +189,119 @@ internal fun NetworkCallDetailPane(
         }
     }
         }
+}
+
+/**
+ * Header used by both the Request and Response panes. The tonal-tinted icon
+ * disc + small-caps label give the pane a strong directional identity (sent
+ * vs received) before the user reads any of the call detail.
+ */
+@Composable
+private fun PaneIdentity(
+    icon: ImageVector,
+    iconContainer: Color,
+    iconTint: Color,
+    label: String,
+    primary: String,
+    secondary: String?,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Surface(
+            color = iconContainer,
+            shape = CircleShape,
+            modifier = Modifier.size(36.dp),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
+        Column {
+            Text(
+                text = label.uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = primary,
+                style = MaterialTheme.typography.titleSmall,
+                fontFamily = FontFamily.Monospace,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (secondary != null) {
+                Text(
+                    text = secondary,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontFamily = FontFamily.Monospace,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Supporting (extra) pane that shows only the response side of a call. Used
+ * by `NetworkMonitorContent` on wide windows where the scaffold can fit three
+ * panes — list + detail (Request) + extra (Response).
+ *
+ * Visually mirrors the Request pane's identity using the opposite direction
+ * (CloudDownload + tertiary tonal accent) so the two panes read as "sent"
+ * and "received" without the user having to scan their contents.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun NetworkCallResponsePane(call: NetworkCall) {
+    val primary = when (call.status) {
+        CallStatus.PENDING -> "Pending"
+        CallStatus.ERROR -> "Network error"
+        CallStatus.COMPLETE -> call.responseCode?.let { code ->
+            "$code ${statusText(code)}".trim()
+        } ?: "—"
+    }
+    val secondary = call.durationMs?.let { "${it}ms" }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    PaneIdentity(
+                        icon = Icons.Default.CloudDownload,
+                        iconContainer = MaterialTheme.colorScheme.tertiaryContainer,
+                        iconTint = MaterialTheme.colorScheme.onTertiaryContainer,
+                        label = "Response",
+                        primary = primary,
+                        secondary = secondary,
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                ),
+            )
+        },
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize(),
+        ) {
+            // Mirror the detail pane's status summary so the response pane is
+            // self-sufficient on wide windows — duration, error message, and
+            // (for errors) the error itself live here rather than next door.
+            StatusSummaryStrip(call)
+            ResponseTab(call)
+        }
+    }
 }
 
 // ── Status summary strip ──────────────────────────────────────────────────────
@@ -352,7 +515,7 @@ private fun CopyableMonoBlock(text: String) {
     val clipboard = LocalClipboardManager.current
     Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.Top,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = text,

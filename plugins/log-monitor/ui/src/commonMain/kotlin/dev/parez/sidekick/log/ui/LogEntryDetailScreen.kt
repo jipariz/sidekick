@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -38,6 +39,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.parez.sidekick.log.LogEntry
+import dev.parez.sidekick.log.LogLevel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,21 +52,15 @@ internal fun LogEntryDetailPane(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        Text(
-                            text = entry.tag,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontFamily = FontFamily.Monospace,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            text = "${entry.level.fullLabel()} - ${formatTimestamp(entry.timestamp)}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                        )
-                    }
+                    // Severity-tinted disc + LOG · LEVEL overline + tag/timestamp.
+                    // Mirrors the network monitor's Request/Response pane identity
+                    // — here driven by [LogLevel] instead of direction so the
+                    // pane reads as "this is a WARN log from tag X" at a glance.
+                    PaneIdentity(
+                        level = entry.level,
+                        primary = entry.tag,
+                        secondary = formatTimestamp(entry.timestamp),
+                    )
                 },
                 navigationIcon = {
                     if (showBackButton) {
@@ -86,9 +82,6 @@ internal fun LogEntryDetailPane(
             Modifier.padding(it).
             fillMaxSize()
         ) {
-            // -- Level summary strip ----------------------------------------------
-            LevelSummaryStrip(entry)
-
             // -- Content ----------------------------------------------------------
             Column(
                 modifier = Modifier
@@ -122,30 +115,58 @@ internal fun LogEntryDetailPane(
     }
 }
 
-// -- Level summary strip ------------------------------------------------------
+// -- Pane identity ------------------------------------------------------------
 
+/**
+ * Header inside the detail [TopAppBar]: a severity-tinted disc carrying the
+ * level's icon, plus a small-caps "LOG · LEVEL" overline above the tag and
+ * timestamp. Mirrors the network monitor's request/response identity so the
+ * two plugins feel like one design system.
+ */
 @Composable
-private fun LevelSummaryStrip(entry: LogEntry) {
-    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+private fun PaneIdentity(
+    level: LogLevel,
+    primary: String,
+    secondary: String,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Surface(
+            color = level.containerColor(),
+            shape = CircleShape,
+            modifier = Modifier.size(36.dp),
         ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = level.icon(),
+                    contentDescription = null,
+                    tint = level.onContainerColor(),
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
+        Column {
             Text(
-                text = entry.level.fullLabel(),
-                style = MaterialTheme.typography.titleMedium,
-                color = entry.level.color(),
-                fontFamily = FontFamily.Monospace,
+                text = "LOG · ${level.fullLabel().uppercase()}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(Modifier.weight(1f))
             Text(
-                text = formatTimestamp(entry.timestamp),
-                style = MaterialTheme.typography.labelMedium,
+                text = primary,
+                style = MaterialTheme.typography.titleSmall,
+                fontFamily = FontFamily.Monospace,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = secondary,
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontFamily = FontFamily.Monospace,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -201,7 +222,7 @@ private fun CopyableMonoBlock(text: String) {
     val clipboard = LocalClipboardManager.current
     Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.Top,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = text,

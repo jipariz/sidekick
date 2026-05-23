@@ -1,8 +1,15 @@
 package dev.parez.sidekick.log.ui
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Article
+import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import dev.parez.sidekick.log.LogLevel
 
 internal fun LogLevel.label(): String = when (this) {
@@ -41,6 +48,41 @@ internal fun LogLevel.onColor(): Color = when (this) {
     LogLevel.WARN    -> MaterialTheme.colorScheme.onTertiary
     LogLevel.ERROR   -> MaterialTheme.colorScheme.onError
     LogLevel.ASSERT  -> MaterialTheme.colorScheme.onError
+}
+
+/**
+ * Tonal-container backgrounds for the pane-identity disc in the detail header.
+ * Mirrors [color] but uses the M3 `*Container` roles so the disc reads as a
+ * recessed badge instead of a high-emphasis fill.
+ */
+@Composable
+internal fun LogLevel.containerColor(): Color = when (this) {
+    LogLevel.VERBOSE -> MaterialTheme.colorScheme.surfaceContainerHigh
+    LogLevel.DEBUG   -> MaterialTheme.colorScheme.secondaryContainer
+    LogLevel.INFO    -> MaterialTheme.colorScheme.primaryContainer
+    LogLevel.WARN    -> MaterialTheme.colorScheme.tertiaryContainer
+    LogLevel.ERROR   -> MaterialTheme.colorScheme.errorContainer
+    LogLevel.ASSERT  -> MaterialTheme.colorScheme.errorContainer
+}
+
+@Composable
+internal fun LogLevel.onContainerColor(): Color = when (this) {
+    LogLevel.VERBOSE -> MaterialTheme.colorScheme.onSurfaceVariant
+    LogLevel.DEBUG   -> MaterialTheme.colorScheme.onSecondaryContainer
+    LogLevel.INFO    -> MaterialTheme.colorScheme.onPrimaryContainer
+    LogLevel.WARN    -> MaterialTheme.colorScheme.onTertiaryContainer
+    LogLevel.ERROR   -> MaterialTheme.colorScheme.onErrorContainer
+    LogLevel.ASSERT  -> MaterialTheme.colorScheme.onErrorContainer
+}
+
+/** Severity-specific icon for the pane-identity disc. */
+internal fun LogLevel.icon(): ImageVector = when (this) {
+    LogLevel.VERBOSE -> Icons.Default.Article
+    LogLevel.DEBUG   -> Icons.Default.BugReport
+    LogLevel.INFO    -> Icons.Default.Info
+    LogLevel.WARN    -> Icons.Default.Warning
+    LogLevel.ERROR   -> Icons.Default.Error
+    LogLevel.ASSERT  -> Icons.Default.Error
 }
 
 internal fun formatTimestamp(millis: Long): String {
