@@ -256,11 +256,33 @@ Pure Compose state: `mutableStateOf` in `SidekickState`. ViewModels use `android
 ### Paging (Network + Log monitors)
 Both monitor plugins use **AndroidX Paging 3.5.0** (KMP) for their list screens. The store exposes `pagedX(filter: Flow<XFilter>): Flow<PagingData<X>>`, and `filteredCount(filter): Flow<Long>` for the header counter.
 
-- **SQL path (Android / iOS / JVM / JS)**: `Pager(config, factory = { XPagingSource(db, filter) }).flow`. The `XPagingSource` registers a `Query.Listener` on the entity table (table-scoped, not query-scoped), so any insert/update fires `invalidate()` and Paging reloads only the visible page — the perf win vs. the prior `Flow<List<T>>` re-emission of the full 500/1000-row list.
-- **WasmJS fallback**: SQLDelight has no wasmJs driver, so the store keeps an in-memory cap-bounded list. The `pagedX` Flow there is `inMemorySnapshot.map { PagingData.from(it.filter(matches), sourceLoadStates = StaticLoadStates) }`. We bypass `Pager` + `PagingSource` on wasmJs because that chain has interop issues (likely `simpleChannelFlow` internals); a static `PagingData.from(...)` works and is fine for a bounded list. `StaticLoadStates` is `LoadStates(NotLoading(endOfPaginationReached=true), ...)` so the LazyPagingItems transitions out of its initial Loading state when items land.
-- **Filtering is SQL-side**: search query and method/level filters are WHERE clauses in `selectPagedFiltered{,AllX}` and `countFiltered{,AllX}`. The two `AllX` variants exist because SQLDelight 2.x generates invalid SQL for `IN ()` — when the filter set is empty, the store dispatches to the no-`IN` variant.
+- **Room path (all targets when the DB initialises)**: `Pager(config, factory = { XPagingSource(db, filter, scope) }).flow`. Each `XPagingSource` collects `db.invalidationTracker.createFlow(tableName, emitInitialState = false)` on the store's scope and calls `invalidate()` on any change — the Room 3 equivalent of SQLDelight's `Query.Listener`. The DAO ships a `suspend fun loadPaged(... limit, offset): List<Entity>` (not a `PagingSource`-typed return) because Room 3 KMP's generated PagingSource is Android-only, and non-Android source sets reject non-suspend DAO returns.
+- **In-memory fallback (web with no worker bundled)**: `NetworkMonitorStore.init` / `LogMonitorStore.init` probe the DB with a no-op `deleteOlderThan` call inside `runCatching {}`. On Android / JVM / iOS the probe passes and `_database.value` is set; on web targets without the sqlite-web worker bundled, the probe throws and the store falls back to `_inMemory.value = emptyList()`. The fallback `pagedX` flow is `inMemorySnapshot.map { PagingData.from(it.filter(matches), sourceLoadStates = StaticLoadStates) }`, bypassing `Pager` + `PagingSource` because that chain has interop issues on wasmJs (likely `simpleChannelFlow` internals). `StaticLoadStates` is `LoadStates(NotLoading(endOfPaginationReached=true), ...)` so `LazyPagingItems` transitions out of its initial Loading state when items land.
+- **Filtering is SQL-side**: search query and method/level filters are WHERE clauses on `loadPaged(...)` / `filteredCount(...)`. A single query handles both "all methods" and "method IN (...)" cases via a `:hasMethodFilter` int flag (`AND (:hasMethodFilter = 0 OR method IN (:methods))`) — Room rejects `IN ()` with an empty list at runtime, so the flag bypasses the IN clause when the consumer hasn't selected any methods. (Pre-migration this was two separate `.sq` queries; the flag-based form collapses them.)
 - **Filter state lives in the VM**: `MutableStateFlow<String>` for query + `MutableStateFlow<Set<…>>` for level/method chips, `combine(query.debounce(150L), filter).distinctUntilChanged()` → passed to `store.pagedX(filterFlow)` → `cachedIn(viewModelScope)`. `PagingData` is exposed as a **separate** `Flow` on the VM, never wrapped in a UiState (wrapping causes scroll-to-top on any state change).
-- **Detail pane is `selectById`-backed**: the entity may not be on a currently-loaded page, so the detail panel collects `store.xById(id).asFlow().mapToOneOrNull()` directly — independent of pagination.
+- **Detail pane is `selectById`-backed**: the entity may not be on a currently-loaded page, so the detail panel collects `store.xById(id)` (a `Flow<XEntity?>` from the DAO) directly — independent of pagination.
+
+### Monitor storage: Room 3 across all targets
+
+- **Android / JVM / iOS**: persistent SQLite via `BundledSQLiteDriver`. File paths are `getDatabasePath("sidekick_<name>_monitor.db")` on Android, `NSDocumentDirectory/sidekick_<name>_monitor.db` on iOS, and `java.io.tmpdir/sidekick_<name>_monitor_room.db` on JVM. The JVM path explicitly carries a `_room` suffix to **avoid colliding with pre-migration SQLDelight files** at the same tmpdir — Room can't parse SQLDelight's schema and `fallbackToDestructiveMigration` doesn't help (Room sees the missing `room_master_table` row and bails before dropping).
+- **JS / wasmJs**: persistent via `Room.inMemoryDatabaseBuilder<X>().setDriver(WebWorkerSQLiteDriver(worker)).build()`. The worker is loaded via `new URL("sqlite-wasm-worker/worker.js", import.meta.url)` — meaning the **consumer's web app must bundle an npm package named `sqlite-wasm-worker`** that exports a `worker.js` running `@sqlite.org/sqlite-wasm`. The reference implementation is `demo/webApp/sqlite-worker/{worker.js,package.json}`, wired in `demo/webApp/build.gradle.kts:28-40`.
+- **No bundled web worker = graceful fallback**: store init runs a `runCatching { dao.deleteOlderThan(...) }` probe. On web targets where the worker isn't bundled, the probe throws (the WebWorkerSQLiteDriver only fails on first SQL use, not at construction) and the store switches to its in-memory list. Consumers who skip the web persistence setup still see live monitor data — they only lose page-reload persistence.
+
+### Consumer setup: web persistence
+
+Consumers targeting `js`/`wasmJs` who want monitor data to survive a page reload need three things alongside their normal Sidekick dependency:
+
+1. **A worker.js file**, copied verbatim from `demo/webApp/sqlite-worker/worker.js`. It calls `new sqlite3.oo1.OpfsDb(fileName)` from `@sqlite.org/sqlite-wasm`, so monitor data persists in the browser's Origin Private File System.
+2. **A `package.json`** for the worker (`demo/webApp/sqlite-worker/package.json` is the template — exports the worker as an ES module).
+3. **A Gradle declaration** in the web app's `jsMain.dependencies` / `wasmJsMain.dependencies` block:
+
+   ```kotlin
+   implementation(npm("sqlite-wasm-worker", layout.projectDirectory.dir("sqlite-worker").asFile))
+   ```
+
+   The npm package name must be `sqlite-wasm-worker` because the monitor api modules hardcode that path. Webpack picks up the URL at bundle time and emits the worker alongside the main bundle.
+
+Without these, monitors still work — they just fall back to in-memory mode on web (data survives within a session, not across reloads). Native targets (Android / JVM / iOS) are unaffected.
 
 ### Android Context Initialization
 `SidekickInitializer` is a `ContentProvider` in `:core:plugin-api` that auto-initializes `ApplicationContextHolder` at app startup — no manual setup required in consuming apps. `ApplicationContextHolder.isInitialized` guards against uninitialized access for consumers that don't go through the normal ContentProvider path.
@@ -338,7 +360,7 @@ and `plugins/**` modules.
 
 ## Dependency Management
 
-Dependencies are declared in `gradle/libs.versions.toml` (version catalog). Always use `libs.*` accessors in `build.gradle.kts` — never hardcode versions. Key versions (as of 2026-05-23): Kotlin 2.3.21, Compose Multiplatform 1.11.0, AGP 9.2.1, M3 Adaptive 1.3.0-beta01, Koin 4.2.1, SQLDelight 2.3.2, Ktor 3.5.0, Room 3 3.0.0-alpha05, AndroidX Paging 3.5.0 (KMP; AOSP coordinates `androidx.paging:paging-{common,compose}`), AndroidX Navigation 3 1.1.2, `compose-adaptive-navigation3` 1.3.0-beta01, `navigation3-browser` 1.0.0.
+Dependencies are declared in `gradle/libs.versions.toml` (version catalog). Always use `libs.*` accessors in `build.gradle.kts` — never hardcode versions. Key versions (as of 2026-05-25): Kotlin 2.3.21, Compose Multiplatform 1.11.0, AGP 9.2.1, M3 Adaptive 1.3.0-beta01, Koin 4.2.1, Ktor 3.5.0, Room 3 3.0.0-alpha05, AndroidX Paging 3.5.0 (KMP; AOSP coordinates `androidx.paging:paging-{common,compose}`), AndroidX Navigation 3 1.1.2, `compose-adaptive-navigation3` 1.3.0-beta01, `navigation3-browser` 1.0.0. Both monitor plugins use Room 3 across every target — no SQLDelight anywhere in the repo.
 
 The `:demo:shared` module force-bumps several AOSP artifacts past the
 versions transitively pulled by `adaptive-navigation3:1.3.0-beta01` — the

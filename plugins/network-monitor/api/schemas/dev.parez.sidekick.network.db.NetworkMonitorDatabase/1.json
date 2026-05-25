@@ -1,0 +1,92 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "f19aac4cb1480189a789b10a6fbaac06",
+    "entities": [
+      {
+        "tableName": "network_calls",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `url` TEXT NOT NULL, `method` TEXT NOT NULL, `requestHeaders` TEXT NOT NULL, `requestBody` TEXT, `requestTimestamp` INTEGER NOT NULL, `responseCode` INTEGER, `responseHeaders` TEXT NOT NULL, `responseBody` TEXT, `responseTimestamp` INTEGER, `error` TEXT, `status` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "url",
+            "columnName": "url",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "method",
+            "columnName": "method",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "requestHeaders",
+            "columnName": "requestHeaders",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "requestBody",
+            "columnName": "requestBody",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "requestTimestamp",
+            "columnName": "requestTimestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "responseCode",
+            "columnName": "responseCode",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "responseHeaders",
+            "columnName": "responseHeaders",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "responseBody",
+            "columnName": "responseBody",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "responseTimestamp",
+            "columnName": "responseTimestamp",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "error",
+            "columnName": "error",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f19aac4cb1480189a789b10a6fbaac06')"
+    ]
+  }
+}

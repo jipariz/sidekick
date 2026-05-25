@@ -37,10 +37,11 @@ class SidekickKmpLibraryPlugin : Plugin<Project> {
             // the `com.android.kotlin.multiplatform.library` plugin. AGP 8.12.0 introduced
             // the `android { … }` accessor as a replacement for the older `androidLibrary { … }`,
             // and `androidLibrary` was marked deprecated in AGP 9.1.0-alpha09. We stick
-            // with `androidLibrary` for now because in build scripts that also apply
-            // `app.cash.sqldelight`, the new `android { … }` accessor is shadowed by
-            // KMP's deprecated `android(name: String, …): KotlinAndroidTarget` member function
-            // — Gradle's static accessor generator picks the member over the runtime extension.
+            // with `androidLibrary` for now because in build scripts that also apply third-
+            // party plugins (historically `app.cash.sqldelight`), the new `android { … }`
+            // accessor can be shadowed by KMP's deprecated
+            // `android(name: String, …): KotlinAndroidTarget` member function — Gradle's
+            // static accessor generator picks the member over the runtime extension.
             // `androidLibrary { … }` is unambiguous in both cases.
             (this as ExtensionAware).extensions.configure<KotlinMultiplatformAndroidLibraryExtension>("androidLibrary") {
                 this.compileSdk = compileSdkVersion

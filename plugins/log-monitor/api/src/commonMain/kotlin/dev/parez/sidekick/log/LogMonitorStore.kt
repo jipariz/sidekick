@@ -5,13 +5,10 @@ import androidx.paging.LoadStates
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
-import app.cash.sqldelight.async.coroutines.awaitAsOne
-import app.cash.sqldelight.coroutines.asFlow
-import app.cash.sqldelight.coroutines.mapToOne
-import app.cash.sqldelight.coroutines.mapToOneOrNull
+import dev.parez.sidekick.log.db.LogEntryEntity
 import dev.parez.sidekick.log.db.LogMonitorDatabase
+import dev.parez.sidekick.log.db.createLogMonitorDatabase
 import dev.parez.sidekick.log.paging.LogEntryPagingSource
-import dev.parez.sidekick.log.paging.toDomain
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlinx.coroutines.CoroutineScope
@@ -51,12 +48,19 @@ object LogMonitorStore : LogCollector {
         if (!initialized.compareAndSet(expect = false, update = true)) return
 
         scope.launch {
-            val driver = createLogMonitorDriver()
-            if (driver != null) {
-                val db = LogMonitorDatabase(driver)
-                db.logEntryQueries.deleteOlderThan(
-                    currentTimeMillis() - retentionPeriod.inWholeMilliseconds
-                )
+            val db = createLogMonitorDatabase()
+            val ready =
+                db != null &&
+                    runCatching {
+                            // See NetworkMonitorStore.init — on web this probes
+                            // for a missing sqlite-web worker.
+                            db.logEntryDao()
+                                .deleteOlderThan(
+                                    currentTimeMillis() - retentionPeriod.inWholeMilliseconds
+                                )
+                        }
+                        .isSuccess
+            if (ready) {
                 _database.value = db
             } else {
                 _inMemory.value = emptyList()
@@ -70,14 +74,10 @@ object LogMonitorStore : LogCollector {
                 if (db != null) {
                     Pager(
                             config = LogPagingConfig,
-                            pagingSourceFactory = { LogEntryPagingSource(db, f) },
+                            pagingSourceFactory = { LogEntryPagingSource(db, f, scope) },
                         )
                         .flow
                 } else {
-                    // In-memory fallback (wasmJs): the list is capped at MAX_ENTRIES
-                    // so we don't need real pagination — just snapshot the filtered list
-                    // each time it changes. PagingData.from() avoids the Pager + PagingSource
-                    // machinery, which has interop issues on wasmJs.
                     inMemorySnapshot.map { list ->
                         PagingData.from(
                             data = list.filter(f::matches),
@@ -91,19 +91,12 @@ object LogMonitorStore : LogCollector {
         combine(_database, filter.distinctUntilChanged()) { db, f -> db to f }
             .flatMapLatest { (db, f) ->
                 if (db != null) {
-                    val token = f.toLikeToken()
-                    if (f.levels.isEmpty()) {
-                        db.logEntryQueries
-                            .countFilteredAllLevels(token)
-                            .asFlow()
-                            .mapToOne(Dispatchers.Default)
-                    } else {
-                        val levelNames = f.levels.map { it.name }.toSet()
-                        db.logEntryQueries
-                            .countFiltered(token, levelNames)
-                            .asFlow()
-                            .mapToOne(Dispatchers.Default)
-                    }
+                    db.logEntryDao()
+                        .filteredCount(
+                            likeToken = f.toLikeToken(),
+                            levels = f.levels.map { it.name },
+                            hasLevelFilter = if (f.levels.isEmpty()) 0 else 1,
+                        )
                 } else {
                     inMemorySnapshot.map { list -> list.count(f::matches).toLong() }
                 }
@@ -111,9 +104,7 @@ object LogMonitorStore : LogCollector {
 
     fun entryById(id: String): Flow<LogEntry?> = _database.flatMapLatest { db ->
         if (db != null) {
-            db.logEntryQueries.selectById(id).asFlow().mapToOneOrNull(Dispatchers.Default).map {
-                it?.toDomain()
-            }
+            db.logEntryDao().selectById(id).map { it?.toDomain() }
         } else {
             inMemorySnapshot.map { list -> list.firstOrNull { it.id == id } }
         }
@@ -150,15 +141,18 @@ object LogMonitorStore : LogCollector {
     ) {
         val db = _database.value
         if (db != null) {
-            db.logEntryQueries.insertEntry(
-                id = id,
-                timestamp = timestamp,
-                level = level.name,
-                tag = tag,
-                message = message.truncate(),
-                throwable = throwable?.truncate(),
-                metadata = metadata?.encodeToJson(),
-            )
+            db.logEntryDao()
+                .insert(
+                    LogEntryEntity(
+                        id = id,
+                        timestamp = timestamp,
+                        level = level.name,
+                        tag = tag,
+                        message = message.truncate(),
+                        throwable = throwable?.truncate(),
+                        metadata = metadata?.encodeToJson(),
+                    )
+                )
             trimDbIfNeeded(db)
         } else if (_inMemory.value != null) {
             val entry =
@@ -178,14 +172,14 @@ object LogMonitorStore : LogCollector {
     }
 
     suspend fun clear() {
-        _database.value?.logEntryQueries?.deleteAll()
+        _database.value?.logEntryDao()?.deleteAll()
         if (_inMemory.value != null) _inMemory.value = emptyList()
     }
 
     private suspend fun trimDbIfNeeded(db: LogMonitorDatabase) {
-        val count = db.logEntryQueries.countAll().awaitAsOne()
+        val count = db.logEntryDao().countAll()
         val over = count - MAX_ENTRIES
-        if (over > 0) db.logEntryQueries.deleteOldestOverLimit(over)
+        if (over > 0) db.logEntryDao().deleteOldestOverLimit(over)
     }
 
     private fun String.truncate() =
@@ -201,9 +195,6 @@ object LogMonitorStore : LogCollector {
             jumpThreshold = 120,
         )
 
-    // For PagingData.from() on the in-memory path: signal that the static list
-    // is fully loaded so LazyPagingItems renders NotLoading instead of staying
-    // in the default Loading state.
     private val StaticLoadStates =
         LoadStates(
             refresh = LoadState.NotLoading(endOfPaginationReached = true),
@@ -211,3 +202,23 @@ object LogMonitorStore : LogCollector {
             append = LoadState.NotLoading(endOfPaginationReached = true),
         )
 }
+
+internal fun LogEntryEntity.toDomain(): LogEntry =
+    LogEntry(
+        id = id,
+        timestamp = timestamp,
+        level =
+            when (level) {
+                "VERBOSE" -> LogLevel.VERBOSE
+                "DEBUG" -> LogLevel.DEBUG
+                "INFO" -> LogLevel.INFO
+                "WARN" -> LogLevel.WARN
+                "ERROR" -> LogLevel.ERROR
+                "ASSERT" -> LogLevel.ASSERT
+                else -> LogLevel.DEBUG
+            },
+        tag = tag,
+        message = message,
+        throwable = throwable,
+        metadata = metadata?.decodeToMetadataMap(),
+    )

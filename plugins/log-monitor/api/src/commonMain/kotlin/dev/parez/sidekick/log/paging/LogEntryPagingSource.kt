@@ -2,26 +2,29 @@ package dev.parez.sidekick.log.paging
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
-import app.cash.sqldelight.Query
-import app.cash.sqldelight.async.coroutines.awaitAsList
 import dev.parez.sidekick.log.LogEntry
 import dev.parez.sidekick.log.LogFilter
-import dev.parez.sidekick.log.LogLevel
-import dev.parez.sidekick.log.db.LogEntry as DbLogEntry
 import dev.parez.sidekick.log.db.LogMonitorDatabase
-import dev.parez.sidekick.log.decodeToMetadataMap
+import dev.parez.sidekick.log.toDomain
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 
 internal class LogEntryPagingSource(
     private val db: LogMonitorDatabase,
     private val filter: LogFilter,
+    scope: CoroutineScope,
 ) : PagingSource<Int, LogEntry>() {
 
-    private val listenerQuery: Query<*> = db.logEntryQueries.selectAll()
-    private val listener = Query.Listener { invalidate() }
+    private val invalidationJob: Job = scope.launch {
+        db.invalidationTracker.createFlow(LOG_ENTRIES_TABLE, emitInitialState = false).collect {
+            invalidate()
+        }
+    }
 
     init {
-        listenerQuery.addListener(listener)
-        registerInvalidatedCallback { listenerQuery.removeListener(listener) }
+        registerInvalidatedCallback { invalidationJob.cancel() }
     }
 
     override val keyReuseSupported: Boolean = true
@@ -31,39 +34,32 @@ internal class LogEntryPagingSource(
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, LogEntry> {
         val offset = params.key ?: 0
-        val limit = params.loadSize.toLong()
+        val limit = params.loadSize
         val token = filter.toLikeToken()
+        val levels = filter.levels.map { it.name }
+        val hasLevelFilter = if (levels.isEmpty()) 0 else 1
         return try {
             val rows =
-                if (filter.levels.isEmpty()) {
-                    db.logEntryQueries
-                        .selectPagedFilteredAllLevels(token, limit, offset.toLong())
-                        .awaitAsList()
-                } else {
-                    val levelNames = filter.levels.map { it.name }.toSet()
-                    db.logEntryQueries
-                        .selectPagedFiltered(token, levelNames, limit, offset.toLong())
-                        .awaitAsList()
-                }
+                db.logEntryDao()
+                    .loadPaged(
+                        likeToken = token,
+                        levels = levels,
+                        hasLevelFilter = hasLevelFilter,
+                        limit = limit,
+                        offset = offset,
+                    )
             val mapped = rows.map { it.toDomain() }
             LoadResult.Page(
                 data = mapped,
                 prevKey = if (offset == 0) null else (offset - params.loadSize).coerceAtLeast(0),
-                nextKey = if (mapped.size < params.loadSize) null else offset + mapped.size,
+                nextKey = if (mapped.size < limit) null else offset + mapped.size,
             )
         } catch (t: Throwable) {
             LoadResult.Error(t)
         }
     }
-}
 
-internal fun DbLogEntry.toDomain() =
-    LogEntry(
-        id = id,
-        timestamp = timestamp,
-        level = LogLevel.entries.firstOrNull { it.name == level } ?: LogLevel.DEBUG,
-        tag = tag,
-        message = message,
-        throwable = throwable,
-        metadata = metadata?.decodeToMetadataMap(),
-    )
+    private companion object {
+        const val LOG_ENTRIES_TABLE = "log_entries"
+    }
+}
