@@ -26,11 +26,8 @@ internal fun SidekickPluginScreen(plugin: SidekickPlugin, state: SidekickState) 
     // other targets, which is fine — they have their own back affordances.
     // TODO: migrate to androidx.navigationevent.NavigationEventHandler once we
     // wire LocalNavigationEventDispatcherOwner at the Sidekick root composable.
-    @Suppress("DEPRECATION")
-    BackHandler(onBack = backNavigator)
+    @Suppress("DEPRECATION") BackHandler(onBack = backNavigator)
     CompositionLocalProvider(LocalSidekickBackNavigator provides backNavigator) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            plugin.Content()
-        }
+        Box(modifier = Modifier.fillMaxSize()) { plugin.Content() }
     }
 }

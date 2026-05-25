@@ -39,17 +39,12 @@ private val TeamRocketRed = Color(0xFFE53935)
 private val TeamRocketDeepRed = Color(0xFF8B0000)
 
 /**
- * Error screen styled after Team Rocket's "blasting off again" moment.
- * Used as a fallback when fetching from the network fails — surfaces the
- * underlying [message] in muted text and exposes a [onRetry] button so the
- * caller doesn't have to leave the screen.
+ * Error screen styled after Team Rocket's "blasting off again" moment. Used as a fallback when
+ * fetching from the network fails — surfaces the underlying [message] in muted text and exposes a
+ * [onRetry] button so the caller doesn't have to leave the screen.
  */
 @Composable
-fun TeamRocketError(
-    message: String,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
+fun TeamRocketError(message: String, onRetry: () -> Unit, modifier: Modifier = Modifier) {
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -78,10 +73,11 @@ fun TeamRocketError(
             )
             Button(
                 onClick = onRetry,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = TeamRocketRed,
-                    contentColor = Color.White,
-                ),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = TeamRocketRed,
+                        contentColor = Color.White,
+                    ),
             ) {
                 Text("Try Again")
             }
@@ -90,27 +86,30 @@ fun TeamRocketError(
 }
 
 /**
- * The Team Rocket "R" emblem — a white-ringed red disc with a bold italic R.
- * Gently wobbles to suggest the balloon-getting-popped vibe.
+ * The Team Rocket "R" emblem — a white-ringed red disc with a bold italic R. Gently wobbles to
+ * suggest the balloon-getting-popped vibe.
  */
 @Composable
 private fun TeamRocketEmblem(modifier: Modifier = Modifier) {
     val transition = rememberInfiniteTransition(label = "team-rocket-emblem")
-    val tilt by transition.animateFloat(
-        initialValue = -6f,
-        targetValue = 6f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 900, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "tilt",
-    )
+    val tilt by
+        transition.animateFloat(
+            initialValue = -6f,
+            targetValue = 6f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(durationMillis = 900, easing = FastOutSlowInEasing),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+            label = "tilt",
+        )
     Box(
-        modifier = modifier
-            .rotate(tilt)
-            .background(TeamRocketRed, CircleShape)
-            .border(width = 4.dp, color = Color.White, shape = CircleShape)
-            .padding(8.dp),
+        modifier =
+            modifier
+                .rotate(tilt)
+                .background(TeamRocketRed, CircleShape)
+                .border(width = 4.dp, color = Color.White, shape = CircleShape)
+                .padding(8.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -132,12 +131,7 @@ private fun TeamRocketEmblem(modifier: Modifier = Modifier) {
 @Composable
 private fun TeamRocketError_TimeoutPreview() {
     MaterialTheme(colorScheme = lightColorScheme()) {
-        Surface {
-            TeamRocketError(
-                message = "Request timeout has expired",
-                onRetry = {},
-            )
-        }
+        Surface { TeamRocketError(message = "Request timeout has expired", onRetry = {}) }
     }
 }
 
@@ -147,9 +141,10 @@ private fun TeamRocketError_LongMessagePreview() {
     MaterialTheme(colorScheme = lightColorScheme()) {
         Surface {
             TeamRocketError(
-                message = "Failed to connect to https://pokeapi.co — the server " +
-                    "returned 503 Service Unavailable after three retries. Check " +
-                    "your connection and try again in a moment.",
+                message =
+                    "Failed to connect to https://pokeapi.co — the server " +
+                        "returned 503 Service Unavailable after three retries. Check " +
+                        "your connection and try again in a moment.",
                 onRetry = {},
             )
         }
@@ -161,10 +156,7 @@ private fun TeamRocketError_LongMessagePreview() {
 private fun TeamRocketError_DarkPreview() {
     MaterialTheme(colorScheme = darkColorScheme()) {
         Surface {
-            TeamRocketError(
-                message = "Unable to resolve host: api.pokemon.example",
-                onRetry = {},
-            )
+            TeamRocketError(message = "Unable to resolve host: api.pokemon.example", onRetry = {})
         }
     }
 }

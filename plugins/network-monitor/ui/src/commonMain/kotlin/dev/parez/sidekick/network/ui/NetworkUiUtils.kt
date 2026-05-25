@@ -15,29 +15,30 @@ internal fun urlPath(url: String): String {
 
 // ── HTTP status text ──────────────────────────────────────────────────────────
 
-internal fun statusText(code: Int): String = when (code) {
-    200 -> "OK"
-    201 -> "Created"
-    202 -> "Accepted"
-    204 -> "No Content"
-    301 -> "Moved"
-    302 -> "Found"
-    304 -> "Not Modified"
-    400 -> "Bad Request"
-    401 -> "Unauthorized"
-    403 -> "Forbidden"
-    404 -> "Not Found"
-    405 -> "Method Not Allowed"
-    408 -> "Timeout"
-    409 -> "Conflict"
-    422 -> "Unprocessable"
-    429 -> "Too Many Requests"
-    500 -> "Server Error"
-    502 -> "Bad Gateway"
-    503 -> "Unavailable"
-    504 -> "Gateway Timeout"
-    else -> ""
-}
+internal fun statusText(code: Int): String =
+    when (code) {
+        200 -> "OK"
+        201 -> "Created"
+        202 -> "Accepted"
+        204 -> "No Content"
+        301 -> "Moved"
+        302 -> "Found"
+        304 -> "Not Modified"
+        400 -> "Bad Request"
+        401 -> "Unauthorized"
+        403 -> "Forbidden"
+        404 -> "Not Found"
+        405 -> "Method Not Allowed"
+        408 -> "Timeout"
+        409 -> "Conflict"
+        422 -> "Unprocessable"
+        429 -> "Too Many Requests"
+        500 -> "Server Error"
+        502 -> "Bad Gateway"
+        503 -> "Unavailable"
+        504 -> "Gateway Timeout"
+        else -> ""
+    }
 
 // ── Body size ────────────────────────────────────────────────────────────────
 
@@ -64,17 +65,23 @@ internal fun String.prettyPrintJson(): String {
         if (c == '"' && prev != '\\') inString = !inString
         if (!inString) {
             when (c) {
-                '{', '[' -> {
-                    sb.append(c); sb.append('\n')
-                    indent++; sb.append("  ".repeat(indent))
-                }
-                '}', ']' -> {
+                '{',
+                '[' -> {
+                    sb.append(c)
                     sb.append('\n')
-                    indent--; sb.append("  ".repeat(indent))
+                    indent++
+                    sb.append("  ".repeat(indent))
+                }
+                '}',
+                ']' -> {
+                    sb.append('\n')
+                    indent--
+                    sb.append("  ".repeat(indent))
                     sb.append(c)
                 }
                 ',' -> {
-                    sb.append(c); sb.append('\n')
+                    sb.append(c)
+                    sb.append('\n')
                     sb.append("  ".repeat(indent))
                 }
                 ':' -> sb.append(": ")

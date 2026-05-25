@@ -35,12 +35,9 @@ internal fun SidekickMenu(
     appInfo: SidekickAppInfo?,
     title: String,
     navigationIcon: @Composable () -> Unit,
-    actions: @Composable RowScope.() -> Unit
+    actions: @Composable RowScope.() -> Unit,
 ) {
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.surface,
-    ) {
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
         // ── Content — simple state-based routing with animated transitions.
         // Key on plugin id (stable String) rather than the plugin object so a
         // plugin instance swap that preserves the id doesn't retrigger.
@@ -49,10 +46,10 @@ internal fun SidekickMenu(
             transitionSpec = {
                 if (targetState != null) {
                     (slideInHorizontally { it } + fadeIn()) togetherWith
-                            (slideOutHorizontally { -it } + fadeOut())
+                        (slideOutHorizontally { -it } + fadeOut())
                 } else {
                     (slideInHorizontally { -it } + fadeIn()) togetherWith
-                            (slideOutHorizontally { it } + fadeOut())
+                        (slideOutHorizontally { it } + fadeOut())
                 }
             },
         ) { pluginId ->
@@ -71,10 +68,10 @@ internal fun SidekickMenu(
 @Composable
 internal fun AppInfoStrip(appInfo: SidekickAppInfo) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 6.dp),
+        modifier =
+            Modifier.fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -108,9 +105,7 @@ internal fun AppInfoStrip(appInfo: SidekickAppInfo) {
         }
 
         // User-defined extras
-        appInfo.extras.forEach { (key, value) ->
-            InfoBadge("$key: $value")
-        }
+        appInfo.extras.forEach { (key, value) -> InfoBadge("$key: $value") }
     }
 }
 
@@ -130,16 +125,20 @@ private fun VersionBadge(version: String?, buildCode: Long?) {
 
 @Composable
 private fun BuildTypeBadge(buildType: String) {
-    val (container, content) = when (buildType.lowercase()) {
-        "debug" -> MaterialTheme.colorScheme.errorContainer to
-                MaterialTheme.colorScheme.onErrorContainer
+    val (container, content) =
+        when (buildType.lowercase()) {
+            "debug" ->
+                MaterialTheme.colorScheme.errorContainer to
+                    MaterialTheme.colorScheme.onErrorContainer
 
-        "release" -> MaterialTheme.colorScheme.primaryContainer to
-                MaterialTheme.colorScheme.onPrimaryContainer
+            "release" ->
+                MaterialTheme.colorScheme.primaryContainer to
+                    MaterialTheme.colorScheme.onPrimaryContainer
 
-        else -> MaterialTheme.colorScheme.secondaryContainer to
-                MaterialTheme.colorScheme.onSecondaryContainer
-    }
+            else ->
+                MaterialTheme.colorScheme.secondaryContainer to
+                    MaterialTheme.colorScheme.onSecondaryContainer
+        }
     InfoBadge(buildType, containerColor = container, contentColor = content)
 }
 
@@ -149,10 +148,7 @@ private fun InfoBadge(
     containerColor: Color = MaterialTheme.colorScheme.surfaceVariant,
     contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
-    Surface(
-        shape = RoundedCornerShape(50),
-        color = containerColor,
-    ) {
+    Surface(shape = RoundedCornerShape(50), color = containerColor) {
         Text(
             text = text,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),

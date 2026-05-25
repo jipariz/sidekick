@@ -4,7 +4,13 @@ import dev.parez.sidekick.preferences.Preference
 import dev.parez.sidekick.preferences.SidekickPreferences
 
 enum class ColorTheme {
-    DYNAMIC, DEFAULT, FIRE, WATER, GRASS, ELECTRIC, PSYCHIC
+    DYNAMIC,
+    DEFAULT,
+    FIRE,
+    WATER,
+    GRASS,
+    ELECTRIC,
+    PSYCHIC,
 }
 
 @SidekickPreferences(title = "Preferences")
@@ -13,8 +19,7 @@ class AppPreferences {
 
     var colorTheme: ColorTheme = ColorTheme.DEFAULT
 
-    @Preference(label = "Show Pokédex Numbers")
-    var showNumbers: Boolean = true
+    @Preference(label = "Show Pokédex Numbers") var showNumbers: Boolean = true
 
     var shinySprites: Boolean = false
 }

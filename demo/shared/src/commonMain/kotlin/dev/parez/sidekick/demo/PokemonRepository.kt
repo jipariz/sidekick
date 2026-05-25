@@ -6,10 +6,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-class PokemonRepository(
-    private val api: PokemonApi,
-    private val cache: PokemonCache,
-) {
+class PokemonRepository(private val api: PokemonApi, private val cache: PokemonCache) {
     private val fetchMutex = Mutex()
     private var nextOffset = 0
     var hasMore = true
@@ -25,7 +22,9 @@ class PokemonRepository(
             Logger.d(tag = "Repository") { "fetchNextPage: offset=$nextOffset, limit=$limit" }
             val response = api.fetchList(nextOffset, limit)
             cache.saveListEntries(response.results)
-            Logger.i(tag = "Repository") { "fetchNextPage: cached ${response.results.size} entries" }
+            Logger.i(tag = "Repository") {
+                "fetchNextPage: cached ${response.results.size} entries"
+            }
             nextOffset += limit
             hasMore = response.next != null
         }

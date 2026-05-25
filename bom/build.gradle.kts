@@ -6,6 +6,7 @@ plugins {
 }
 
 group = "dev.parez.sidekick"
+
 // BOM is calendar-versioned. The per-module versions it pins are derived
 // transitively from each `:projects.*` accessor's project.version.
 version = findProperty("sidekick.bomVersion") as String
@@ -34,8 +35,9 @@ mavenPublishing {
     configure(JavaPlatform())
     publishToMavenCentral(automaticRelease = false)
 
-    val hasSigningKey = providers.environmentVariable("ORG_GRADLE_PROJECT_signingInMemoryKey").isPresent ||
-        providers.gradleProperty("signingInMemoryKey").isPresent
+    val hasSigningKey =
+        providers.environmentVariable("ORG_GRADLE_PROJECT_signingInMemoryKey").isPresent ||
+            providers.gradleProperty("signingInMemoryKey").isPresent
     if (hasSigningKey) {
         signAllPublications()
     }

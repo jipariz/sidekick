@@ -14,10 +14,7 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
 import dev.parez.sidekick.preferences.ksp.model.PreferenceProperty
 
-class AccessorGenerator(
-    private val codeGenerator: CodeGenerator,
-    private val logger: KSPLogger,
-) {
+class AccessorGenerator(private val codeGenerator: CodeGenerator, private val logger: KSPLogger) {
 
     fun generate(
         packageName: String,
@@ -32,22 +29,20 @@ class AccessorGenerator(
         val storeType = ClassName("dev.parez.sidekick.preferences", "PreferenceStore")
         val stateFlowClass = ClassName("kotlinx.coroutines.flow", "StateFlow")
 
-        val storeParam = ParameterSpec.builder("_store", storeType)
-            .defaultValue("createPreferenceStore(%S)", storeName)
-            .build()
+        val storeParam =
+            ParameterSpec.builder("_store", storeType)
+                .defaultValue("createPreferenceStore(%S)", storeName)
+                .build()
 
-        val classBuilder = TypeSpec.classBuilder(accessorName)
-            .primaryConstructor(
-                FunSpec.constructorBuilder()
-                    .addParameter(storeParam)
-                    .build()
-            )
-            .addProperty(
-                PropertySpec.builder("_store", storeType)
-                    .initializer("_store")
-                    .addModifiers(KModifier.PRIVATE)
-                    .build()
-            )
+        val classBuilder =
+            TypeSpec.classBuilder(accessorName)
+                .primaryConstructor(FunSpec.constructorBuilder().addParameter(storeParam).build())
+                .addProperty(
+                    PropertySpec.builder("_store", storeType)
+                        .initializer("_store")
+                        .addModifiers(KModifier.PRIVATE)
+                        .build()
+                )
 
         // Add coroutine scope only if there are enum properties
         val hasEnumProps = properties.any { it.isEnum }
@@ -58,7 +53,12 @@ class AccessorGenerator(
             classBuilder.addProperty(
                 PropertySpec.builder("_scope", coroutineScopeClass)
                     .addModifiers(KModifier.PRIVATE)
-                    .initializer("%T(%T.Default + %T())", coroutineScopeClass, dispatchersClass, supervisorJobClass)
+                    .initializer(
+                        "%T(%T.Default + %T())",
+                        coroutineScopeClass,
+                        dispatchersClass,
+                        supervisorJobClass,
+                    )
                     .build()
             )
         }
@@ -115,9 +115,10 @@ class AccessorGenerator(
             }
         }
 
-        val fileSpecBuilder = FileSpec.builder(packageName, accessorName)
-            .addImport("dev.parez.sidekick.preferences", "createPreferenceStore")
-            .addType(classBuilder.build())
+        val fileSpecBuilder =
+            FileSpec.builder(packageName, accessorName)
+                .addImport("dev.parez.sidekick.preferences", "createPreferenceStore")
+                .addType(classBuilder.build())
 
         if (hasEnumProps) {
             fileSpecBuilder
@@ -125,44 +126,54 @@ class AccessorGenerator(
                 .addImport("kotlinx.coroutines.flow", "stateIn")
         }
 
-        codeGenerator.createNewFile(
-            Dependencies(false),
-            packageName,
-            accessorName,
-        ).bufferedWriter().use { fileSpecBuilder.build().writeTo(it) }
+        codeGenerator
+            .createNewFile(Dependencies(false), packageName, accessorName)
+            .bufferedWriter()
+            .use { fileSpecBuilder.build().writeTo(it) }
     }
 }
 
-private fun PreferenceProperty.kotlinTypeName(): ClassName = when (type) {
-    "Boolean" -> Boolean::class.asClassName()
-    "Int"     -> Int::class.asClassName()
-    "Long"    -> Long::class.asClassName()
-    "Float"   -> Float::class.asClassName()
-    "Double"  -> Double::class.asClassName()
-    else      -> String::class.asClassName()
-}
+private fun PreferenceProperty.kotlinTypeName(): ClassName =
+    when (type) {
+        "Boolean" -> Boolean::class.asClassName()
+        "Int" -> Int::class.asClassName()
+        "Long" -> Long::class.asClassName()
+        "Float" -> Float::class.asClassName()
+        "Double" -> Double::class.asClassName()
+        else -> String::class.asClassName()
+    }
 
 private fun PreferenceProperty.buildObserveProperty(
-    stateFlowType: com.squareup.kotlinpoet.TypeName,
+    stateFlowType: com.squareup.kotlinpoet.TypeName
 ): PropertySpec {
     return when (type) {
-        "Boolean" -> PropertySpec.builder(name, stateFlowType)
-            .initializer("_store.observe(%S, %L)", name, defaultValue.toBooleanStrictOrNull() ?: false)
-            .build()
-        "Int" -> PropertySpec.builder(name, stateFlowType)
-            .initializer("_store.observe(%S, %L)", name, defaultValue.toIntOrNull() ?: 0)
-            .build()
-        "Long" -> PropertySpec.builder(name, stateFlowType)
-            .initializer("_store.observe(%S, %LL)", name, defaultValue.toLongOrNull() ?: 0L)
-            .build()
-        "Float" -> PropertySpec.builder(name, stateFlowType)
-            .initializer("_store.observe(%S, %Lf)", name, defaultValue.toFloatOrNull() ?: 0f)
-            .build()
-        "Double" -> PropertySpec.builder(name, stateFlowType)
-            .initializer("_store.observe(%S, %L)", name, defaultValue.toDoubleOrNull() ?: 0.0)
-            .build()
-        else -> PropertySpec.builder(name, stateFlowType)
-            .initializer("_store.observe(%S, %S)", name, defaultValue)
-            .build()
+        "Boolean" ->
+            PropertySpec.builder(name, stateFlowType)
+                .initializer(
+                    "_store.observe(%S, %L)",
+                    name,
+                    defaultValue.toBooleanStrictOrNull() ?: false,
+                )
+                .build()
+        "Int" ->
+            PropertySpec.builder(name, stateFlowType)
+                .initializer("_store.observe(%S, %L)", name, defaultValue.toIntOrNull() ?: 0)
+                .build()
+        "Long" ->
+            PropertySpec.builder(name, stateFlowType)
+                .initializer("_store.observe(%S, %LL)", name, defaultValue.toLongOrNull() ?: 0L)
+                .build()
+        "Float" ->
+            PropertySpec.builder(name, stateFlowType)
+                .initializer("_store.observe(%S, %Lf)", name, defaultValue.toFloatOrNull() ?: 0f)
+                .build()
+        "Double" ->
+            PropertySpec.builder(name, stateFlowType)
+                .initializer("_store.observe(%S, %L)", name, defaultValue.toDoubleOrNull() ?: 0.0)
+                .build()
+        else ->
+            PropertySpec.builder(name, stateFlowType)
+                .initializer("_store.observe(%S, %S)", name, defaultValue)
+                .build()
     }
 }

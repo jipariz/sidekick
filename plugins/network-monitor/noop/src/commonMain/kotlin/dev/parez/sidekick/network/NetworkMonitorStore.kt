@@ -1,16 +1,16 @@
 package dev.parez.sidekick.network
 
 import androidx.paging.PagingData
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.hours
 
 /**
- * Release-variant stub for `NetworkMonitorStore` — keeps the same public surface
- * but performs no recording and opens no database. All `recordX` calls are no-ops;
- * all query flows emit empty results.
+ * Release-variant stub for `NetworkMonitorStore` — keeps the same public surface but performs no
+ * recording and opens no database. All `recordX` calls are no-ops; all query flows emit empty
+ * results.
  */
 @Suppress("UNUSED_PARAMETER")
 class NetworkMonitorStore(scope: CoroutineScope? = null) {

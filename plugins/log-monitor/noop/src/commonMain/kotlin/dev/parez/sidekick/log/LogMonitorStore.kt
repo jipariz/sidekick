@@ -1,15 +1,15 @@
 package dev.parez.sidekick.log
 
 import androidx.paging.PagingData
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 /**
- * Release-variant stub for `LogMonitorStore` — keeps the same public surface
- * but performs no recording and opens no database. `record` and `log` are
- * no-ops; all query flows emit empty results.
+ * Release-variant stub for `LogMonitorStore` — keeps the same public surface but performs no
+ * recording and opens no database. `record` and `log` are no-ops; all query flows emit empty
+ * results.
  */
 @Suppress("UNUSED_PARAMETER")
 object LogMonitorStore : LogCollector {

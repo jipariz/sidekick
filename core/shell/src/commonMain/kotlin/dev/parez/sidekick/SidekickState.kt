@@ -45,10 +45,9 @@ class SidekickState(val plugins: List<SidekickPlugin>) {
 /**
  * Creates and remembers a [SidekickState] for the given [plugins].
  *
- * Note: when called from [Sidekick], the plugins list is already stabilized by
- * its plugin ids — a `listOf(...)` literal at the `Sidekick(plugins = …)` call
- * site is fine. If you call this function directly (e.g. for testing), pass a
- * list reference that is itself stable across recompositions.
+ * Note: when called from [Sidekick], the plugins list is already stabilized by its plugin ids — a
+ * `listOf(...)` literal at the `Sidekick(plugins = …)` call site is fine. If you call this function
+ * directly (e.g. for testing), pass a list reference that is itself stable across recompositions.
  */
 @Composable
 fun rememberSidekickState(plugins: List<SidekickPlugin>): SidekickState =

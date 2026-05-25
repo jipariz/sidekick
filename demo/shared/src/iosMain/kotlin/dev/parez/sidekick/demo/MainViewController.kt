@@ -4,7 +4,6 @@ import androidx.compose.ui.window.ComposeUIViewController
 
 /**
  * UIViewController entry point consumed by `iosApp/iosApp/ContentView.swift`:
- *
  * ```swift
  * struct ComposeView: UIViewControllerRepresentable {
  *     func makeUIViewController(context: Context) -> UIViewController {
@@ -13,5 +12,4 @@ import androidx.compose.ui.window.ComposeUIViewController
  * }
  * ```
  */
-@Suppress("unused")
-fun MainViewController() = ComposeUIViewController { DemoApp() }
+@Suppress("unused") fun MainViewController() = ComposeUIViewController { DemoApp() }

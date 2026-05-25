@@ -1,15 +1,15 @@
 package dev.parez.sidekick.plugin
 
 /**
- * Optional extension for [SidekickPlugin] implementations that need to react to
- * composition lifecycle events.
+ * Optional extension for [SidekickPlugin] implementations that need to react to composition
+ * lifecycle events.
  *
- * The Sidekick runtime calls [onAttach] when the plugin screen enters composition
- * and [onDetach] when it leaves. Both callbacks run on the main thread.
+ * The Sidekick runtime calls [onAttach] when the plugin screen enters composition and [onDetach]
+ * when it leaves. Both callbacks run on the main thread.
  *
- * Most plugins do not need this — Koin-managed scopes and Compose `remember` state
- * handle the common cases automatically. Implement this interface only when a plugin
- * holds resources that must be explicitly released, such as:
+ * Most plugins do not need this — Koin-managed scopes and Compose `remember` state handle the
+ * common cases automatically. Implement this interface only when a plugin holds resources that must
+ * be explicitly released, such as:
  * - OS-level listeners (BroadcastReceiver, ContentObserver)
  * - Polling loops that should pause when the screen is not visible
  * - File watchers or WebSocket connections tied to the plugin UI
@@ -29,5 +29,6 @@ package dev.parez.sidekick.plugin
  */
 interface SidekickLifecycleAware {
     fun onAttach() {}
+
     fun onDetach() {}
 }

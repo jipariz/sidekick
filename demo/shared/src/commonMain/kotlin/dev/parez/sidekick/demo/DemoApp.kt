@@ -20,6 +20,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.navigation3.runtime.rememberNavBackStack
 import co.touchlab.kermit.Logger
 import co.touchlab.kermit.platformLogWriter
 import com.svenjacobs.reveal.OnClick
@@ -28,7 +29,6 @@ import com.svenjacobs.reveal.RevealCanvas
 import com.svenjacobs.reveal.RevealShape
 import com.svenjacobs.reveal.rememberRevealCanvasState
 import com.svenjacobs.reveal.rememberRevealState
-import androidx.navigation3.runtime.rememberNavBackStack
 import dev.parez.sidekick.demo.di.LibraryKoinContext
 import dev.parez.sidekick.demo.navigation.BrowserHistoryEffect
 import dev.parez.sidekick.demo.navigation.DemoSavedStateConfiguration
@@ -47,7 +47,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.KoinIsolatedContext
 
-internal enum class RevealKey { SidekickFab }
+internal enum class RevealKey {
+    SidekickFab
+}
 
 @Composable
 fun DemoApp() {
@@ -84,9 +86,10 @@ fun DemoApp() {
             )
         }
 
-        val plugins = remember(prefsPlugin, networkPlugin, logPlugin, buildInfoPlugin, customDebugPlugin) {
-            listOf(prefsPlugin, networkPlugin, logPlugin, buildInfoPlugin, customDebugPlugin)
-        }
+        val plugins =
+            remember(prefsPlugin, networkPlugin, logPlugin, buildInfoPlugin, customDebugPlugin) {
+                listOf(prefsPlugin, networkPlugin, logPlugin, buildInfoPlugin, customDebugPlugin)
+            }
 
         MaterialTheme(colorScheme = colorScheme, typography = AppTypography) {
             // Single source of truth for the demo's navigation — list, detail,
@@ -95,9 +98,8 @@ fun DemoApp() {
             // + back/forward stay in sync.
             val backStack = rememberNavBackStack(DemoSavedStateConfiguration, PokemonListKey)
             BrowserHistoryEffect(backStack)
-            val sidekickActive by remember(backStack) {
-                derivedStateOf { backStack.lastOrNull() is SidekickKey }
-            }
+            val sidekickActive by
+                remember(backStack) { derivedStateOf { backStack.lastOrNull() is SidekickKey } }
             val revealCanvasState = rememberRevealCanvasState()
             val revealState = rememberRevealState()
             val revealScope = rememberCoroutineScope()
@@ -108,10 +110,7 @@ fun DemoApp() {
                 revealState.reveal(RevealKey.SidekickFab)
             }
 
-            RevealCanvas(
-                modifier = Modifier.fillMaxSize(),
-                revealCanvasState = revealCanvasState,
-            ) {
+            RevealCanvas(modifier = Modifier.fillMaxSize(), revealCanvasState = revealCanvasState) {
                 Reveal(
                     revealCanvasState = revealCanvasState,
                     revealState = revealState,
@@ -124,22 +123,26 @@ fun DemoApp() {
                             if (!sidekickActive) {
                                 SmallFloatingActionButton(
                                     onClick = { backStack.add(SidekickKey) },
-                                    modifier = Modifier
-                                        .padding(16.dp)
-                                        .revealable(
-                                            key = RevealKey.SidekickFab,
-                                            shape = RevealShape.RoundRect(16.dp),
-                                            borderStroke = BorderStroke(2.dp, Color.DarkGray),
-                                            onClick = OnClick.Listener {
-                                                revealScope.launch { revealState.hide() }
-                                                backStack.add(SidekickKey)
-                                            },
-                                        ),
+                                    modifier =
+                                        Modifier.padding(16.dp)
+                                            .revealable(
+                                                key = RevealKey.SidekickFab,
+                                                shape = RevealShape.RoundRect(16.dp),
+                                                borderStroke = BorderStroke(2.dp, Color.DarkGray),
+                                                onClick =
+                                                    OnClick.Listener {
+                                                        revealScope.launch { revealState.hide() }
+                                                        backStack.add(SidekickKey)
+                                                    },
+                                            ),
                                 ) {
-                                    Icon(Icons.Filled.BugReport, contentDescription = "Open Sidekick")
+                                    Icon(
+                                        Icons.Filled.BugReport,
+                                        contentDescription = "Open Sidekick",
+                                    )
                                 }
                             }
-                        },
+                        }
                     ) {
                         PokemonCatalog(
                             backStack = backStack,

@@ -1,10 +1,7 @@
-plugins {
-    id("sidekick.kmp.library")
-}
+plugins { id("sidekick.kmp.library") }
+
 kotlin {
-    androidLibrary {
-        namespace = "dev.parez.sidekick.network.noop"
-    }
+    androidLibrary { namespace = "dev.parez.sidekick.network.noop" }
     sourceSets {
         commonMain.dependencies {
             api(projects.core.pluginApi)

@@ -5,9 +5,9 @@ import androidx.compose.runtime.compositionLocalOf
 /**
  * Provides a callback that navigates back to the Sidekick plugin list.
  *
- * Populated by the Sidekick runtime inside [dev.parez.sidekick.ui.SidekickPluginScreen].
- * Plugin implementations call [current][androidx.compose.runtime.ProvidableCompositionLocal.current]
- * to obtain the lambda and invoke it from a back button or similar affordance.
+ * Populated by the Sidekick runtime inside [dev.parez.sidekick.ui.SidekickPluginScreen]. Plugin
+ * implementations call [current][androidx.compose.runtime.ProvidableCompositionLocal.current] to
+ * obtain the lambda and invoke it from a back button or similar affordance.
  *
  * ```kotlin
  * @Composable
@@ -17,6 +17,9 @@ import androidx.compose.runtime.compositionLocalOf
  * }
  * ```
  */
-val LocalSidekickBackNavigator = compositionLocalOf<() -> Unit> {
-    error("LocalSidekickBackNavigator not provided — is this composable running inside Sidekick?")
-}
+val LocalSidekickBackNavigator =
+    compositionLocalOf<() -> Unit> {
+        error(
+            "LocalSidekickBackNavigator not provided — is this composable running inside Sidekick?"
+        )
+    }

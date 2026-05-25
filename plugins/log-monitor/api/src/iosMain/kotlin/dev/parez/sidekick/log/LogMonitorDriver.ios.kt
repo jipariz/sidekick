@@ -6,7 +6,4 @@ import app.cash.sqldelight.driver.native.NativeSqliteDriver
 import dev.parez.sidekick.log.db.LogMonitorDatabase
 
 internal actual suspend fun createLogMonitorDriver(): SqlDriver? =
-    NativeSqliteDriver(
-        schema = LogMonitorDatabase.Schema.synchronous(),
-        name = "log_monitor.db",
-    )
+    NativeSqliteDriver(schema = LogMonitorDatabase.Schema.synchronous(), name = "log_monitor.db")

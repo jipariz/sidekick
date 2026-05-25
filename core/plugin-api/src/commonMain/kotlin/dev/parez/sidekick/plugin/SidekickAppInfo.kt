@@ -7,9 +7,9 @@ import androidx.compose.runtime.remember
 /**
  * Host-application metadata shown in the Sidekick overlay header.
  *
- * App-level info (name, version, build type) lives inside [PlatformInfo] subtypes rather than
- * here, because only Android and iOS can auto-detect those values. Desktop and Web expose
- * only OS/runtime info; use [withExtras] to surface any additional key-value pairs.
+ * App-level info (name, version, build type) lives inside [PlatformInfo] subtypes rather than here,
+ * because only Android and iOS can auto-detect those values. Desktop and Web expose only OS/runtime
+ * info; use [withExtras] to surface any additional key-value pairs.
  *
  * Obtain via [SidekickAppInfo.detect] (auto-detects the current platform) or construct manually.
  */
@@ -18,8 +18,8 @@ data class SidekickAppInfo(
     /** Platform-specific metadata. Defaults to [PlatformInfo.Unknown]. */
     val platform: PlatformInfo = PlatformInfo.Unknown,
     /**
-     * Optional custom key-value entries shown as additional badges in the Sidekick header.
-     * Prefer [withExtras] over `.copy(extras = …)` to ensure auto-detected fields are preserved.
+     * Optional custom key-value entries shown as additional badges in the Sidekick header. Prefer
+     * [withExtras] over `.copy(extras = …)` to ensure auto-detected fields are preserved.
      */
     val extras: Map<String, String> = emptyMap(),
 ) {
@@ -27,8 +27,8 @@ data class SidekickAppInfo(
 }
 
 /**
- * Returns a copy of this [SidekickAppInfo] with the given key-value pairs appended to [extras].
- * All auto-detected platform fields are preserved unchanged.
+ * Returns a copy of this [SidekickAppInfo] with the given key-value pairs appended to [extras]. All
+ * auto-detected platform fields are preserved unchanged.
  *
  * ```kotlin
  * Sidekick(
@@ -62,24 +62,24 @@ fun SidekickAppInfo.withExtras(vararg pairs: Pair<String, String>): SidekickAppI
  *     ?.copy(buildType = BuildConfig.BUILD_TYPE)
  *     ?.let { SidekickAppInfo(platform = it) }
  * ```
+ *
  * To disable the header entirely, pass `appInfo = null` to [dev.parez.sidekick.Sidekick].
  */
 expect fun SidekickAppInfo.Companion.detect(): SidekickAppInfo
 
 /**
- * Returns a [SidekickAppInfo] that is auto-detected once and remembered across recompositions.
- * Used as the default value for [dev.parez.sidekick.Sidekick].
+ * Returns a [SidekickAppInfo] that is auto-detected once and remembered across recompositions. Used
+ * as the default value for [dev.parez.sidekick.Sidekick].
  */
-@Composable
-fun rememberSidekickAppInfo(): SidekickAppInfo = remember { SidekickAppInfo.detect() }
+@Composable fun rememberSidekickAppInfo(): SidekickAppInfo = remember { SidekickAppInfo.detect() }
 
 // ── Platform info ─────────────────────────────────────────────────────────────
 
 /**
  * Platform-specific debug metadata surfaced in the Sidekick header.
  *
- * App-level fields (name, version, build type) are included in [Android] and [Ios] because
- * those platforms can auto-detect them. [Desktop] and [Web] expose only runtime/OS info.
+ * App-level fields (name, version, build type) are included in [Android] and [Ios] because those
+ * platforms can auto-detect them. [Desktop] and [Web] expose only runtime/OS info.
  */
 @Immutable
 sealed interface PlatformInfo {
@@ -113,8 +113,8 @@ sealed interface PlatformInfo {
         /** Build number from `CFBundleVersion`. */
         val buildCode: Long?,
         /**
-         * Build configuration (e.g. "Debug", "Release"). Cannot be read at runtime;
-         * supply via [SidekickAppInfo.Companion.detect].
+         * Build configuration (e.g. "Debug", "Release"). Cannot be read at runtime; supply via
+         * [SidekickAppInfo.Companion.detect].
          */
         val buildType: String? = null,
         /** iOS version from UIDevice (e.g. "17.2"). */

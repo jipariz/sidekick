@@ -10,11 +10,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
@@ -24,11 +22,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.ToggleOff
-import androidx.compose.material.icons.filled.ToggleOn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,15 +41,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.material3.LocalMinimumInteractiveComponentSize
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.parez.sidekick.preferences.BooleanPref
 import dev.parez.sidekick.preferences.DoublePref
 import dev.parez.sidekick.preferences.EnumPref
@@ -91,7 +84,7 @@ internal fun PreferencesContent(
                     }
                 },
             )
-        },
+        }
     ) { paddingValues ->
         StaggeredLayout(
             definitions = definitions,
@@ -138,14 +131,11 @@ private fun StaggeredLayout(
 }
 
 @Composable
-private fun PreferenceCard(
-    def: PreferenceDefinition<*>,
-    value: Any,
-    onChange: (Any) -> Unit,
-) {
-    val cardClick: (() -> Unit)? = if (def is BooleanPref) {
-        { onChange(!(value as Boolean)) }
-    } else null
+private fun PreferenceCard(def: PreferenceDefinition<*>, value: Any, onChange: (Any) -> Unit) {
+    val cardClick: (() -> Unit)? =
+        if (def is BooleanPref) {
+            { onChange(!(value as Boolean)) }
+        } else null
 
     val content: @Composable () -> Unit = {
         Column(
@@ -214,22 +204,29 @@ private fun PreferenceCardEditor(
                 Text(
                     text = if (checked) "Enabled" else "Disabled",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    color =
+                        if (checked) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f),
                 )
                 Switch(checked = checked, onCheckedChange = null)
             }
         }
         is StringPref -> StringEditor(value = value as String, onChange = { onChange(it) })
-        is IntPref    -> NumberEditor(value = value.toString(), onSave = { it.toIntOrNull()?.let(onChange) })
-        is LongPref   -> NumberEditor(value = value.toString(), onSave = { it.toLongOrNull()?.let(onChange) })
-        is FloatPref  -> NumberEditor(value = value.toString(), onSave = { it.toFloatOrNull()?.let(onChange) })
-        is DoublePref -> NumberEditor(value = value.toString(), onSave = { it.toDoubleOrNull()?.let(onChange) })
-        is EnumPref -> EnumEditor(
-            options = def.options,
-            currentValue = (value as? Enum<*>)?.name ?: value.toString(),
-            onChange = onChange,
-        )
+        is IntPref ->
+            NumberEditor(value = value.toString(), onSave = { it.toIntOrNull()?.let(onChange) })
+        is LongPref ->
+            NumberEditor(value = value.toString(), onSave = { it.toLongOrNull()?.let(onChange) })
+        is FloatPref ->
+            NumberEditor(value = value.toString(), onSave = { it.toFloatOrNull()?.let(onChange) })
+        is DoublePref ->
+            NumberEditor(value = value.toString(), onSave = { it.toDoubleOrNull()?.let(onChange) })
+        is EnumPref ->
+            EnumEditor(
+                options = def.options,
+                currentValue = (value as? Enum<*>)?.name ?: value.toString(),
+                onChange = onChange,
+            )
     }
 }
 
@@ -308,15 +305,51 @@ private fun EnumEditor(options: List<String>, currentValue: String, onChange: (A
 
 @Composable
 private fun TypeBadge(def: PreferenceDefinition<*>, modifier: Modifier = Modifier) {
-    val (bg, fg, label) = when (def) {
-        is BooleanPref -> Triple(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer, "BOOL")
-        is StringPref  -> Triple(MaterialTheme.colorScheme.primaryContainer,   MaterialTheme.colorScheme.onPrimaryContainer,   "STR")
-        is IntPref     -> Triple(MaterialTheme.colorScheme.tertiaryContainer,  MaterialTheme.colorScheme.onTertiaryContainer,  "INT")
-        is LongPref    -> Triple(MaterialTheme.colorScheme.tertiaryContainer,  MaterialTheme.colorScheme.onTertiaryContainer,  "LONG")
-        is FloatPref   -> Triple(MaterialTheme.colorScheme.tertiaryContainer,  MaterialTheme.colorScheme.onTertiaryContainer,  "FLOAT")
-        is DoublePref  -> Triple(MaterialTheme.colorScheme.tertiaryContainer,  MaterialTheme.colorScheme.onTertiaryContainer,  "DOUBLE")
-        is EnumPref    -> Triple(MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.onTertiaryContainer, "ENUM")
-    }
+    val (bg, fg, label) =
+        when (def) {
+            is BooleanPref ->
+                Triple(
+                    MaterialTheme.colorScheme.secondaryContainer,
+                    MaterialTheme.colorScheme.onSecondaryContainer,
+                    "BOOL",
+                )
+            is StringPref ->
+                Triple(
+                    MaterialTheme.colorScheme.primaryContainer,
+                    MaterialTheme.colorScheme.onPrimaryContainer,
+                    "STR",
+                )
+            is IntPref ->
+                Triple(
+                    MaterialTheme.colorScheme.tertiaryContainer,
+                    MaterialTheme.colorScheme.onTertiaryContainer,
+                    "INT",
+                )
+            is LongPref ->
+                Triple(
+                    MaterialTheme.colorScheme.tertiaryContainer,
+                    MaterialTheme.colorScheme.onTertiaryContainer,
+                    "LONG",
+                )
+            is FloatPref ->
+                Triple(
+                    MaterialTheme.colorScheme.tertiaryContainer,
+                    MaterialTheme.colorScheme.onTertiaryContainer,
+                    "FLOAT",
+                )
+            is DoublePref ->
+                Triple(
+                    MaterialTheme.colorScheme.tertiaryContainer,
+                    MaterialTheme.colorScheme.onTertiaryContainer,
+                    "DOUBLE",
+                )
+            is EnumPref ->
+                Triple(
+                    MaterialTheme.colorScheme.tertiaryContainer,
+                    MaterialTheme.colorScheme.onTertiaryContainer,
+                    "ENUM",
+                )
+        }
     Surface(color = bg, shape = MaterialTheme.shapes.extraSmall, modifier = modifier) {
         Text(
             text = label,

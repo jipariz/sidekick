@@ -1,12 +1,10 @@
 package dev.parez.sidekick.network.ktor
 
-import dev.parez.sidekick.network.NetworkMonitorStore
 import dev.parez.sidekick.network.currentTimeMillis
 import io.ktor.client.call.save
 import io.ktor.client.plugins.api.ClientPlugin
 import io.ktor.client.plugins.api.Send
 import io.ktor.client.plugins.api.createClientPlugin
-import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
@@ -23,7 +21,6 @@ private val DisableLogging = AttributeKey<Unit>("NetworkMonitorDisableLogging")
 @OptIn(ExperimentalUuidApi::class)
 public val NetworkMonitorKtor: ClientPlugin<NetworkMonitorKtorConfig> =
     createClientPlugin("NetworkMonitorKtor", ::NetworkMonitorKtorConfig) {
-
         val config = pluginConfig
         val store = config.store
 
@@ -39,9 +36,11 @@ public val NetworkMonitorKtor: ClientPlugin<NetworkMonitorKtorConfig> =
 
             // ── Request capture ───────────────────────────────────────────────
             val reqHeaders = request.headers.build().sanitize(config.sanitizedHeaders)
-            val reqBody = runCatching { request.body.toString() }.getOrNull()
-                ?.takeIf { it != "EmptyContent" }
-                ?.truncate(config.maxContentLength)
+            val reqBody =
+                runCatching { request.body.toString() }
+                    .getOrNull()
+                    ?.takeIf { it != "EmptyContent" }
+                    ?.truncate(config.maxContentLength)
 
             val url = request.url.buildString()
             val method = request.method.value
@@ -58,12 +57,13 @@ public val NetworkMonitorKtor: ClientPlugin<NetworkMonitorKtorConfig> =
             }
 
             // ── Execute request ───────────────────────────────────────────────
-            val call = try {
-                proceed(request)
-            } catch (e: Throwable) {
-                runCatching { store.recordError(id, e) }
-                throw e
-            }
+            val call =
+                try {
+                    proceed(request)
+                } catch (e: Throwable) {
+                    runCatching { store.recordError(id, e) }
+                    throw e
+                }
 
             // ── Response metadata ─────────────────────────────────────────────
             val statusCode = call.response.status.value
@@ -107,14 +107,21 @@ private fun Headers.sanitize(sanitized: List<SanitizedHeader>): Map<String, Stri
 private fun String.truncate(max: Int) = if (length > max) take(max) + "…" else this
 
 /**
- * Returns true if this content type carries human-readable text that can be safely
- * decoded as a string. Binary types (images, audio, protobuf, etc.) return false.
+ * Returns true if this content type carries human-readable text that can be safely decoded as a
+ * string. Binary types (images, audio, protobuf, etc.) return false.
  */
 private fun ContentType.isTextBased(): Boolean =
     contentType == "text" ||
         (contentType == "application" && contentSubtype in TEXT_APPLICATION_SUBTYPES)
 
-private val TEXT_APPLICATION_SUBTYPES = setOf(
-    "json", "xml", "x-www-form-urlencoded",
-    "graphql", "ld+json", "x-ndjson", "x-yaml", "yaml",
-)
+private val TEXT_APPLICATION_SUBTYPES =
+    setOf(
+        "json",
+        "xml",
+        "x-www-form-urlencoded",
+        "graphql",
+        "ld+json",
+        "x-ndjson",
+        "x-yaml",
+        "yaml",
+    )

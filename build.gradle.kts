@@ -9,6 +9,8 @@ plugins {
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.kotlinJvm) apply false
     alias(libs.plugins.vanniktechMavenPublish) apply false
+    // ktfmt — Kotlin formatter applied to every subproject below.
+    alias(libs.plugins.ktfmt) apply false
     // Registers `updateModuleVersions` + `checkModuleVersions` tasks.
     id("sidekick.version.update")
 }
@@ -33,5 +35,17 @@ val artifactIdMap = mapOf(
 subprojects {
     if (artifactIdMap.containsKey(path)) {
         ext.set("sidekick.artifactId", artifactIdMap[path])
+    }
+
+    // Apply ktfmt to every subproject — it auto-detects Kotlin source sets
+    // (commonMain/androidMain/iosMain/etc. for KMP modules, plus main/test
+    // for the BOM and KSP modules). Run `./gradlew ktfmtFormat` to format,
+    // `./gradlew ktfmtCheck` to verify (the latter is CI-friendly).
+    apply(plugin = rootProject.libs.plugins.ktfmt.get().pluginId)
+    extensions.configure<com.ncorti.ktfmt.gradle.KtfmtExtension> {
+        // Kotlinlang style: 4-space indent, max line 100. Matches the
+        // existing codebase conventions; switch to googleStyle() if we
+        // ever migrate to 2-space.
+        kotlinLangStyle()
     }
 }

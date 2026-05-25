@@ -7,10 +7,9 @@ import io.ktor.utils.io.KtorDsl
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 
-
 /**
- * The maximum length of the content that will be logged.
- * After this, request/response body will be truncated.
+ * The maximum length of the content that will be logged. After this, request/response body will be
+ * truncated.
  */
 public object ContentLength {
     /** Default value: 65,536 characters. */
@@ -35,16 +34,16 @@ public class NetworkMonitorKtorConfig {
     public var store: NetworkMonitorStore = NetworkMonitorKoinContext.getDefaultStore()
 
     /**
-     * Exclude requests matching [predicate] from being recorded.
-     * If no filters are registered, all requests are recorded.
+     * Exclude requests matching [predicate] from being recorded. If no filters are registered, all
+     * requests are recorded.
      */
     public fun filter(predicate: (HttpRequestBuilder) -> Boolean) {
         filters += predicate
     }
 
     /**
-     * Replace the value of any header whose name matches [predicate] with [placeholder].
-     * Call multiple times to sanitize multiple headers.
+     * Replace the value of any header whose name matches [predicate] with [placeholder]. Call
+     * multiple times to sanitize multiple headers.
      */
     public fun sanitizeHeader(placeholder: String = "***", predicate: (String) -> Boolean) {
         sanitizedHeaders += SanitizedHeader(placeholder, predicate)

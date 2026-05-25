@@ -1,10 +1,7 @@
-plugins {
-    id("sidekick.kmp.library")
-}
+plugins { id("sidekick.kmp.library") }
+
 kotlin {
-    androidLibrary {
-        namespace = "dev.parez.sidekick.network.ui"
-    }
+    androidLibrary { namespace = "dev.parez.sidekick.network.ui" }
     sourceSets {
         commonMain.dependencies {
             api(projects.plugins.networkMonitor.api)
@@ -21,8 +18,6 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.androidx.paging.compose)
         }
-        androidMain.dependencies {
-            implementation(libs.koin.android)
-        }
+        androidMain.dependencies { implementation(libs.koin.android) }
     }
 }

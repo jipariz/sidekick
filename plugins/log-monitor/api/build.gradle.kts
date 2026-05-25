@@ -4,9 +4,7 @@ plugins {
 }
 
 kotlin {
-    androidLibrary {
-        namespace = "dev.parez.sidekick.log"
-    }
+    androidLibrary { namespace = "dev.parez.sidekick.log" }
     sourceSets {
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutinesCore)
@@ -22,17 +20,11 @@ kotlin {
             implementation(libs.sqldelight.driver.android)
             implementation(libs.koin.android)
         }
-        iosMain.dependencies {
-            implementation(libs.sqldelight.driver.native)
-        }
-        jvmMain.dependencies {
-            implementation(libs.sqldelight.driver.sqlite)
-        }
+        iosMain.dependencies { implementation(libs.sqldelight.driver.native) }
+        jvmMain.dependencies { implementation(libs.sqldelight.driver.sqlite) }
         // web-worker-driver only publishes a js variant, not wasmJs.
         // wasmJsMain returns null from createLogMonitorDriver() and falls back to in-memory.
-        jsMain.dependencies {
-            implementation(libs.sqldelight.driver.web)
-        }
+        jsMain.dependencies { implementation(libs.sqldelight.driver.web) }
     }
 }
 

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -69,44 +68,26 @@ internal fun LogEntryDetailPane(
                         }
                     }
                 },
-                actions = {
-                    LevelBadge(entry.level, modifier = Modifier.padding(end = 12.dp))
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                ),
+                actions = { LevelBadge(entry.level, modifier = Modifier.padding(end = 12.dp)) },
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    ),
             )
         }
     ) {
-        Column(
-            Modifier.padding(it).
-            fillMaxSize()
-        ) {
+        Column(Modifier.padding(it).fillMaxSize()) {
             // -- Content ----------------------------------------------------------
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState()),
-            ) {
-                DetailSection(label = "Tag") {
-                    CopyableMonoBlock(entry.tag)
-                }
-                DetailSection(label = "Message") {
-                    CopyableCodeBlock(entry.message)
-                }
+            Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                DetailSection(label = "Tag") { CopyableMonoBlock(entry.tag) }
+                DetailSection(label = "Message") { CopyableCodeBlock(entry.message) }
                 entry.throwable?.let {
-                    DetailSection(label = "Stacktrace") {
-                        CopyableCodeBlock(it)
-                    }
+                    DetailSection(label = "Stacktrace") { CopyableCodeBlock(it) }
                 }
-                DetailSection(label = "Timestamp") {
-                    MonoText(formatTimestamp(entry.timestamp))
-                }
+                DetailSection(label = "Timestamp") { MonoText(formatTimestamp(entry.timestamp)) }
                 entry.metadata?.let { meta ->
                     if (meta.isNotEmpty()) {
-                        DetailSection(label = "Metadata") {
-                            MetadataTable(meta)
-                        }
+                        DetailSection(label = "Metadata") { MetadataTable(meta) }
                     }
                 }
                 Spacer(Modifier.height(24.dp))
@@ -118,17 +99,12 @@ internal fun LogEntryDetailPane(
 // -- Pane identity ------------------------------------------------------------
 
 /**
- * Header inside the detail [TopAppBar]: a severity-tinted disc carrying the
- * level's icon, plus a small-caps "LOG · LEVEL" overline above the tag and
- * timestamp. Mirrors the network monitor's request/response identity so the
- * two plugins feel like one design system.
+ * Header inside the detail [TopAppBar]: a severity-tinted disc carrying the level's icon, plus a
+ * small-caps "LOG · LEVEL" overline above the tag and timestamp. Mirrors the network monitor's
+ * request/response identity so the two plugins feel like one design system.
  */
 @Composable
-private fun PaneIdentity(
-    level: LogLevel,
-    primary: String,
-    secondary: String,
-) {
+private fun PaneIdentity(level: LogLevel, primary: String, secondary: String) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -178,9 +154,9 @@ private fun PaneIdentity(
 private fun DetailSection(label: String, content: @Composable () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
+            modifier =
+                Modifier.fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -193,17 +169,12 @@ private fun DetailSection(label: String, content: @Composable () -> Unit) {
             modifier = Modifier.padding(horizontal = 16.dp),
             color = MaterialTheme.colorScheme.outlineVariant,
         )
-        Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            content()
-        }
+        Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) { content() }
     }
 }
 
 @Composable
-private fun MonoText(
-    text: String,
-    color: Color = MaterialTheme.colorScheme.onSurface,
-) {
+private fun MonoText(text: String, color: Color = MaterialTheme.colorScheme.onSurface) {
     Text(
         text = text,
         style = MaterialTheme.typography.bodySmall,
@@ -218,21 +189,15 @@ private fun CopyableMonoBlock(text: String) {
     // TODO: migrate to LocalClipboard once Compose Multiplatform ships a
     // commonMain ClipEntry text helper (1.11.0 only exposes the suspend
     // Clipboard.setClipEntry, with no per-platform ClipEntry factory in common).
-    @Suppress("DEPRECATION")
-    val clipboard = LocalClipboardManager.current
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    @Suppress("DEPRECATION") val clipboard = LocalClipboardManager.current
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = text,
             style = MaterialTheme.typography.bodySmall,
             fontFamily = FontFamily.Monospace,
             modifier = Modifier.weight(1f),
         )
-        IconButton(
-            onClick = { clipboard.setText(AnnotatedString(text)) },
-        ) {
+        IconButton(onClick = { clipboard.setText(AnnotatedString(text)) }) {
             Icon(
                 Icons.Default.ContentCopy,
                 contentDescription = "Copy",
@@ -248,8 +213,7 @@ private fun CopyableCodeBlock(text: String) {
     // TODO: migrate to LocalClipboard once Compose Multiplatform ships a
     // commonMain ClipEntry text helper (1.11.0 only exposes the suspend
     // Clipboard.setClipEntry, with no per-platform ClipEntry factory in common).
-    @Suppress("DEPRECATION")
-    val clipboard = LocalClipboardManager.current
+    @Suppress("DEPRECATION") val clipboard = LocalClipboardManager.current
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerLowest,
         shape = MaterialTheme.shapes.small,
@@ -257,14 +221,10 @@ private fun CopyableCodeBlock(text: String) {
     ) {
         Column {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                 horizontalArrangement = Arrangement.End,
             ) {
-                IconButton(
-                    onClick = { clipboard.setText(AnnotatedString(text)) },
-                ) {
+                IconButton(onClick = { clipboard.setText(AnnotatedString(text)) }) {
                     Icon(
                         Icons.Default.ContentCopy,
                         contentDescription = "Copy",
@@ -278,10 +238,8 @@ private fun CopyableCodeBlock(text: String) {
                 text = text,
                 style = MaterialTheme.typography.bodySmall,
                 fontFamily = FontFamily.Monospace,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(12.dp),
+                modifier =
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(12.dp),
             )
         }
     }
@@ -296,15 +254,14 @@ private fun MetadataTable(metadata: Map<String, String>) {
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             metadata.entries.forEachIndexed { index, (key, value) ->
-                val rowBg = if (index % 2 == 0)
-                    MaterialTheme.colorScheme.surfaceContainerLowest
-                else
-                    MaterialTheme.colorScheme.surfaceContainer
+                val rowBg =
+                    if (index % 2 == 0) MaterialTheme.colorScheme.surfaceContainerLowest
+                    else MaterialTheme.colorScheme.surfaceContainer
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(rowBg)
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .background(rowBg)
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
@@ -327,7 +284,9 @@ private fun MetadataTable(metadata: Map<String, String>) {
                     )
                 }
                 if (index < metadata.size - 1) {
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                    )
                 }
             }
         }

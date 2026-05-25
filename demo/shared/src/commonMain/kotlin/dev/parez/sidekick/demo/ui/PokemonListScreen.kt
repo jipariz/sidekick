@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -28,7 +26,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -38,8 +35,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -63,30 +60,33 @@ fun PokemonListScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Pokédex", style = MaterialTheme.typography.titleLarge) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                ),
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    ),
             )
-        },
+        }
     ) { padding ->
         when (val state = uiState) {
             is ListUiState.Loading -> LoadingState(Modifier.padding(padding))
-            is ListUiState.Error -> ErrorState(
-                message = state.message,
-                onRetry = viewModel::onRetry,
-                modifier = Modifier.padding(padding),
-            )
-            is ListUiState.Content -> ContentState(
-                state = state,
-                showNumbers = showNumbers,
-                shinySprites = shinySprites,
-                onSelect = onSelect,
-                onQueryChanged = viewModel::onSearchQueryChanged,
-                onLoadMore = viewModel::loadNextPage,
-                onRetry = viewModel::onRetry,
-                modifier = Modifier.padding(padding),
-            )
+            is ListUiState.Error ->
+                ErrorState(
+                    message = state.message,
+                    onRetry = viewModel::onRetry,
+                    modifier = Modifier.padding(padding),
+                )
+            is ListUiState.Content ->
+                ContentState(
+                    state = state,
+                    showNumbers = showNumbers,
+                    shinySprites = shinySprites,
+                    onSelect = onSelect,
+                    onQueryChanged = viewModel::onSearchQueryChanged,
+                    onLoadMore = viewModel::loadNextPage,
+                    onRetry = viewModel::onRetry,
+                    modifier = Modifier.padding(padding),
+                )
         }
     }
 }
@@ -107,9 +107,7 @@ private fun ContentState(
         OutlinedTextField(
             value = state.query,
             onValueChange = onQueryChanged,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
             placeholder = {
                 Text(
                     "Search Pokémon…",
@@ -120,9 +118,10 @@ private fun ContentState(
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             singleLine = true,
             shape = MaterialTheme.shapes.extraLarge,
-            colors = OutlinedTextFieldDefaults.colors(
-                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-            ),
+            colors =
+                OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                ),
         )
 
         // ── Grid ──────────────────────────────────────────────────────────
@@ -145,33 +144,32 @@ private fun ContentState(
             // Footer: load-more / spinner / end-of-list
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     when {
                         state.isLoadingMore -> PokeballLoader(modifier = Modifier.size(40.dp))
-                        state.error != null -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                state.error,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                            Spacer(Modifier.height(8.dp))
-                            Button(onClick = onRetry) {
-                                Text("Retry")
+                        state.error != null ->
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    state.error,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Button(onClick = onRetry) { Text("Retry") }
                             }
-                        }
-                        state.hasMore && state.query.isBlank() -> Button(onClick = {}) {
-                            LaunchedEffect(Unit) { onLoadMore() }
-                            Text("Load more")
-                        }
-                        !state.hasMore -> Text(
-                            "All ${state.items.size} Pokémon loaded",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        state.hasMore && state.query.isBlank() ->
+                            Button(onClick = {}) {
+                                LaunchedEffect(Unit) { onLoadMore() }
+                                Text("Load more")
+                            }
+                        !state.hasMore ->
+                            Text(
+                                "All ${state.items.size} Pokémon loaded",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                     }
                 }
             }
@@ -189,24 +187,18 @@ private fun PokemonCard(
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {},
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ),
+        colors =
+            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             AsyncImage(
                 model = spriteUrlFor(entry.id, shiny = shinySprites),
                 contentDescription = entry.name,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .padding(8.dp),
+                modifier = Modifier.fillMaxWidth().aspectRatio(1f).padding(8.dp),
             )
             if (showNumber) {
                 Text(

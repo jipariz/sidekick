@@ -84,18 +84,14 @@ internal fun LogEntryListPane(
                     }
                 },
             )
-        },
+        }
     ) {
-        Column(
-            Modifier
-                .padding(it)
-                .fillMaxSize(),
-        ) {
+        Column(Modifier.padding(it).fillMaxSize()) {
             // ── Search bar ────────────────────────────────────────────────────────
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 OutlinedTextField(
@@ -117,10 +113,12 @@ internal fun LogEntryListPane(
                         )
                     },
                     singleLine = true,
-                    textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                    ),
+                    textStyle =
+                        MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                    colors =
+                        OutlinedTextFieldDefaults.colors(
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                        ),
                     shape = MaterialTheme.shapes.small,
                 )
                 Spacer(Modifier.width(4.dp))
@@ -135,10 +133,10 @@ internal fun LogEntryListPane(
 
             // ── Level filter chips ───────────────────────────────────────────────
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 LogLevel.entries.forEach { level ->
@@ -147,24 +145,20 @@ internal fun LogEntryListPane(
                         selected = isSelected,
                         onClick = { onToggleLevel(level) },
                         label = {
-                            Text(
-                                level.label(),
-                                style = MaterialTheme.typography.labelSmall,
-                            )
+                            Text(level.label(), style = MaterialTheme.typography.labelSmall)
                         },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = level.color(),
-                            selectedLabelColor = level.onColor(),
-                        ),
+                        colors =
+                            FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = level.color(),
+                                selectedLabelColor = level.onColor(),
+                            ),
                     )
                 }
             }
 
             // ── Stats row ─────────────────────────────────────────────────────────
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -186,46 +180,48 @@ internal fun LogEntryListPane(
             val refresh = lazyItems.loadState.refresh
             val isEmpty = lazyItems.itemCount == 0 && refresh is LoadState.NotLoading
             when {
-                isEmpty -> LogEntryEmptyState(
-                    isFiltered = query.isNotBlank() || levelFilter.isNotEmpty(),
-                )
+                isEmpty ->
+                    LogEntryEmptyState(isFiltered = query.isNotBlank() || levelFilter.isNotEmpty())
 
-                refresh is LoadState.Error -> LogEntryErrorState(
-                    error = refresh.error,
-                    onRetry = lazyItems::retry,
-                )
+                refresh is LoadState.Error ->
+                    LogEntryErrorState(error = refresh.error, onRetry = lazyItems::retry)
 
-                else -> LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 8.dp),
-                ) {
-                    items(
-                        count = lazyItems.itemCount,
-                        key = lazyItems.itemKey { it.id },
-                        contentType = lazyItems.itemContentType { "LogEntry" },
-                    ) { index ->
-                        val entry = lazyItems[index] ?: return@items
-                        LogEntryRow(
-                            entry = entry,
-                            isSelected = selected?.id == entry.id,
-                            showChevron = showChevron,
-                            onClick = { onSelect(entry) },
-                        )
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                            modifier = Modifier.padding(start = 56.dp),
-                        )
-                    }
-
-                    when (val appendState = lazyItems.loadState.append) {
-                        is LoadState.Loading -> item { AppendLoadingRow() }
-                        is LoadState.Error -> item {
-                            AppendErrorRow(error = appendState.error, onRetry = lazyItems::retry)
+                else ->
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 8.dp),
+                    ) {
+                        items(
+                            count = lazyItems.itemCount,
+                            key = lazyItems.itemKey { it.id },
+                            contentType = lazyItems.itemContentType { "LogEntry" },
+                        ) { index ->
+                            val entry = lazyItems[index] ?: return@items
+                            LogEntryRow(
+                                entry = entry,
+                                isSelected = selected?.id == entry.id,
+                                showChevron = showChevron,
+                                onClick = { onSelect(entry) },
+                            )
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                                modifier = Modifier.padding(start = 56.dp),
+                            )
                         }
 
-                        is LoadState.NotLoading -> Unit
+                        when (val appendState = lazyItems.loadState.append) {
+                            is LoadState.Loading -> item { AppendLoadingRow() }
+                            is LoadState.Error ->
+                                item {
+                                    AppendErrorRow(
+                                        error = appendState.error,
+                                        onRetry = lazyItems::retry,
+                                    )
+                                }
+
+                            is LoadState.NotLoading -> Unit
+                        }
                     }
-                }
             }
         }
     }
@@ -234,9 +230,7 @@ internal fun LogEntryListPane(
 @Composable
 private fun AppendLoadingRow() {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.Center,
     ) {
         CircularProgressIndicator(modifier = Modifier.size(20.dp))
@@ -246,9 +240,7 @@ private fun AppendLoadingRow() {
 @Composable
 private fun AppendErrorRow(error: Throwable, onRetry: () -> Unit) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -305,15 +297,13 @@ private fun LogEntryRow(
     val selectionColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
 
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(if (isSelected) selectionColor else Color.Transparent)
-            .clickable(onClick = onClick),
+        modifier =
+            Modifier.fillMaxWidth()
+                .background(if (isSelected) selectionColor else Color.Transparent)
+                .clickable(onClick = onClick)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
@@ -351,9 +341,7 @@ private fun LogEntryRow(
                     Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .size(16.dp)
-                        .padding(top = 2.dp),
+                    modifier = Modifier.size(16.dp).padding(top = 2.dp),
                 )
             }
         }
@@ -362,11 +350,7 @@ private fun LogEntryRow(
 
 @Composable
 internal fun LevelBadge(level: LogLevel, modifier: Modifier = Modifier) {
-    Surface(
-        color = level.color(),
-        shape = MaterialTheme.shapes.extraSmall,
-        modifier = modifier,
-    ) {
+    Surface(color = level.color(), shape = MaterialTheme.shapes.extraSmall, modifier = modifier) {
         Text(
             text = level.label(),
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
@@ -396,7 +380,9 @@ private fun LogEntryEmptyState(isFiltered: Boolean) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = if (isFiltered) "Try a different search or level filter" else "Log messages will appear here",
+                text =
+                    if (isFiltered) "Try a different search or level filter"
+                    else "Log messages will appear here",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
             )

@@ -21,9 +21,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
-internal class LogMonitorViewModel(
-    private val store: LogMonitorStore,
-) : ViewModel() {
+internal class LogMonitorViewModel(private val store: LogMonitorStore) : ViewModel() {
 
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
@@ -31,22 +29,25 @@ internal class LogMonitorViewModel(
     private val _levelFilter = MutableStateFlow<Set<LogLevel>>(emptySet())
     val levelFilter: StateFlow<Set<LogLevel>> = _levelFilter.asStateFlow()
 
-    private val filterFlow: Flow<LogFilter> = combine(
-        _query.debounce(150L),
-        _levelFilter,
-    ) { q, levels -> LogFilter(query = q, levels = levels) }
-        .distinctUntilChanged()
+    private val filterFlow: Flow<LogFilter> =
+        combine(_query.debounce(150L), _levelFilter) { q, levels ->
+                LogFilter(query = q, levels = levels)
+            }
+            .distinctUntilChanged()
 
-    val pagedEntries: Flow<PagingData<LogEntry>> = store.pagedEntries(filterFlow)
-        .cachedIn(viewModelScope)
+    val pagedEntries: Flow<PagingData<LogEntry>> =
+        store.pagedEntries(filterFlow).cachedIn(viewModelScope)
 
-    val filteredCount: StateFlow<Long> = store.filteredCount(filterFlow)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0L)
+    val filteredCount: StateFlow<Long> =
+        store
+            .filteredCount(filterFlow)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0L)
 
     private val _selectedId = MutableStateFlow<String?>(null)
-    val selectedEntry: StateFlow<LogEntry?> = _selectedId
-        .flatMapLatest { id -> if (id == null) flowOf(null) else store.entryById(id) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    val selectedEntry: StateFlow<LogEntry?> =
+        _selectedId
+            .flatMapLatest { id -> if (id == null) flowOf(null) else store.entryById(id) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun select(id: String?) {
         _selectedId.value = id

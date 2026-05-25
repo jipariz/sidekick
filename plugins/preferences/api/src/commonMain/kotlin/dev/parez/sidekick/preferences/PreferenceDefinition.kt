@@ -26,9 +26,9 @@ class DoublePref(key: String, label: String, description: String, defaultValue: 
     PreferenceDefinition<Double>(key, label, description, defaultValue)
 
 /**
- * A preference that can only take one of a fixed set of string values (enum entry names).
- * The UI renders each option as a selectable chip.
- * The stored value and [defaultValue] are the enum entry name strings (e.g. "FIRE").
+ * A preference that can only take one of a fixed set of string values (enum entry names). The UI
+ * renders each option as a selectable chip. The stored value and [defaultValue] are the enum entry
+ * name strings (e.g. "FIRE").
  */
 class EnumPref(
     key: String,

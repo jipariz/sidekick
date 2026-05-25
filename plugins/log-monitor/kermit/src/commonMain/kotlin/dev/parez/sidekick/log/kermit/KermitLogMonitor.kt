@@ -8,8 +8,8 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 
 /**
- * Returns a [LogMonitorPlugin] with the Kermit bridge already installed onto
- * the process-wide [Logger] singleton — a one-liner for the common case.
+ * Returns a [LogMonitorPlugin] with the Kermit bridge already installed onto the process-wide
+ * [Logger] singleton — a one-liner for the common case.
  *
  * Equivalent to:
  * ```kotlin
@@ -31,9 +31,7 @@ import kotlin.time.Duration.Companion.hours
  *
  * @param retentionPeriod How long captured entries remain available in the panel.
  */
-fun kermitLogMonitor(
-    retentionPeriod: Duration = 1.hours,
-): LogMonitorPlugin {
+fun kermitLogMonitor(retentionPeriod: Duration = 1.hours): LogMonitorPlugin {
     val plugin = LogMonitorPlugin(retentionPeriod = retentionPeriod)
     Logger.setLogWriters(platformLogWriter(), LogMonitorLogWriter(LogMonitorStore))
     return plugin

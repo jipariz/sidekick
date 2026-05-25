@@ -24,20 +24,19 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 internal fun BuildInfoScreen() {
-    val rows = listOf(
-        "Module" to ":composeApp",
-        "Kotlin" to "2.3.20",
-        "Compose" to "1.10.3",
-        "Min SDK" to "24",
-    )
+    val rows =
+        listOf(
+            "Module" to ":composeApp",
+            "Kotlin" to "2.3.20",
+            "Compose" to "1.10.3",
+            "Min SDK" to "24",
+        )
     Surface(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.padding(vertical = 8.dp)) {
             rows.forEachIndexed { index, (label, value) ->
                 ListItem(
                     headlineContent = { Text(label) },
-                    trailingContent = {
-                        Text(value, style = MaterialTheme.typography.bodyMedium)
-                    },
+                    trailingContent = { Text(value, style = MaterialTheme.typography.bodyMedium) },
                 )
                 if (index < rows.lastIndex) {
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
@@ -51,9 +50,7 @@ internal fun BuildInfoScreen() {
 internal fun CustomDebugScreen() {
     Surface(modifier = Modifier.fillMaxSize()) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
+            modifier = Modifier.fillMaxWidth().padding(24.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -64,10 +61,7 @@ internal fun CustomDebugScreen() {
                 tint = MaterialTheme.colorScheme.primary,
             )
             Spacer(Modifier.height(16.dp))
-            Text(
-                text = "Your custom debug screen",
-                style = MaterialTheme.typography.titleLarge,
-            )
+            Text(text = "Your custom debug screen", style = MaterialTheme.typography.titleLarge)
             Spacer(Modifier.height(8.dp))
             Text(
                 text = "Replace this composable with your own UI.\nDI (Koin, Hilt, …) works here.",

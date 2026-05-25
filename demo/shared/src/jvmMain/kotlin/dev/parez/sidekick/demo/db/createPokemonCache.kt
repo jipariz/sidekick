@@ -7,11 +7,10 @@ import java.io.File
 actual fun createPokemonCache(): PokemonCache {
     val dbFile = File(System.getProperty("user.home"), ".sidekick-demo/pokemon_cache.db")
     dbFile.parentFile?.mkdirs()
-    val database = Room.databaseBuilder<PokemonDatabase>(
-        name = dbFile.absolutePath,
-    )
-        .setDriver(BundledSQLiteDriver())
-        .fallbackToDestructiveMigration(true)
-        .build()
+    val database =
+        Room.databaseBuilder<PokemonDatabase>(name = dbFile.absolutePath)
+            .setDriver(BundledSQLiteDriver())
+            .fallbackToDestructiveMigration(true)
+            .build()
     return RoomPokemonCache(database.pokemonCacheDao())
 }
