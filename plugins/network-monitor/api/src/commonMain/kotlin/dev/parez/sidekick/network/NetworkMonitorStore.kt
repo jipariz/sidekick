@@ -5,17 +5,13 @@ import androidx.paging.LoadStates
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
-import app.cash.sqldelight.async.coroutines.awaitAsOne
-import app.cash.sqldelight.coroutines.asFlow
-import app.cash.sqldelight.coroutines.mapToOne
-import app.cash.sqldelight.coroutines.mapToOneOrNull
+import dev.parez.sidekick.network.db.NetworkCallEntity
 import dev.parez.sidekick.network.db.NetworkMonitorDatabase
+import dev.parez.sidekick.network.db.createNetworkMonitorDatabase
 import dev.parez.sidekick.network.paging.NetworkCallPagingSource
-import dev.parez.sidekick.network.paging.toDomain
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,15 +32,15 @@ private const val MAX_BODY_LENGTH = 65_536
 @OptIn(ExperimentalCoroutinesApi::class)
 class NetworkMonitorStore(private val scope: CoroutineScope) {
 
-    // SQLDelight-backed storage (android, ios, jvm, js)
+    // Room-backed storage (android, ios, jvm). Web targets fall through to the
+    // in-memory list below — see createNetworkMonitorDatabase.{js,wasmJs}.kt.
     private val _database = MutableStateFlow<NetworkMonitorDatabase?>(null)
 
-    // In-memory fallback when SQLDelight is unavailable (wasmJs)
     private val _inMemory = MutableStateFlow<List<NetworkCall>?>(null)
 
-    // Hot StateFlow view of the in-memory list, used as the source for
-    // InMemoryNetworkCallPagingSource.
-    // Owned by the store's scope so it outlives ViewModel-scoped pagers.
+    // Hot StateFlow view of the in-memory list, used as the source for the
+    // web fallback PagingData. Owned by the store's scope so it outlives
+    // ViewModel-scoped pagers.
     private val inMemorySnapshot: StateFlow<List<NetworkCall>> =
         _inMemory.filterNotNull().stateIn(scope, SharingStarted.Eagerly, emptyList())
 
@@ -54,12 +50,20 @@ class NetworkMonitorStore(private val scope: CoroutineScope) {
         if (!initialized.compareAndSet(expect = false, update = true)) return
 
         scope.launch {
-            val driver = createNetworkMonitorDriver()
-            if (driver != null) {
-                val db = NetworkMonitorDatabase(driver)
-                db.networkCallQueries.deleteOlderThan(
-                    currentTimeMillis() - retentionPeriod.inWholeMilliseconds
-                )
+            val db = createNetworkMonitorDatabase()
+            val ready =
+                db != null &&
+                    runCatching {
+                            // Probes the underlying driver. On web targets the
+                            // WebWorkerSQLiteDriver only fails on first SQL use, so
+                            // a no-op DAO call surfaces a missing sqlite-web worker.
+                            db.networkCallDao()
+                                .deleteOlderThan(
+                                    currentTimeMillis() - retentionPeriod.inWholeMilliseconds
+                                )
+                        }
+                        .isSuccess
+            if (ready) {
                 _database.value = db
             } else {
                 _inMemory.value = emptyList()
@@ -73,11 +77,11 @@ class NetworkMonitorStore(private val scope: CoroutineScope) {
                 if (db != null) {
                     Pager(
                             config = NetworkPagingConfig,
-                            pagingSourceFactory = { NetworkCallPagingSource(db, f) },
+                            pagingSourceFactory = { NetworkCallPagingSource(db, f, scope) },
                         )
                         .flow
                 } else {
-                    // In-memory fallback (wasmJs): the list is capped at MAX_CALLS
+                    // In-memory fallback (js, wasmJs): the list is capped at MAX_CALLS
                     // so we don't need real pagination — just snapshot the filtered list
                     // each time it changes. PagingData.from() avoids the Pager + PagingSource
                     // machinery, which has interop issues on wasmJs.
@@ -94,18 +98,12 @@ class NetworkMonitorStore(private val scope: CoroutineScope) {
         combine(_database, filter.distinctUntilChanged()) { db, f -> db to f }
             .flatMapLatest { (db, f) ->
                 if (db != null) {
-                    val token = f.toLikeToken()
-                    if (f.methods.isEmpty()) {
-                        db.networkCallQueries
-                            .countFilteredAllMethods(token)
-                            .asFlow()
-                            .mapToOne(Dispatchers.Default)
-                    } else {
-                        db.networkCallQueries
-                            .countFiltered(token, f.methods)
-                            .asFlow()
-                            .mapToOne(Dispatchers.Default)
-                    }
+                    db.networkCallDao()
+                        .filteredCount(
+                            likeToken = f.toLikeToken(),
+                            methods = f.methods.toList(),
+                            hasMethodFilter = if (f.methods.isEmpty()) 0 else 1,
+                        )
                 } else {
                     inMemorySnapshot.map { list -> list.count(f::matches).toLong() }
                 }
@@ -113,9 +111,7 @@ class NetworkMonitorStore(private val scope: CoroutineScope) {
 
     fun callById(id: String): Flow<NetworkCall?> = _database.flatMapLatest { db ->
         if (db != null) {
-            db.networkCallQueries.selectById(id).asFlow().mapToOneOrNull(Dispatchers.Default).map {
-                it?.toDomain()
-            }
+            db.networkCallDao().selectById(id).map { it?.toDomain() }
         } else {
             inMemorySnapshot.map { list -> list.firstOrNull { it.id == id } }
         }
@@ -131,14 +127,23 @@ class NetworkMonitorStore(private val scope: CoroutineScope) {
     ) {
         val db = _database.value
         if (db != null) {
-            db.networkCallQueries.insertCall(
-                id = id,
-                url = url,
-                method = method,
-                requestHeaders = headers.encodeToJson(),
-                requestBody = body?.truncate(),
-                requestTimestamp = timestamp,
-            )
+            db.networkCallDao()
+                .insert(
+                    NetworkCallEntity(
+                        id = id,
+                        url = url,
+                        method = method,
+                        requestHeaders = headers.encodeToJson(),
+                        requestBody = body?.truncate(),
+                        requestTimestamp = timestamp,
+                        responseCode = null,
+                        responseHeaders = "{}",
+                        responseBody = null,
+                        responseTimestamp = null,
+                        error = null,
+                        status = "PENDING",
+                    )
+                )
             trimDbIfNeeded(db)
         } else if (_inMemory.value != null) {
             val call =
@@ -170,13 +175,14 @@ class NetworkMonitorStore(private val scope: CoroutineScope) {
     ) {
         val db = _database.value
         if (db != null) {
-            db.networkCallQueries.updateResponse(
-                responseCode = code.toLong(),
-                responseHeaders = headers.encodeToJson(),
-                responseBody = null,
-                responseTimestamp = timestamp,
-                id = id,
-            )
+            db.networkCallDao()
+                .updateResponse(
+                    id = id,
+                    code = code,
+                    headers = headers.encodeToJson(),
+                    body = null,
+                    timestamp = timestamp,
+                )
         } else if (_inMemory.value != null) {
             _inMemory.update { list ->
                 list?.map { call ->
@@ -196,7 +202,7 @@ class NetworkMonitorStore(private val scope: CoroutineScope) {
     suspend fun recordResponseBody(id: String, body: String) {
         val db = _database.value
         if (db != null) {
-            db.networkCallQueries.updateResponseBody(responseBody = body.truncate(), id = id)
+            db.networkCallDao().updateResponseBody(id = id, body = body.truncate())
         } else if (_inMemory.value != null) {
             _inMemory.update { list ->
                 list?.map { call ->
@@ -209,7 +215,7 @@ class NetworkMonitorStore(private val scope: CoroutineScope) {
     suspend fun recordError(id: String, error: Throwable) {
         val db = _database.value
         if (db != null) {
-            db.networkCallQueries.updateError(error = error.message ?: error.toString(), id = id)
+            db.networkCallDao().updateError(id = id, error = error.message ?: error.toString())
         } else if (_inMemory.value != null) {
             _inMemory.update { list ->
                 list?.map { call ->
@@ -225,14 +231,14 @@ class NetworkMonitorStore(private val scope: CoroutineScope) {
     }
 
     suspend fun clear() {
-        _database.value?.networkCallQueries?.deleteAll()
+        _database.value?.networkCallDao()?.deleteAll()
         if (_inMemory.value != null) _inMemory.value = emptyList()
     }
 
     private suspend fun trimDbIfNeeded(db: NetworkMonitorDatabase) {
-        val count = db.networkCallQueries.countAll().awaitAsOne()
+        val count = db.networkCallDao().countAll()
         val over = count - MAX_CALLS
-        if (over > 0) db.networkCallQueries.deleteOldestOverLimit(over)
+        if (over > 0) db.networkCallDao().deleteOldestOverLimit(over)
     }
 
     private fun String.truncate() =
@@ -260,3 +266,24 @@ class NetworkMonitorStore(private val scope: CoroutineScope) {
             )
     }
 }
+
+internal fun NetworkCallEntity.toDomain() =
+    NetworkCall(
+        id = id,
+        url = url,
+        method = method,
+        requestHeaders = requestHeaders.decodeToHeaderMap(),
+        requestBody = requestBody,
+        requestTimestamp = requestTimestamp,
+        responseCode = responseCode,
+        responseHeaders = responseHeaders.decodeToHeaderMap(),
+        responseBody = responseBody,
+        responseTimestamp = responseTimestamp,
+        error = error,
+        status =
+            when (status) {
+                "COMPLETE" -> CallStatus.COMPLETE
+                "ERROR" -> CallStatus.ERROR
+                else -> CallStatus.PENDING
+            },
+    )

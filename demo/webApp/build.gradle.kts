@@ -26,9 +26,6 @@ kotlin {
             implementation(libs.compose.ui)
         }
         jsMain.dependencies {
-            implementation(npm("sql.js", "1.10.3"))
-            implementation(npm("@cashapp/sqldelight-sqljs-worker", "2.1.0"))
-            implementation(devNpm("copy-webpack-plugin", "9.1.0"))
             implementation(
                 npm("sqlite-wasm-worker", layout.projectDirectory.dir("sqlite-worker").asFile)
             )
