@@ -2,12 +2,17 @@ package dev.parez.sidekick
 
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
+import dev.parez.sidekick.persistence.createMenuOrderStore
 import dev.parez.sidekick.plugin.SidekickAppInfo
 import dev.parez.sidekick.plugin.SidekickPlugin
 import dev.parez.sidekick.plugin.rememberSidekickAppInfo
 import dev.parez.sidekick.ui.SidekickMenu
 import dev.parez.sidekick.ui.theme.SidekickTheme
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 
 /**
  * Sidekick debug menu composable.
@@ -20,6 +25,10 @@ import dev.parez.sidekick.ui.theme.SidekickTheme
  * call site does not reset navigation state on recomposition. Plugin instances themselves should
  * still be wrapped in `remember { ... }` by the caller, since they are stateful (in-memory stores,
  * coroutine scopes, etc.).
+ *
+ * The user-chosen plugin order is persisted via a target-native key/value backend (Android:
+ * DataStore Preferences, iOS: NSUserDefaults, Desktop: java.util.prefs, Web: localStorage) and
+ * re-applied on the next launch.
  *
  * ### Theme behaviour
  * - **`useSidekickTheme = true`** (default) → Sidekick applies its own Material 3 color scheme
@@ -47,6 +56,17 @@ fun Sidekick(
 ) {
     val stablePlugins = remember(plugins.map { it.id }) { plugins }
     val state = rememberSidekickState(stablePlugins)
+    val store = remember { createMenuOrderStore() }
+
+    LaunchedEffect(state) { state.applyPersistedOrder(store.read()) }
+
+    LaunchedEffect(state) {
+        snapshotFlow { state.orderedPluginIds.toList() }
+            .drop(1)
+            .distinctUntilChanged()
+            .collect { store.write(it) }
+    }
+
     SidekickTheme(useSidekickTheme = useSidekickTheme) {
         SidekickMenu(state, appInfo, title, navigationIcon, actions)
     }
