@@ -12,27 +12,33 @@ internal actual suspend fun createNetworkMonitorDriver(): SqlDriver? {
     val driver = JdbcSqliteDriver("jdbc:sqlite:$file")
     val schema = NetworkMonitorDatabase.Schema.synchronous()
     val schemaVersion = NetworkMonitorDatabase.Schema.version
-    val currentVersion = driver.executeQuery<Long>(
-        identifier = null,
-        sql = "PRAGMA user_version",
-        mapper = { QueryResult.Value(it.getLong(0) ?: 0L) },
-        parameters = 0,
-    ).value
+    val currentVersion =
+        driver
+            .executeQuery<Long>(
+                identifier = null,
+                sql = "PRAGMA user_version",
+                mapper = { QueryResult.Value(it.getLong(0) ?: 0L) },
+                parameters = 0,
+            )
+            .value
     when {
         currentVersion == 0L -> {
             // user_version=0 means either a brand-new file or a legacy file created before
             // versioning was added. Check sqlite_master to distinguish the two cases.
-            val tableExists = driver.executeQuery<Long>(
-                identifier = null,
-                sql = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='NetworkCall'",
-                mapper = { QueryResult.Value(it.getLong(0) ?: 0L) },
-                parameters = 0,
-            ).value > 0L
+            val tableExists =
+                driver
+                    .executeQuery<Long>(
+                        identifier = null,
+                        sql =
+                            "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='NetworkCall'",
+                        mapper = { QueryResult.Value(it.getLong(0) ?: 0L) },
+                        parameters = 0,
+                    )
+                    .value > 0L
             if (!tableExists) schema.create(driver)
             driver.execute(null, "PRAGMA user_version = $schemaVersion", 0)
         }
-        currentVersion < schemaVersion ->
-            schema.migrate(driver, currentVersion, schemaVersion)
+        currentVersion < schemaVersion -> schema.migrate(driver, currentVersion, schemaVersion)
     }
     return driver
 }

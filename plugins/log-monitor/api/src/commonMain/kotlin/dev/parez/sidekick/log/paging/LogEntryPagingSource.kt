@@ -7,9 +7,9 @@ import app.cash.sqldelight.async.coroutines.awaitAsList
 import dev.parez.sidekick.log.LogEntry
 import dev.parez.sidekick.log.LogFilter
 import dev.parez.sidekick.log.LogLevel
+import dev.parez.sidekick.log.db.LogEntry as DbLogEntry
 import dev.parez.sidekick.log.db.LogMonitorDatabase
 import dev.parez.sidekick.log.decodeToMetadataMap
-import dev.parez.sidekick.log.db.LogEntry as DbLogEntry
 
 internal class LogEntryPagingSource(
     private val db: LogMonitorDatabase,
@@ -34,16 +34,17 @@ internal class LogEntryPagingSource(
         val limit = params.loadSize.toLong()
         val token = filter.toLikeToken()
         return try {
-            val rows = if (filter.levels.isEmpty()) {
-                db.logEntryQueries
-                    .selectPagedFilteredAllLevels(token, limit, offset.toLong())
-                    .awaitAsList()
-            } else {
-                val levelNames = filter.levels.map { it.name }.toSet()
-                db.logEntryQueries
-                    .selectPagedFiltered(token, levelNames, limit, offset.toLong())
-                    .awaitAsList()
-            }
+            val rows =
+                if (filter.levels.isEmpty()) {
+                    db.logEntryQueries
+                        .selectPagedFilteredAllLevels(token, limit, offset.toLong())
+                        .awaitAsList()
+                } else {
+                    val levelNames = filter.levels.map { it.name }.toSet()
+                    db.logEntryQueries
+                        .selectPagedFiltered(token, levelNames, limit, offset.toLong())
+                        .awaitAsList()
+                }
             val mapped = rows.map { it.toDomain() }
             LoadResult.Page(
                 data = mapped,
@@ -56,12 +57,13 @@ internal class LogEntryPagingSource(
     }
 }
 
-internal fun DbLogEntry.toDomain() = LogEntry(
-    id = id,
-    timestamp = timestamp,
-    level = LogLevel.entries.firstOrNull { it.name == level } ?: LogLevel.DEBUG,
-    tag = tag,
-    message = message,
-    throwable = throwable,
-    metadata = metadata?.decodeToMetadataMap(),
-)
+internal fun DbLogEntry.toDomain() =
+    LogEntry(
+        id = id,
+        timestamp = timestamp,
+        level = LogLevel.entries.firstOrNull { it.name == level } ?: LogLevel.DEBUG,
+        tag = tag,
+        message = message,
+        throwable = throwable,
+        metadata = metadata?.decodeToMetadataMap(),
+    )

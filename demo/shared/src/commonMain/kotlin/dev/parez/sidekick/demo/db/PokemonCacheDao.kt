@@ -14,9 +14,7 @@ interface PokemonCacheDao {
     @Query("SELECT * FROM pokemon_detail WHERE id = :id")
     fun observeDetail(id: Int): Flow<PokemonDetailEntity?>
 
-    @Upsert
-    suspend fun upsertListEntries(entities: List<PokemonListEntity>)
+    @Upsert suspend fun upsertListEntries(entities: List<PokemonListEntity>)
 
-    @Upsert
-    suspend fun upsertDetail(entity: PokemonDetailEntity)
+    @Upsert suspend fun upsertDetail(entity: PokemonDetailEntity)
 }

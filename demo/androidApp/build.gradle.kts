@@ -1,6 +1,4 @@
-plugins {
-    alias(libs.plugins.androidApplication)
-}
+plugins { alias(libs.plugins.androidApplication) }
 
 android {
     namespace = "dev.parez.sidekick.demo.app"
@@ -17,16 +15,8 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    buildTypes {
-        getByName("release") {
-            isMinifyEnabled = false
-        }
-    }
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
-    }
+    buildTypes { getByName("release") { isMinifyEnabled = false } }
+    packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
 }
 
 dependencies {

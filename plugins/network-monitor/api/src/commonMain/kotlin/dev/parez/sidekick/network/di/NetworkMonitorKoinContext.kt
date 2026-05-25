@@ -14,15 +14,15 @@ import org.koin.dsl.module
 /**
  * Isolated Koin context for the Network Monitor plugin.
  *
- * Holds its own [KoinApplication] so the plugin's DI graph never leaks into
- * or conflicts with a consuming application's Koin instance.
+ * Holds its own [KoinApplication] so the plugin's DI graph never leaks into or conflicts with a
+ * consuming application's Koin instance.
  *
  * The [networkMonitorCoreModule] registers:
  * - A shared [CoroutineScope] for background I/O
  * - [NetworkMonitorStore] as a singleton (the single source of truth for HTTP traffic)
  *
- * The `network-monitor:plugin` module extends this context with its ViewModel module
- * via [loadViewModelModule], called once from [dev.parez.sidekick.network.NetworkMonitorPlugin].
+ * The `network-monitor:plugin` module extends this context with its ViewModel module via
+ * [loadViewModelModule], called once from [dev.parez.sidekick.network.NetworkMonitorPlugin].
  *
  * Usage in Compose:
  * ```kotlin
@@ -33,24 +33,23 @@ import org.koin.dsl.module
  */
 public object NetworkMonitorKoinContext {
 
-    public val koinApp: KoinApplication = koinApplication {
-        modules(networkMonitorCoreModule)
-    }
+    public val koinApp: KoinApplication = koinApplication { modules(networkMonitorCoreModule) }
 
-    internal val koin get() = koinApp.koin
+    internal val koin
+        get() = koinApp.koin
 
     private val viewModelModuleLoaded = MutableStateFlow(false)
 
     /**
-     * Returns the singleton [NetworkMonitorStore] from this isolated Koin context.
-     * Used as the default value in [dev.parez.sidekick.network.ktor.NetworkMonitorKtorConfig]
-     * so that the `network-monitor:ktor` module does not need a direct Koin dependency.
+     * Returns the singleton [NetworkMonitorStore] from this isolated Koin context. Used as the
+     * default value in [dev.parez.sidekick.network.ktor.NetworkMonitorKtorConfig] so that the
+     * `network-monitor:ktor` module does not need a direct Koin dependency.
      */
     public fun getDefaultStore(): NetworkMonitorStore = koin.get()
 
     /**
-     * Loads an additional [module] (e.g. the ViewModel module from `network-monitor:plugin`)
-     * into this context exactly once. Subsequent calls are no-ops.
+     * Loads an additional [module] (e.g. the ViewModel module from `network-monitor:plugin`) into
+     * this context exactly once. Subsequent calls are no-ops.
      */
     public fun loadViewModelModule(module: Module) {
         if (viewModelModuleLoaded.compareAndSet(expect = false, update = true)) {

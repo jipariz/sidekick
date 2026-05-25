@@ -1,6 +1,5 @@
-plugins {
-    id("sidekick.kmp.library")
-}
+plugins { id("sidekick.kmp.library") }
+
 kotlin {
     androidLibrary {
         // AGP requires a unique namespace per library, so this cannot match the

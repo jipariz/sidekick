@@ -15,9 +15,10 @@ import com.svenjacobs.reveal.shapes.balloon.Balloon
 @Composable
 internal fun RevealOverlayScope.SidekickRevealOverlay(key: RevealKey?) {
     when (key) {
-        RevealKey.SidekickFab -> FabTooltip(
-            modifier = Modifier.align(horizontalArrangement = RevealOverlayArrangement.Start),
-        )
+        RevealKey.SidekickFab ->
+            FabTooltip(
+                modifier = Modifier.align(horizontalArrangement = RevealOverlayArrangement.Start)
+            )
         null -> {}
     }
 }

@@ -86,18 +86,14 @@ internal fun NetworkCallListPane(
                     }
                 },
             )
-        },
+        }
     ) {
-        Column(
-            Modifier
-                .padding(it)
-                .fillMaxSize(),
-        ) {
+        Column(Modifier.padding(it).fillMaxSize()) {
             // ── Search bar ────────────────────────────────────────────────────────
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 OutlinedTextField(
@@ -119,10 +115,12 @@ internal fun NetworkCallListPane(
                         )
                     },
                     singleLine = true,
-                    textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                    ),
+                    textStyle =
+                        MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                    colors =
+                        OutlinedTextFieldDefaults.colors(
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                        ),
                     shape = MaterialTheme.shapes.small,
                 )
                 Spacer(Modifier.width(4.dp))
@@ -137,10 +135,10 @@ internal fun NetworkCallListPane(
 
             // ── Method filter chips ───────────────────────────────────────────────
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -163,9 +161,7 @@ internal fun NetworkCallListPane(
 
             // ── Stats row ─────────────────────────────────────────────────────────
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -187,49 +183,50 @@ internal fun NetworkCallListPane(
             val refresh = lazyItems.loadState.refresh
             val isEmpty = lazyItems.itemCount == 0 && refresh is LoadState.NotLoading
             when {
-                isEmpty -> NetworkCallEmptyState(
-                    isFiltered = query.isNotBlank() || methodFilter.isNotEmpty(),
-                )
+                isEmpty ->
+                    NetworkCallEmptyState(
+                        isFiltered = query.isNotBlank() || methodFilter.isNotEmpty()
+                    )
 
-                refresh is LoadState.Error -> NetworkCallErrorState(
-                    error = refresh.error,
-                    onRetry = lazyItems::retry,
-                )
+                refresh is LoadState.Error ->
+                    NetworkCallErrorState(error = refresh.error, onRetry = lazyItems::retry)
 
-                else -> LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 8.dp),
-                ) {
-                    items(
-                        count = lazyItems.itemCount,
-                        key = lazyItems.itemKey { it.id },
-                        contentType = lazyItems.itemContentType { "NetworkCall" },
-                    ) { index ->
-                        val call = lazyItems[index] ?: return@items
-                        NetworkCallRow(
-                            call = call,
-                            isSelected = selected?.id == call.id,
-                            showChevron = showChevron,
-                            onClick = { onSelect(call) },
-                        )
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                            modifier = Modifier.padding(start = 56.dp),
-                        )
-                    }
-
-                    when (val appendState = lazyItems.loadState.append) {
-                        is LoadState.Loading -> item { AppendLoadingRow() }
-                        is LoadState.Error -> item {
-                            AppendErrorRow(
-                                error = appendState.error,
-                                onRetry = lazyItems::retry,
+                else ->
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 8.dp),
+                    ) {
+                        items(
+                            count = lazyItems.itemCount,
+                            key = lazyItems.itemKey { it.id },
+                            contentType = lazyItems.itemContentType { "NetworkCall" },
+                        ) { index ->
+                            val call = lazyItems[index] ?: return@items
+                            NetworkCallRow(
+                                call = call,
+                                isSelected = selected?.id == call.id,
+                                showChevron = showChevron,
+                                onClick = { onSelect(call) },
+                            )
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                                modifier = Modifier.padding(start = 56.dp),
                             )
                         }
 
-                        is LoadState.NotLoading -> Unit
+                        when (val appendState = lazyItems.loadState.append) {
+                            is LoadState.Loading -> item { AppendLoadingRow() }
+                            is LoadState.Error ->
+                                item {
+                                    AppendErrorRow(
+                                        error = appendState.error,
+                                        onRetry = lazyItems::retry,
+                                    )
+                                }
+
+                            is LoadState.NotLoading -> Unit
+                        }
                     }
-                }
             }
         }
     }
@@ -238,9 +235,7 @@ internal fun NetworkCallListPane(
 @Composable
 private fun AppendLoadingRow() {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.Center,
     ) {
         CircularProgressIndicator(modifier = Modifier.size(20.dp))
@@ -250,9 +245,7 @@ private fun AppendLoadingRow() {
 @Composable
 private fun AppendErrorRow(error: Throwable, onRetry: () -> Unit) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -309,15 +302,13 @@ private fun NetworkCallRow(
     val selectionColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
 
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(if (isSelected) selectionColor else Color.Transparent)
-            .clickable(onClick = onClick),
+        modifier =
+            Modifier.fillMaxWidth()
+                .background(if (isSelected) selectionColor else Color.Transparent)
+                .clickable(onClick = onClick)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
@@ -395,19 +386,16 @@ private fun NetworkCallRow(
 @Composable
 internal fun MethodBadge(method: String, modifier: Modifier = Modifier) {
     val cs = MaterialTheme.colorScheme
-    val bg = when (method.uppercase()) {
-        "GET" -> cs.primary
-        "POST" -> cs.secondary
-        "PUT" -> cs.tertiary
-        "DELETE" -> cs.error
-        "PATCH" -> cs.tertiaryContainer
-        else -> cs.outline
-    }
-    Surface(
-        color = bg,
-        shape = MaterialTheme.shapes.extraSmall,
-        modifier = modifier,
-    ) {
+    val bg =
+        when (method.uppercase()) {
+            "GET" -> cs.primary
+            "POST" -> cs.secondary
+            "PUT" -> cs.tertiary
+            "DELETE" -> cs.error
+            "PATCH" -> cs.tertiaryContainer
+            else -> cs.outline
+        }
+    Surface(color = bg, shape = MaterialTheme.shapes.extraSmall, modifier = modifier) {
         Text(
             text = method.uppercase().take(6),
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
@@ -421,21 +409,23 @@ internal fun MethodBadge(method: String, modifier: Modifier = Modifier) {
 @Composable
 internal fun StatusChip(call: NetworkCall) {
     val cs = MaterialTheme.colorScheme
-    val (text, bg) = when (call.status) {
-        CallStatus.PENDING -> "●  PENDING" to cs.outlineVariant
-        CallStatus.ERROR -> "ERR" to cs.error
-        CallStatus.COMPLETE -> {
-            val code = call.responseCode ?: 0
-            val label = "$code ${statusText(code)}".trim()
-            val c = when {
-                code < 300 -> cs.secondary
-                code < 400 -> cs.primary
-                code < 500 -> cs.tertiary
-                else -> cs.error
+    val (text, bg) =
+        when (call.status) {
+            CallStatus.PENDING -> "●  PENDING" to cs.outlineVariant
+            CallStatus.ERROR -> "ERR" to cs.error
+            CallStatus.COMPLETE -> {
+                val code = call.responseCode ?: 0
+                val label = "$code ${statusText(code)}".trim()
+                val c =
+                    when {
+                        code < 300 -> cs.secondary
+                        code < 400 -> cs.primary
+                        code < 500 -> cs.tertiary
+                        else -> cs.error
+                    }
+                label to c
             }
-            label to c
         }
-    }
     Surface(color = bg, shape = MaterialTheme.shapes.extraSmall) {
         Text(
             text = text,
@@ -466,7 +456,9 @@ private fun NetworkCallEmptyState(isFiltered: Boolean) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = if (isFiltered) "Adjust filters or search to see results" else "Make a network call to see it here",
+                text =
+                    if (isFiltered) "Adjust filters or search to see results"
+                    else "Make a network call to see it here",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
             )

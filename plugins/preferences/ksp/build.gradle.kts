@@ -8,6 +8,7 @@ plugins {
 }
 
 group = "dev.parez.sidekick"
+
 // version is set by sidekick.version.read from version.properties
 
 dependencies {
@@ -18,12 +19,17 @@ dependencies {
 }
 
 mavenPublishing {
-    coordinates("dev.parez.sidekick", "preferences-ksp", project.version.toString()) // version from sidekick.version.read
+    coordinates(
+        "dev.parez.sidekick",
+        "preferences-ksp",
+        project.version.toString(),
+    ) // version from sidekick.version.read
     configure(KotlinJvm(javadocJar = JavadocJar.Empty()))
     publishToMavenCentral(automaticRelease = false)
 
-    val hasSigningKey = providers.environmentVariable("ORG_GRADLE_PROJECT_signingInMemoryKey").isPresent ||
-        providers.gradleProperty("signingInMemoryKey").isPresent
+    val hasSigningKey =
+        providers.environmentVariable("ORG_GRADLE_PROJECT_signingInMemoryKey").isPresent ||
+            providers.gradleProperty("signingInMemoryKey").isPresent
     if (hasSigningKey) {
         signAllPublications()
     }

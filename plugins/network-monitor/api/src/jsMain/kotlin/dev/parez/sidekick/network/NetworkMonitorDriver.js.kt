@@ -7,5 +7,10 @@ import org.w3c.dom.Worker
 
 internal actual suspend fun createNetworkMonitorDriver(): SqlDriver? =
     WebWorkerDriver(
-        Worker(js("""new URL("@cashapp/sqldelight-sqljs-worker/sqljs.worker.js", import.meta.url)"""))
-    ).also { NetworkMonitorDatabase.Schema.create(it).await() }
+            Worker(
+                js(
+                    """new URL("@cashapp/sqldelight-sqljs-worker/sqljs.worker.js", import.meta.url)"""
+                )
+            )
+        )
+        .also { NetworkMonitorDatabase.Schema.create(it).await() }

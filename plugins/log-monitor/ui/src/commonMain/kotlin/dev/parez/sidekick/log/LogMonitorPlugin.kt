@@ -17,9 +17,7 @@ import kotlin.time.Duration.Companion.hours
 import org.koin.compose.KoinIsolatedContext
 import org.koin.compose.viewmodel.koinViewModel
 
-class LogMonitorPlugin(
-    retentionPeriod: Duration = 1.hours,
-) : SidekickPlugin {
+class LogMonitorPlugin(retentionPeriod: Duration = 1.hours) : SidekickPlugin {
 
     init {
         LogMonitorKoinContext.loadViewModelModule(logMonitorViewModelModule)

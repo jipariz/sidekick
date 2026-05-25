@@ -14,19 +14,20 @@ class LocalStoragePreferenceStore(private val storeName: String) : PreferenceSto
     override fun <T : Any> observe(key: String, defaultValue: T): StateFlow<T> {
         return cache.getOrPut(key) {
             val stored = localStorage.getItem("$storeName.$key")
-            val initial: Any = if (stored != null) {
-                when (defaultValue) {
-                    is Boolean -> stored.toBoolean()
-                    is String  -> stored
-                    is Int     -> stored.toIntOrNull()    ?: defaultValue
-                    is Long    -> stored.toLongOrNull()   ?: defaultValue
-                    is Float   -> stored.toFloatOrNull()  ?: defaultValue
-                    is Double  -> stored.toDoubleOrNull() ?: defaultValue
-                    else       -> defaultValue
+            val initial: Any =
+                if (stored != null) {
+                    when (defaultValue) {
+                        is Boolean -> stored.toBoolean()
+                        is String -> stored
+                        is Int -> stored.toIntOrNull() ?: defaultValue
+                        is Long -> stored.toLongOrNull() ?: defaultValue
+                        is Float -> stored.toFloatOrNull() ?: defaultValue
+                        is Double -> stored.toDoubleOrNull() ?: defaultValue
+                        else -> defaultValue
+                    }
+                } else {
+                    defaultValue
                 }
-            } else {
-                defaultValue
-            }
             MutableStateFlow(initial)
         } as StateFlow<T>
     }

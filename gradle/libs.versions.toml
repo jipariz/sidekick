@@ -40,6 +40,8 @@ reveal = "4.2.0"
 vanniktechMavenPublish = "0.36.0"
 androidxPaging = "3.5.0"
 navigation3Browser = "1.0.0"
+reorderable = "3.1.0"
+ktfmt = "0.26.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -137,6 +139,10 @@ androidx-paging-compose = { module = "androidx.paging:paging-compose", version.r
 # terrakok's tiny lib that wires androidx.navigation3 to the browser History API
 # (back/forward → backstack). Web targets only (js/wasmJs).
 navigation3-browser = { module = "com.github.terrakok:navigation3-browser", version.ref = "navigation3Browser" }
+# Calvin Liang's drag-to-reorder lib for Compose Multiplatform — used by
+# core/shell to let developers rearrange the plugin menu tiles. Publishes
+# android, iosArm64, iosSimulatorArm64, jvm, js, wasmJs variants.
+reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
 
 
 [plugins]
@@ -153,3 +159,4 @@ sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 kotlinxSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 room3               = { id = "androidx.room3",                              version.ref = "room3" }
 vanniktechMavenPublish = { id = "com.vanniktech.maven.publish",             version.ref = "vanniktechMavenPublish" }
+ktfmt = { id = "com.ncorti.ktfmt.gradle", version.ref = "ktfmt" }

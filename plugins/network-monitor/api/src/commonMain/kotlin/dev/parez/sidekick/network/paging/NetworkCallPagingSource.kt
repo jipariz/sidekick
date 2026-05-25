@@ -7,9 +7,9 @@ import app.cash.sqldelight.async.coroutines.awaitAsList
 import dev.parez.sidekick.network.CallStatus
 import dev.parez.sidekick.network.NetworkCall
 import dev.parez.sidekick.network.NetworkFilter
+import dev.parez.sidekick.network.db.NetworkCall as DbNetworkCall
 import dev.parez.sidekick.network.db.NetworkMonitorDatabase
 import dev.parez.sidekick.network.decodeToHeaderMap
-import dev.parez.sidekick.network.db.NetworkCall as DbNetworkCall
 
 internal class NetworkCallPagingSource(
     private val db: NetworkMonitorDatabase,
@@ -34,15 +34,16 @@ internal class NetworkCallPagingSource(
         val limit = params.loadSize.toLong()
         val token = filter.toLikeToken()
         return try {
-            val rows = if (filter.methods.isEmpty()) {
-                db.networkCallQueries
-                    .selectPagedFilteredAllMethods(token, limit, offset.toLong())
-                    .awaitAsList()
-            } else {
-                db.networkCallQueries
-                    .selectPagedFiltered(token, filter.methods, limit, offset.toLong())
-                    .awaitAsList()
-            }
+            val rows =
+                if (filter.methods.isEmpty()) {
+                    db.networkCallQueries
+                        .selectPagedFilteredAllMethods(token, limit, offset.toLong())
+                        .awaitAsList()
+                } else {
+                    db.networkCallQueries
+                        .selectPagedFiltered(token, filter.methods, limit, offset.toLong())
+                        .awaitAsList()
+                }
             val mapped = rows.map { it.toDomain() }
             LoadResult.Page(
                 data = mapped,
@@ -55,21 +56,23 @@ internal class NetworkCallPagingSource(
     }
 }
 
-internal fun DbNetworkCall.toDomain() = NetworkCall(
-    id = id,
-    url = url,
-    method = method,
-    requestHeaders = requestHeaders.decodeToHeaderMap(),
-    requestBody = requestBody,
-    requestTimestamp = requestTimestamp,
-    responseCode = responseCode?.toInt(),
-    responseHeaders = responseHeaders.decodeToHeaderMap(),
-    responseBody = responseBody,
-    responseTimestamp = responseTimestamp,
-    error = error,
-    status = when (status) {
-        "COMPLETE" -> CallStatus.COMPLETE
-        "ERROR" -> CallStatus.ERROR
-        else -> CallStatus.PENDING
-    },
-)
+internal fun DbNetworkCall.toDomain() =
+    NetworkCall(
+        id = id,
+        url = url,
+        method = method,
+        requestHeaders = requestHeaders.decodeToHeaderMap(),
+        requestBody = requestBody,
+        requestTimestamp = requestTimestamp,
+        responseCode = responseCode?.toInt(),
+        responseHeaders = responseHeaders.decodeToHeaderMap(),
+        responseBody = responseBody,
+        responseTimestamp = responseTimestamp,
+        error = error,
+        status =
+            when (status) {
+                "COMPLETE" -> CallStatus.COMPLETE
+                "ERROR" -> CallStatus.ERROR
+                else -> CallStatus.PENDING
+            },
+    )

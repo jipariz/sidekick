@@ -19,19 +19,19 @@ import dev.parez.sidekick.plugin.LocalSidekickBackNavigator
 import dev.parez.sidekick.plugin.SidekickPlugin
 
 /**
- * A [SidekickPlugin] that renders any Composable as a first-class debug screen
- * in the Sidekick overlay.
+ * A [SidekickPlugin] that renders any Composable as a first-class debug screen in the Sidekick
+ * overlay.
  *
- * Each instance appears as its own card in the plugin grid. Create as many
- * instances as needed and pass them all to [dev.parez.sidekick.Sidekick].
+ * Each instance appears as its own card in the plugin grid. Create as many instances as needed and
+ * pass them all to [dev.parez.sidekick.Sidekick].
  *
- * Any DI framework (Koin, Hilt, custom [androidx.compose.runtime.CompositionLocal]s, …)
- * works inside [content] because it executes inside the host app's composition tree —
- * Sidekick does not override DI-related CompositionLocals.
+ * Any DI framework (Koin, Hilt, custom [androidx.compose.runtime.CompositionLocal]s, …) works
+ * inside [content] because it executes inside the host app's composition tree — Sidekick does not
+ * override DI-related CompositionLocals.
  *
- * @param id      Unique identifier for this screen (kebab-case recommended).
- * @param title   Label shown in the plugin grid card and screen header.
- * @param icon    Icon shown in the plugin grid card.
+ * @param id Unique identifier for this screen (kebab-case recommended).
+ * @param title Label shown in the plugin grid card and screen header.
+ * @param icon Icon shown in the plugin grid card.
  * @param content Composable rendered when the user opens this screen.
  */
 class CustomScreenPlugin(
@@ -57,18 +57,13 @@ class CustomScreenPlugin(
                     },
                     navigationIcon = {
                         IconButton(onClick = navigateBack) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back"
-                            )
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
-                    }
+                    },
                 )
             }
         ) {
-            Box(modifier = Modifier.padding(it)) {
-                content()
-            }
+            Box(modifier = Modifier.padding(it)) { content() }
         }
     }
 }

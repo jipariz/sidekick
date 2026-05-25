@@ -4,6 +4,4 @@ import dev.parez.sidekick.log.LogMonitorViewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
-internal val logMonitorViewModelModule = module {
-    viewModelOf(::LogMonitorViewModel)
-}
+internal val logMonitorViewModelModule = module { viewModelOf(::LogMonitorViewModel) }

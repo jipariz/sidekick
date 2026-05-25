@@ -12,18 +12,17 @@ import com.github.terrakok.navigation3.browser.getBrowserHistoryFragmentParamete
  * Web actual — binds the nav3 [backStack] to the browser History via terrakok's
  * `navigation3-browser` chronological binding.
  *
- *   - [PokemonListKey]      → `#home`
- *   - [PokemonDetailKey]    → `#pokemon?id=…&name=…`
+ * - [PokemonListKey] → `#home`
+ * - [PokemonDetailKey] → `#pokemon?id=…&name=…`
  *
- * The lib observes the backstack and writes to history; it also rewrites the
- * backstack on browser back/forward and on first-load deep links. We're using
- * the [NavBackStack]-typed overload (not the generic `SnapshotStateList<T>`
- * one), so the keys we hand it are real [NavKey] instances and `restoreKey`
- * is allowed to round-trip every member of the stack.
+ * The lib observes the backstack and writes to history; it also rewrites the backstack on browser
+ * back/forward and on first-load deep links. We're using the [NavBackStack]-typed overload (not the
+ * generic `SnapshotStateList<T>` one), so the keys we hand it are real [NavKey] instances and
+ * `restoreKey` is allowed to round-trip every member of the stack.
  *
- * Note: `restoreKey` must return non-null for any key that should be restorable
- * on browser back/forward — a `null` return is the lib's parse-failure sentinel
- * and aborts the popstate restore.
+ * Note: `restoreKey` must return non-null for any key that should be restorable on browser
+ * back/forward — a `null` return is the lib's parse-failure sentinel and aborts the popstate
+ * restore.
  */
 @Composable
 actual fun BrowserHistoryEffect(backStack: NavBackStack<NavKey>) {
@@ -32,10 +31,11 @@ actual fun BrowserHistoryEffect(backStack: NavBackStack<NavKey>) {
         saveKey = { key ->
             when (key) {
                 is PokemonListKey -> buildBrowserHistoryFragment("home")
-                is PokemonDetailKey -> buildBrowserHistoryFragment(
-                    name = "pokemon",
-                    parameters = mapOf("id" to key.id.toString(), "name" to key.name),
-                )
+                is PokemonDetailKey ->
+                    buildBrowserHistoryFragment(
+                        name = "pokemon",
+                        parameters = mapOf("id" to key.id.toString(), "name" to key.name),
+                    )
                 is SidekickKey -> buildBrowserHistoryFragment("sidekick")
                 else -> null
             }

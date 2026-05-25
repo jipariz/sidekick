@@ -2,10 +2,9 @@ plugins {
     id("sidekick.kmp.library")
     alias(libs.plugins.sqldelight)
 }
+
 kotlin {
-    androidLibrary {
-        namespace = "dev.parez.sidekick.network"
-    }
+    androidLibrary { namespace = "dev.parez.sidekick.network" }
     sourceSets {
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutinesCore)
@@ -21,19 +20,14 @@ kotlin {
             implementation(libs.sqldelight.driver.android)
             implementation(libs.koin.android)
         }
-        iosMain.dependencies {
-            implementation(libs.sqldelight.driver.native)
-        }
-        jvmMain.dependencies {
-            implementation(libs.sqldelight.driver.sqlite)
-        }
+        iosMain.dependencies { implementation(libs.sqldelight.driver.native) }
+        jvmMain.dependencies { implementation(libs.sqldelight.driver.sqlite) }
         // web-worker-driver only publishes a js variant, not wasmJs.
         // wasmJsMain returns null from createNetworkMonitorDriver() and falls back to in-memory.
-        jsMain.dependencies {
-            implementation(libs.sqldelight.driver.web)
-        }
+        jsMain.dependencies { implementation(libs.sqldelight.driver.web) }
     }
 }
+
 sqldelight {
     databases {
         create("NetworkMonitorDatabase") {

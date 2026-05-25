@@ -13,7 +13,10 @@ import kotlinx.serialization.json.Json
 
 class RoomPokemonCache(private val dao: PokemonCacheDao) : PokemonCache {
 
-    private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        coerceInputValues = true
+    }
 
     override fun observeAll(): Flow<List<PokemonListEntry>> =
         dao.observeListEntries()
@@ -21,9 +24,7 @@ class RoomPokemonCache(private val dao: PokemonCacheDao) : PokemonCache {
             .map { rows -> rows.map { it.toListEntry() } }
 
     override fun observeDetail(id: Int): Flow<PokemonDetail?> =
-        dao.observeDetail(id)
-            .onStart { emit(null) }
-            .map { row -> row?.toDetail() }
+        dao.observeDetail(id).onStart { emit(null) }.map { row -> row?.toDetail() }
 
     override suspend fun saveListEntries(entries: List<PokemonListEntry>) {
         dao.upsertListEntries(entries.map { it.toListRow() })
@@ -35,33 +36,30 @@ class RoomPokemonCache(private val dao: PokemonCacheDao) : PokemonCache {
 
     // ── Mapping helpers ──────────────────────────────────────────────────────
 
-    private fun PokemonListEntity.toListEntry() = PokemonListEntry(
-        name = name,
-        url = "https://pokeapi.co/api/v2/pokemon/$id/",
-    )
+    private fun PokemonListEntity.toListEntry() =
+        PokemonListEntry(name = name, url = "https://pokeapi.co/api/v2/pokemon/$id/")
 
-    private fun PokemonDetailEntity.toDetail() = PokemonDetail(
-        id = id,
-        name = name,
-        height = height,
-        weight = weight,
-        types = json.decodeFromString<List<TypeSlot>>(typesJson),
-        stats = json.decodeFromString<List<StatEntry>>(statsJson),
-        abilities = json.decodeFromString<List<AbilitySlot>>(abilitiesJson),
-    )
+    private fun PokemonDetailEntity.toDetail() =
+        PokemonDetail(
+            id = id,
+            name = name,
+            height = height,
+            weight = weight,
+            types = json.decodeFromString<List<TypeSlot>>(typesJson),
+            stats = json.decodeFromString<List<StatEntry>>(statsJson),
+            abilities = json.decodeFromString<List<AbilitySlot>>(abilitiesJson),
+        )
 
-    private fun PokemonListEntry.toListRow() = PokemonListEntity(
-        id = id,
-        name = name,
-    )
+    private fun PokemonListEntry.toListRow() = PokemonListEntity(id = id, name = name)
 
-    private fun PokemonDetail.toDetailRow() = PokemonDetailEntity(
-        id = id,
-        name = name,
-        height = height,
-        weight = weight,
-        typesJson = json.encodeToString(types),
-        statsJson = json.encodeToString(stats),
-        abilitiesJson = json.encodeToString(abilities),
-    )
+    private fun PokemonDetail.toDetailRow() =
+        PokemonDetailEntity(
+            id = id,
+            name = name,
+            height = height,
+            weight = weight,
+            typesJson = json.encodeToString(types),
+            statsJson = json.encodeToString(stats),
+            abilitiesJson = json.encodeToString(abilities),
+        )
 }

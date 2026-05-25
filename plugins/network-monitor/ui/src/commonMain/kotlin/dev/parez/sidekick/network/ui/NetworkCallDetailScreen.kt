@@ -20,7 +20,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudUpload
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Schedule
@@ -29,9 +28,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -55,21 +54,19 @@ import dev.parez.sidekick.network.NetworkCall
 
 /**
  * Detail pane for the Network Monitor. Works in three layouts:
- *  - **Compact (single-pane)**: list collapses, detail shows with both
- *    Request / Response tabs.
- *  - **Medium (two-pane)**: list + detail; tabs still drive Request / Response.
- *  - **Expanded (three-pane)**: list + detail + extra. Response moves to the
- *    extra pane ([NetworkCallResponsePane]) and this pane drops the tabs,
- *    rendering Request only — controlled by [hideResponseTab].
+ * - **Compact (single-pane)**: list collapses, detail shows with both Request / Response tabs.
+ * - **Medium (two-pane)**: list + detail; tabs still drive Request / Response.
+ * - **Expanded (three-pane)**: list + detail + extra. Response moves to the extra pane
+ *   ([NetworkCallResponsePane]) and this pane drops the tabs, rendering Request only — controlled
+ *   by [hideResponseTab].
  *
- * @param showBackButton  When true (compact mode) shows a back arrow in the TopAppBar.
- *                        When false (two/three-pane) shows nothing.
- * @param onBack          Called when the back arrow is tapped (compact) or when
- *                        the pane should be dismissed.
- * @param hideResponseTab When true, the Request/Response tab row is omitted and
- *                        only the Request body is rendered. Set by
- *                        `NetworkMonitorContent` when the scaffold's extra pane
- *                        is visible so Response lives there instead.
+ * @param showBackButton When true (compact mode) shows a back arrow in the TopAppBar. When false
+ *   (two/three-pane) shows nothing.
+ * @param onBack Called when the back arrow is tapped (compact) or when the pane should be
+ *   dismissed.
+ * @param hideResponseTab When true, the Request/Response tab row is omitted and only the Request
+ *   body is rendered. Set by `NetworkMonitorContent` when the scaffold's extra pane is visible so
+ *   Response lives there instead.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -132,69 +129,65 @@ internal fun NetworkCallDetailPane(
                         }
                     }
                 },
-                actions = {
-                    MethodBadge(call.method, modifier = Modifier.padding(end = 12.dp))
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                ),
+                actions = { MethodBadge(call.method, modifier = Modifier.padding(end = 12.dp)) },
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    ),
             )
         }
     ) {
-    Column(Modifier
-        .padding(it)
-        .fillMaxSize()
-    ) {
-        // ── Status summary strip ──────────────────────────────────────────────
-        // Show only when the response is rendered in this pane (tabs or compact).
-        // In 3-pane mode the response lives next door, so its summary goes there.
-        if (!hideResponseTab) {
-            StatusSummaryStrip(call)
-        }
+        Column(Modifier.padding(it).fillMaxSize()) {
+            // ── Status summary strip ──────────────────────────────────────────────
+            // Show only when the response is rendered in this pane (tabs or compact).
+            // In 3-pane mode the response lives next door, so its summary goes there.
+            if (!hideResponseTab) {
+                StatusSummaryStrip(call)
+            }
 
-        // ── Tabs ──────────────────────────────────────────────────────────────
-        if (!hideResponseTab) {
-            PrimaryTabRow(selectedTabIndex = selectedTab) {
-                Tab(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    icon = {
-                        Icon(
-                            Icons.Default.CloudUpload,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                    },
-                    text = { Text("Request") },
-                )
-                Tab(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    icon = {
-                        Icon(
-                            Icons.Default.CloudDownload,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                    },
-                    text = { Text("Response") },
-                )
+            // ── Tabs ──────────────────────────────────────────────────────────────
+            if (!hideResponseTab) {
+                PrimaryTabRow(selectedTabIndex = selectedTab) {
+                    Tab(
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 },
+                        icon = {
+                            Icon(
+                                Icons.Default.CloudUpload,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        },
+                        text = { Text("Request") },
+                    )
+                    Tab(
+                        selected = selectedTab == 1,
+                        onClick = { selectedTab = 1 },
+                        icon = {
+                            Icon(
+                                Icons.Default.CloudDownload,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        },
+                        text = { Text("Response") },
+                    )
+                }
+            }
+
+            // ── Tab content ───────────────────────────────────────────────────────
+            when (selectedTab) {
+                0 -> RequestTab(call)
+                1 -> ResponseTab(call)
             }
         }
-
-        // ── Tab content ───────────────────────────────────────────────────────
-        when (selectedTab) {
-            0 -> RequestTab(call)
-            1 -> ResponseTab(call)
-        }
     }
-        }
 }
 
 /**
- * Header used by both the Request and Response panes. The tonal-tinted icon
- * disc + small-caps label give the pane a strong directional identity (sent
- * vs received) before the user reads any of the call detail.
+ * Header used by both the Request and Response panes. The tonal-tinted icon disc + small-caps label
+ * give the pane a strong directional identity (sent vs received) before the user reads any of the
+ * call detail.
  */
 @Composable
 private fun PaneIdentity(
@@ -209,11 +202,7 @@ private fun PaneIdentity(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Surface(
-            color = iconContainer,
-            shape = CircleShape,
-            modifier = Modifier.size(36.dp),
-        ) {
+        Surface(color = iconContainer, shape = CircleShape, modifier = Modifier.size(36.dp)) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     icon,
@@ -251,24 +240,24 @@ private fun PaneIdentity(
 }
 
 /**
- * Supporting (extra) pane that shows only the response side of a call. Used
- * by `NetworkMonitorContent` on wide windows where the scaffold can fit three
- * panes — list + detail (Request) + extra (Response).
+ * Supporting (extra) pane that shows only the response side of a call. Used by
+ * `NetworkMonitorContent` on wide windows where the scaffold can fit three panes — list + detail
+ * (Request) + extra (Response).
  *
- * Visually mirrors the Request pane's identity using the opposite direction
- * (CloudDownload + tertiary tonal accent) so the two panes read as "sent"
- * and "received" without the user having to scan their contents.
+ * Visually mirrors the Request pane's identity using the opposite direction (CloudDownload +
+ * tertiary tonal accent) so the two panes read as "sent" and "received" without the user having to
+ * scan their contents.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun NetworkCallResponsePane(call: NetworkCall) {
-    val primary = when (call.status) {
-        CallStatus.PENDING -> "Pending"
-        CallStatus.ERROR -> "Network error"
-        CallStatus.COMPLETE -> call.responseCode?.let { code ->
-            "$code ${statusText(code)}".trim()
-        } ?: "—"
-    }
+    val primary =
+        when (call.status) {
+            CallStatus.PENDING -> "Pending"
+            CallStatus.ERROR -> "Network error"
+            CallStatus.COMPLETE ->
+                call.responseCode?.let { code -> "$code ${statusText(code)}".trim() } ?: "—"
+        }
     val secondary = call.durationMs?.let { "${it}ms" }
 
     Scaffold(
@@ -284,17 +273,14 @@ internal fun NetworkCallResponsePane(call: NetworkCall) {
                         secondary = secondary,
                     )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                ),
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    ),
             )
-        },
+        }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize(),
-        ) {
+        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
             // Mirror the detail pane's status summary so the response pane is
             // self-sufficient on wide windows — duration, error message, and
             // (for errors) the error itself live here rather than next door.
@@ -310,9 +296,7 @@ internal fun NetworkCallResponsePane(call: NetworkCall) {
 private fun StatusSummaryStrip(call: NetworkCall) {
     Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -355,12 +339,13 @@ private fun StatusSummaryStrip(call: NetworkCall) {
                 }
                 CallStatus.COMPLETE -> {
                     val code = call.responseCode ?: 0
-                    val statusColor = when {
-                        code < 300 -> MaterialTheme.colorScheme.secondary
-                        code < 400 -> MaterialTheme.colorScheme.primary
-                        code < 500 -> MaterialTheme.colorScheme.tertiary
-                        else       -> MaterialTheme.colorScheme.error
-                    }
+                    val statusColor =
+                        when {
+                            code < 300 -> MaterialTheme.colorScheme.secondary
+                            code < 400 -> MaterialTheme.colorScheme.primary
+                            code < 500 -> MaterialTheme.colorScheme.tertiary
+                            else -> MaterialTheme.colorScheme.error
+                        }
                     Text(
                         text = "$code",
                         style = MaterialTheme.typography.titleMedium,
@@ -402,26 +387,14 @@ private fun StatusSummaryStrip(call: NetworkCall) {
 
 @Composable
 private fun RequestTab(call: NetworkCall) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
-    ) {
-        DetailSection(label = "URL") {
-            CopyableMonoBlock(call.url)
-        }
-        DetailSection(label = "Method") {
-            MonoText(call.method)
-        }
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        DetailSection(label = "URL") { CopyableMonoBlock(call.url) }
+        DetailSection(label = "Method") { MonoText(call.method) }
         if (call.requestHeaders.isNotEmpty()) {
-            DetailSection(label = "Headers") {
-                HeadersTable(call.requestHeaders)
-            }
+            DetailSection(label = "Headers") { HeadersTable(call.requestHeaders) }
         }
         call.requestBody?.let {
-            DetailSection(label = "Body") {
-                CopyableCodeBlock(it.prettyPrintJson())
-            }
+            DetailSection(label = "Body") { CopyableCodeBlock(it.prettyPrintJson()) }
         }
         Spacer(Modifier.height(24.dp))
     }
@@ -431,35 +404,19 @@ private fun RequestTab(call: NetworkCall) {
 
 @Composable
 private fun ResponseTab(call: NetworkCall) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
-    ) {
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         call.responseCode?.let {
-            DetailSection(label = "Status") {
-                MonoText("$it ${statusText(it)}".trim())
-            }
+            DetailSection(label = "Status") { MonoText("$it ${statusText(it)}".trim()) }
         }
-        call.durationMs?.let {
-            DetailSection(label = "Duration") {
-                MonoText("${it}ms")
-            }
-        }
+        call.durationMs?.let { DetailSection(label = "Duration") { MonoText("${it}ms") } }
         if (call.responseHeaders.isNotEmpty()) {
-            DetailSection(label = "Headers") {
-                HeadersTable(call.responseHeaders)
-            }
+            DetailSection(label = "Headers") { HeadersTable(call.responseHeaders) }
         }
         call.responseBody?.let {
-            DetailSection(label = "Body") {
-                CopyableCodeBlock(it.prettyPrintJson())
-            }
+            DetailSection(label = "Body") { CopyableCodeBlock(it.prettyPrintJson()) }
         }
         call.error?.let {
-            DetailSection(label = "Error") {
-                MonoText(it, color = MaterialTheme.colorScheme.error)
-            }
+            DetailSection(label = "Error") { MonoText(it, color = MaterialTheme.colorScheme.error) }
         }
         Spacer(Modifier.height(24.dp))
     }
@@ -471,9 +428,9 @@ private fun ResponseTab(call: NetworkCall) {
 private fun DetailSection(label: String, content: @Composable () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
+            modifier =
+                Modifier.fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -486,17 +443,12 @@ private fun DetailSection(label: String, content: @Composable () -> Unit) {
             modifier = Modifier.padding(horizontal = 16.dp),
             color = MaterialTheme.colorScheme.outlineVariant,
         )
-        Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            content()
-        }
+        Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) { content() }
     }
 }
 
 @Composable
-private fun MonoText(
-    text: String,
-    color: Color = MaterialTheme.colorScheme.onSurface,
-) {
+private fun MonoText(text: String, color: Color = MaterialTheme.colorScheme.onSurface) {
     Text(
         text = text,
         style = MaterialTheme.typography.bodySmall,
@@ -511,21 +463,15 @@ private fun CopyableMonoBlock(text: String) {
     // TODO: migrate to LocalClipboard once Compose Multiplatform ships a
     // commonMain ClipEntry text helper (1.11.0 only exposes the suspend
     // Clipboard.setClipEntry, with no per-platform ClipEntry factory in common).
-    @Suppress("DEPRECATION")
-    val clipboard = LocalClipboardManager.current
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    @Suppress("DEPRECATION") val clipboard = LocalClipboardManager.current
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = text,
             style = MaterialTheme.typography.bodySmall,
             fontFamily = FontFamily.Monospace,
             modifier = Modifier.weight(1f),
         )
-        IconButton(
-            onClick = { clipboard.setText(AnnotatedString(text)) },
-        ) {
+        IconButton(onClick = { clipboard.setText(AnnotatedString(text)) }) {
             Icon(
                 Icons.Default.ContentCopy,
                 contentDescription = "Copy",
@@ -541,8 +487,7 @@ private fun CopyableCodeBlock(text: String) {
     // TODO: migrate to LocalClipboard once Compose Multiplatform ships a
     // commonMain ClipEntry text helper (1.11.0 only exposes the suspend
     // Clipboard.setClipEntry, with no per-platform ClipEntry factory in common).
-    @Suppress("DEPRECATION")
-    val clipboard = LocalClipboardManager.current
+    @Suppress("DEPRECATION") val clipboard = LocalClipboardManager.current
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerLowest,
         shape = MaterialTheme.shapes.small,
@@ -550,14 +495,10 @@ private fun CopyableCodeBlock(text: String) {
     ) {
         Column {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                 horizontalArrangement = Arrangement.End,
             ) {
-                IconButton(
-                    onClick = { clipboard.setText(AnnotatedString(text)) },
-                ) {
+                IconButton(onClick = { clipboard.setText(AnnotatedString(text)) }) {
                     Icon(
                         Icons.Default.ContentCopy,
                         contentDescription = "Copy",
@@ -571,10 +512,8 @@ private fun CopyableCodeBlock(text: String) {
                 text = text,
                 style = MaterialTheme.typography.bodySmall,
                 fontFamily = FontFamily.Monospace,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(12.dp),
+                modifier =
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(12.dp),
             )
         }
     }
@@ -589,15 +528,14 @@ private fun HeadersTable(headers: Map<String, String>) {
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             headers.entries.forEachIndexed { index, (key, value) ->
-                val rowBg = if (index % 2 == 0)
-                    MaterialTheme.colorScheme.surfaceContainerLowest
-                else
-                    MaterialTheme.colorScheme.surfaceContainer
+                val rowBg =
+                    if (index % 2 == 0) MaterialTheme.colorScheme.surfaceContainerLowest
+                    else MaterialTheme.colorScheme.surfaceContainer
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(rowBg)
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .background(rowBg)
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
@@ -620,7 +558,9 @@ private fun HeadersTable(headers: Map<String, String>) {
                     )
                 }
                 if (index < headers.size - 1) {
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                    )
                 }
             }
         }

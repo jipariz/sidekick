@@ -13,4 +13,11 @@ data class LogEntry(
     val metadata: Map<String, String>? = null,
 )
 
-enum class LogLevel { VERBOSE, DEBUG, INFO, WARN, ERROR, ASSERT }
+enum class LogLevel {
+    VERBOSE,
+    DEBUG,
+    INFO,
+    WARN,
+    ERROR,
+    ASSERT,
+}

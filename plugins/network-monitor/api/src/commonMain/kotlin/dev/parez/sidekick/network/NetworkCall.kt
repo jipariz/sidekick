@@ -21,4 +21,8 @@ data class NetworkCall(
         get() = if (responseTimestamp != null) responseTimestamp - requestTimestamp else null
 }
 
-enum class CallStatus { PENDING, COMPLETE, ERROR }
+enum class CallStatus {
+    PENDING,
+    COMPLETE,
+    ERROR,
+}

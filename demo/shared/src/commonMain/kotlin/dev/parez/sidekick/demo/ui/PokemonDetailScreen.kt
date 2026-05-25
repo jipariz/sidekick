@@ -18,7 +18,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -55,7 +54,8 @@ fun PokemonDetailScreen(
     name: String,
     onBack: () -> Unit,
     shinySprites: Boolean = false,
-    viewModel: PokemonDetailViewModel = koinViewModel(key = "pokemon-detail-$id") { parametersOf(id) },
+    viewModel: PokemonDetailViewModel =
+        koinViewModel(key = "pokemon-detail-$id") { parametersOf(id) },
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -64,10 +64,7 @@ fun PokemonDetailScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text(
-                            name.toDisplayName(),
-                            style = MaterialTheme.typography.titleMedium,
-                        )
+                        Text(name.toDisplayName(), style = MaterialTheme.typography.titleMedium)
                         Text(
                             "#${id.toString().padStart(3, '0')}",
                             style = MaterialTheme.typography.labelSmall,
@@ -81,43 +78,44 @@ fun PokemonDetailScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                ),
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    ),
             )
-        },
+        }
     ) { padding ->
         when (val state = uiState) {
-            is DetailUiState.Loading -> Box(
-                Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center,
-            ) {
-                PokeballLoader(modifier = Modifier.size(96.dp))
-            }
-            is DetailUiState.Error -> TeamRocketError(
-                message = state.message,
-                onRetry = viewModel::onRetry,
-                modifier = Modifier.padding(padding),
-            )
-            is DetailUiState.Content -> DetailContent(
-                detail = state.detail,
-                shinySprites = shinySprites,
-                modifier = Modifier.padding(padding),
-            )
+            is DetailUiState.Loading ->
+                Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                    PokeballLoader(modifier = Modifier.size(96.dp))
+                }
+            is DetailUiState.Error ->
+                TeamRocketError(
+                    message = state.message,
+                    onRetry = viewModel::onRetry,
+                    modifier = Modifier.padding(padding),
+                )
+            is DetailUiState.Content ->
+                DetailContent(
+                    detail = state.detail,
+                    shinySprites = shinySprites,
+                    modifier = Modifier.padding(padding),
+                )
         }
     }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun DetailContent(detail: PokemonDetail, shinySprites: Boolean, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
-    ) {
+private fun DetailContent(
+    detail: PokemonDetail,
+    shinySprites: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         // ── Hero artwork ──────────────────────────────────────────────────────
         Surface(
             color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
@@ -126,10 +124,7 @@ private fun DetailContent(detail: PokemonDetail, shinySprites: Boolean, modifier
             AsyncImage(
                 model = artworkUrlFor(detail.id, shiny = shinySprites),
                 contentDescription = detail.name,
-                modifier = Modifier
-                    .size(220.dp)
-                    .align(Alignment.CenterHorizontally)
-                    .padding(16.dp),
+                modifier = Modifier.size(220.dp).align(Alignment.CenterHorizontally).padding(16.dp),
             )
         }
 
@@ -138,9 +133,7 @@ private fun DetailContent(detail: PokemonDetail, shinySprites: Boolean, modifier
 
             // ── Type chips ────────────────────────────────────────────────────
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                detail.types.sortedBy { it.slot }.forEach { slot ->
-                    TypeChip(slot.type.name)
-                }
+                detail.types.sortedBy { it.slot }.forEach { slot -> TypeChip(slot.type.name) }
             }
 
             Spacer(Modifier.height(20.dp))
@@ -227,16 +220,18 @@ private fun PhysicalStatItem(label: String, value: String) {
 @Composable
 private fun StatBar(name: String, value: Int, maxValue: Int) {
     val fraction = (value.toFloat() / maxValue).coerceIn(0f, 1f)
-    val barColor = when {
-        fraction < 0.33f -> MaterialTheme.colorScheme.error
-        fraction < 0.66f -> MaterialTheme.colorScheme.tertiary
-        else             -> MaterialTheme.colorScheme.primary
-    }
-    val ratingLabel = when {
-        fraction < 0.33f -> "L"
-        fraction < 0.66f -> "M"
-        else             -> "H"
-    }
+    val barColor =
+        when {
+            fraction < 0.33f -> MaterialTheme.colorScheme.error
+            fraction < 0.66f -> MaterialTheme.colorScheme.tertiary
+            else -> MaterialTheme.colorScheme.primary
+        }
+    val ratingLabel =
+        when {
+            fraction < 0.33f -> "L"
+            fraction < 0.66f -> "M"
+            else -> "H"
+        }
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -256,22 +251,12 @@ private fun StatBar(name: String, value: Int, maxValue: Int) {
             modifier = Modifier.width(28.dp),
             textAlign = TextAlign.End,
         )
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .height(8.dp)
-                .clip(MaterialTheme.shapes.extraSmall),
-        ) {
+        Box(modifier = Modifier.weight(1f).height(8.dp).clip(MaterialTheme.shapes.extraSmall)) {
             Surface(
                 modifier = Modifier.fillMaxSize(),
                 color = MaterialTheme.colorScheme.surfaceVariant,
             ) {}
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth(fraction)
-                    .fillMaxSize(),
-                color = barColor,
-            ) {}
+            Surface(modifier = Modifier.fillMaxWidth(fraction).fillMaxSize(), color = barColor) {}
         }
         Text(
             text = ratingLabel,
@@ -286,10 +271,7 @@ private fun StatBar(name: String, value: Int, maxValue: Int) {
 
 @Composable
 private fun TypeChip(typeName: String) {
-    Surface(
-        color = typeColor(typeName),
-        shape = CircleShape,
-    ) {
+    Surface(color = typeColor(typeName), shape = CircleShape) {
         Text(
             text = typeName.replaceFirstChar { it.uppercase() },
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
@@ -303,44 +285,43 @@ private fun TypeChip(typeName: String) {
 @Composable
 private fun AbilityChip(name: String, isHidden: Boolean) {
     Surface(
-        color = if (isHidden)
-            MaterialTheme.colorScheme.surfaceVariant
-        else
-            MaterialTheme.colorScheme.secondaryContainer,
+        color =
+            if (isHidden) MaterialTheme.colorScheme.surfaceVariant
+            else MaterialTheme.colorScheme.secondaryContainer,
         shape = CircleShape,
     ) {
         Text(
             text = if (isHidden) "${name.toDisplayName()} (hidden)" else name.toDisplayName(),
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             style = MaterialTheme.typography.labelMedium,
-            color = if (isHidden)
-                MaterialTheme.colorScheme.onSurfaceVariant
-            else
-                MaterialTheme.colorScheme.onSecondaryContainer,
+            color =
+                if (isHidden) MaterialTheme.colorScheme.onSurfaceVariant
+                else MaterialTheme.colorScheme.onSecondaryContainer,
         )
     }
 }
 
 // ── Pokémon type colors (standard community palette) ─────────────────────────
 
-private fun typeColor(type: String): Color = when (type.lowercase()) {
-    "normal"   -> Color(0xFFA8A878)
-    "fire"     -> Color(0xFFF08030)
-    "water"    -> Color(0xFF6890F0)
-    "electric" -> Color(0xFFF8D030)
-    "grass"    -> Color(0xFF78C850)
-    "ice"      -> Color(0xFF98D8D8)
-    "fighting" -> Color(0xFFC03028)
-    "poison"   -> Color(0xFFA040A0)
-    "ground"   -> Color(0xFFE0C068)
-    "flying"   -> Color(0xFFA890F0)
-    "psychic"  -> Color(0xFFF85888)
-    "bug"      -> Color(0xFFA8B820)
-    "rock"     -> Color(0xFFB8A038)
-    "ghost"    -> Color(0xFF705898)
-    "dragon"   -> Color(0xFF7038F8)
-    "dark"     -> Color(0xFF705848)
-    "steel"    -> Color(0xFFB8B8D0)
-    "fairy"    -> Color(0xFFEE99AC)
-    else       -> Color(0xFF68A090)
-}
+private fun typeColor(type: String): Color =
+    when (type.lowercase()) {
+        "normal" -> Color(0xFFA8A878)
+        "fire" -> Color(0xFFF08030)
+        "water" -> Color(0xFF6890F0)
+        "electric" -> Color(0xFFF8D030)
+        "grass" -> Color(0xFF78C850)
+        "ice" -> Color(0xFF98D8D8)
+        "fighting" -> Color(0xFFC03028)
+        "poison" -> Color(0xFFA040A0)
+        "ground" -> Color(0xFFE0C068)
+        "flying" -> Color(0xFFA890F0)
+        "psychic" -> Color(0xFFF85888)
+        "bug" -> Color(0xFFA8B820)
+        "rock" -> Color(0xFFB8A038)
+        "ghost" -> Color(0xFF705898)
+        "dragon" -> Color(0xFF7038F8)
+        "dark" -> Color(0xFF705848)
+        "steel" -> Color(0xFFB8B8D0)
+        "fairy" -> Color(0xFFEE99AC)
+        else -> Color(0xFF68A090)
+    }

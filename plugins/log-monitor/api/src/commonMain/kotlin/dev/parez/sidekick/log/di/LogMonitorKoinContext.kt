@@ -10,20 +10,19 @@ import org.koin.dsl.module
 /**
  * Isolated Koin context for the Log Monitor plugin.
  *
- * Holds its own [KoinApplication] so the plugin's DI graph never leaks into
- * or conflicts with a consuming application's Koin instance.
+ * Holds its own [KoinApplication] so the plugin's DI graph never leaks into or conflicts with a
+ * consuming application's Koin instance.
  *
- * The [logMonitorCoreModule] registers [LogMonitorStore] as a singleton.
- * The `log-monitor:plugin` module extends this context with its ViewModel module
- * via [loadViewModelModule], called once from [dev.parez.sidekick.log.LogMonitorPlugin].
+ * The [logMonitorCoreModule] registers [LogMonitorStore] as a singleton. The `log-monitor:plugin`
+ * module extends this context with its ViewModel module via [loadViewModelModule], called once from
+ * [dev.parez.sidekick.log.LogMonitorPlugin].
  */
 public object LogMonitorKoinContext {
 
-    public val koinApp: KoinApplication = koinApplication {
-        modules(logMonitorCoreModule)
-    }
+    public val koinApp: KoinApplication = koinApplication { modules(logMonitorCoreModule) }
 
-    internal val koin get() = koinApp.koin
+    internal val koin
+        get() = koinApp.koin
 
     private val viewModelModuleLoaded = MutableStateFlow(false)
 
@@ -36,6 +35,4 @@ public object LogMonitorKoinContext {
     }
 }
 
-internal val logMonitorCoreModule = module {
-    single { LogMonitorStore }
-}
+internal val logMonitorCoreModule = module { single { LogMonitorStore } }

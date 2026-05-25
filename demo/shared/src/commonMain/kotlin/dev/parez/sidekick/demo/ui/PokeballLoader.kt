@@ -27,32 +27,34 @@ private val PokeballBlack = Color(0xFF1F1F1F)
 private val PokeballWhite = Color(0xFFF5F5F5)
 
 /**
- * Pokéball loading indicator. Wobbles side-to-side and bobs vertically, mimicking
- * the classic capture animation. Pure Compose [Canvas] — no native or web
- * runtime dependencies, works on every CMP target.
+ * Pokéball loading indicator. Wobbles side-to-side and bobs vertically, mimicking the classic
+ * capture animation. Pure Compose [Canvas] — no native or web runtime dependencies, works on every
+ * CMP target.
  *
  * Default size 64.dp; pass [Modifier.size] to override.
  */
 @Composable
 fun PokeballLoader(modifier: Modifier = Modifier) {
     val transition = rememberInfiniteTransition(label = "pokeball-loader")
-    val tilt by transition.animateFloat(
-        initialValue = -18f,
-        targetValue = 18f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 600, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "tilt",
-    )
-    val bobPhase by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = (2f * PI).toFloat(),
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1200, easing = LinearEasing),
-        ),
-        label = "bob",
-    )
+    val tilt by
+        transition.animateFloat(
+            initialValue = -18f,
+            targetValue = 18f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(durationMillis = 600, easing = FastOutSlowInEasing),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+            label = "tilt",
+        )
+    val bobPhase by
+        transition.animateFloat(
+            initialValue = 0f,
+            targetValue = (2f * PI).toFloat(),
+            animationSpec =
+                infiniteRepeatable(animation = tween(durationMillis = 1200, easing = LinearEasing)),
+            label = "bob",
+        )
 
     Canvas(modifier = modifier.size(64.dp)) {
         val side = minOf(size.width, size.height)
@@ -104,11 +106,7 @@ fun PokeballLoader(modifier: Modifier = Modifier) {
                 // Centre button — white disc with a thick black ring, and a
                 // smaller hollow ring inside to catch the eye.
                 val buttonOuter = radius * 0.28f
-                drawCircle(
-                    color = PokeballWhite,
-                    radius = buttonOuter,
-                    center = Offset(cx, cy),
-                )
+                drawCircle(color = PokeballWhite, radius = buttonOuter, center = Offset(cx, cy))
                 drawCircle(
                     color = PokeballBlack,
                     radius = buttonOuter,

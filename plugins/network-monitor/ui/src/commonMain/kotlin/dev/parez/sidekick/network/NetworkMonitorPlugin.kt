@@ -17,9 +17,7 @@ import kotlin.time.Duration.Companion.hours
 import org.koin.compose.KoinIsolatedContext
 import org.koin.compose.viewmodel.koinViewModel
 
-class NetworkMonitorPlugin(
-    retentionPeriod: Duration = 1.hours,
-) : SidekickPlugin {
+class NetworkMonitorPlugin(retentionPeriod: Duration = 1.hours) : SidekickPlugin {
 
     init {
         NetworkMonitorKoinContext.loadViewModelModule(networkMonitorViewModelModule)

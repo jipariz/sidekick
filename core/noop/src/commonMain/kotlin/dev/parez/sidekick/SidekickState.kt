@@ -5,7 +5,9 @@ import androidx.compose.runtime.remember
 import dev.parez.sidekick.plugin.SidekickPlugin
 
 class SidekickState(val plugins: List<SidekickPlugin>) {
-    val activePlugin: SidekickPlugin? get() = null
+    val activePlugin: SidekickPlugin?
+        get() = null
+
     fun reset() {}
 }
 

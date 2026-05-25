@@ -48,19 +48,17 @@ import dev.parez.sidekick.plugin.SidekickPlugin
 /**
  * Adaptive list-detail catalog driven by AndroidX Navigation 3.
  *
- * [backStack] is the single source of truth — pushing a [PokemonDetailKey]
- * opens the detail pane, popping returns to the list. On wide windows the
- * [ListDetailSceneStrategy] keeps both panes visible; on narrow windows it
- * collapses to one, with `PaneMotionDefaults` animating the resize.
+ * [backStack] is the single source of truth — pushing a [PokemonDetailKey] opens the detail pane,
+ * popping returns to the list. On wide windows the [ListDetailSceneStrategy] keeps both panes
+ * visible; on narrow windows it collapses to one, with `PaneMotionDefaults` animating the resize.
  *
  * Three fanciness knobs on top of the basic recipe:
- *  - `shouldHandleSinglePaneLayout = true` keeps the scaffold in charge of
- *    every window size so pane transitions stay smooth.
- *  - `paneExpansionDragHandle` exposes a Material 3 [VerticalDragHandle] so
- *    users can drag the divider between list and detail on wide windows.
- *  - The `SidekickKey` entry overrides the default crossfade with a
- *    slide-from-bottom transition (a nod to the old `AnimatedVisibility`
- *    we used before Sidekick became a nav3 destination).
+ * - `shouldHandleSinglePaneLayout = true` keeps the scaffold in charge of every window size so pane
+ *   transitions stay smooth.
+ * - `paneExpansionDragHandle` exposes a Material 3 [VerticalDragHandle] so users can drag the
+ *   divider between list and detail on wide windows.
+ * - The `SidekickKey` entry overrides the default crossfade with a slide-from-bottom transition (a
+ *   nod to the old `AnimatedVisibility` we used before Sidekick became a nav3 destination).
  *
  * On web, the same backstack is bound to browser history via
  * [dev.parez.sidekick.demo.navigation.BrowserHistoryEffect].
@@ -76,52 +74,59 @@ internal fun PokemonCatalog(
     // Drop the default horizontal gutter between the two panes — same tweak as
     // the official Material recipe (b/418201867).
     val windowAdaptiveInfo = currentWindowAdaptiveInfoV2()
-    val directive = remember(windowAdaptiveInfo) {
-        calculatePaneScaffoldDirective(windowAdaptiveInfo)
-            .copy(horizontalPartitionSpacerSize = 0.dp)
-    }
+    val directive =
+        remember(windowAdaptiveInfo) {
+            calculatePaneScaffoldDirective(windowAdaptiveInfo)
+                .copy(horizontalPartitionSpacerSize = 0.dp)
+        }
     // Proportion-based anchors so the divider position scales with window
     // width instead of staying at a fixed dp offset — without this the
     // divider visibly jumps as the user resizes the host window.
-    val paneExpansionState = rememberPaneExpansionState(
-        anchors = listOf(
-            PaneExpansionAnchor.Proportion(0.35f),
-            PaneExpansionAnchor.Proportion(0.5f),
-            PaneExpansionAnchor.Proportion(0.65f),
-        ),
-        initialAnchoredIndex = 1,
-    )
-    val sceneStrategy = rememberListDetailSceneStrategy<NavKey>(
-        // Keep the adaptive scaffold in charge of every window size so the
-        // `PaneMotionDefaults` animations play on one-pane ↔ two-pane resizes.
-        // Default `false` would hand single-pane mode off to NavDisplay's
-        // plain `SinglePaneScene` crossfade.
-        shouldHandleSinglePaneLayout = true,
-        directive = directive,
-        paneExpansionState = paneExpansionState,
-        paneExpansionDragHandle = { state ->
-            val interactionSource = remember { MutableInteractionSource() }
-            VerticalDragHandle(
-                modifier = Modifier.paneExpansionDraggable(
-                    state = state,
-                    minTouchTargetSize = 48.dp,
-                    interactionSource = interactionSource,
-                    semanticsProperties = null,
+    val paneExpansionState =
+        rememberPaneExpansionState(
+            anchors =
+                listOf(
+                    PaneExpansionAnchor.Proportion(0.35f),
+                    PaneExpansionAnchor.Proportion(0.5f),
+                    PaneExpansionAnchor.Proportion(0.65f),
                 ),
-                interactionSource = interactionSource,
-            )
-        },
-    )
+            initialAnchoredIndex = 1,
+        )
+    val sceneStrategy =
+        rememberListDetailSceneStrategy<NavKey>(
+            // Keep the adaptive scaffold in charge of every window size so the
+            // `PaneMotionDefaults` animations play on one-pane ↔ two-pane resizes.
+            // Default `false` would hand single-pane mode off to NavDisplay's
+            // plain `SinglePaneScene` crossfade.
+            shouldHandleSinglePaneLayout = true,
+            directive = directive,
+            paneExpansionState = paneExpansionState,
+            paneExpansionDragHandle = { state ->
+                val interactionSource = remember { MutableInteractionSource() }
+                VerticalDragHandle(
+                    modifier =
+                        Modifier.paneExpansionDraggable(
+                            state = state,
+                            minTouchTargetSize = 48.dp,
+                            interactionSource = interactionSource,
+                            semanticsProperties = null,
+                        ),
+                    interactionSource = interactionSource,
+                )
+            },
+        )
 
     NavDisplay(
         backStack = backStack,
         onBack = { backStack.removeLastOrNull() },
         sceneStrategies = listOf(sceneStrategy),
-        entryProvider = entryProvider {
+        entryProvider =
+            entryProvider {
                 entry<PokemonListKey>(
-                    metadata = ListDetailSceneStrategy.listPane(
-                        detailPlaceholder = { DetailPlaceholder() },
-                    ),
+                    metadata =
+                        ListDetailSceneStrategy.listPane(
+                            detailPlaceholder = { DetailPlaceholder() }
+                        )
                 ) {
                     PokemonListScreen(
                         showNumbers = showNumbers,
@@ -141,9 +146,7 @@ internal fun PokemonCatalog(
                         },
                     )
                 }
-                entry<PokemonDetailKey>(
-                    metadata = ListDetailSceneStrategy.detailPane(),
-                ) { key ->
+                entry<PokemonDetailKey>(metadata = ListDetailSceneStrategy.detailPane()) { key ->
                     PokemonDetailScreen(
                         id = key.id,
                         name = key.name,
@@ -156,13 +159,15 @@ internal fun PokemonCatalog(
                 // default crossfade with a slide-up-from-bottom on push and a
                 // slide-down on pop, matching the old AnimatedVisibility feel.
                 entry<SidekickKey>(
-                    metadata = NavDisplay.transitionSpec {
-                        slideInVertically(initialOffsetY = { it }) + fadeIn() togetherWith
-                            fadeOut()
-                    } + NavDisplay.popTransitionSpec {
-                        fadeIn() togetherWith
-                            slideOutVertically(targetOffsetY = { it }) + fadeOut()
-                    },
+                    metadata =
+                        NavDisplay.transitionSpec {
+                            slideInVertically(initialOffsetY = { it }) + fadeIn() togetherWith
+                                fadeOut()
+                        } +
+                            NavDisplay.popTransitionSpec {
+                                fadeIn() togetherWith
+                                    slideOutVertically(targetOffsetY = { it }) + fadeOut()
+                            }
                 ) {
                     Sidekick(
                         useSidekickTheme = false,
@@ -177,7 +182,7 @@ internal fun PokemonCatalog(
                         },
                     )
                 }
-        },
+            },
     )
 }
 

@@ -6,8 +6,8 @@ import org.koin.dsl.koinApplication
 /**
  * Isolated Koin context for the demo library.
  *
- * Holds its own [KoinApplication] so the library's DI graph never leaks into
- * or conflicts with a consuming application's Koin instance.
+ * Holds its own [KoinApplication] so the library's DI graph never leaks into or conflicts with a
+ * consuming application's Koin instance.
  *
  * Usage in Compose:
  * ```kotlin
@@ -17,7 +17,5 @@ import org.koin.dsl.koinApplication
  * ```
  */
 object LibraryKoinContext {
-    val koinApp: KoinApplication = koinApplication {
-        modules(appModule)
-    }
+    val koinApp: KoinApplication = koinApplication { modules(appModule) }
 }

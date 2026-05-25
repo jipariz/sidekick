@@ -51,23 +51,22 @@ internal fun LogMonitorContent(
 
     LaunchedEffect(selected?.id) {
         if (selected != null) {
-            navigator.navigateTo(
-                pane = ListDetailPaneScaffoldRole.Detail,
-                contentKey = selected.id,
-            )
+            navigator.navigateTo(pane = ListDetailPaneScaffoldRole.Detail, contentKey = selected.id)
         }
     }
 
     // Proportion-based anchors keep the divider in step with window resizes;
     // dp-absolute defaults would drift the divider visually as the host shrinks.
-    val paneExpansionState = rememberPaneExpansionState(
-        anchors = listOf(
-            PaneExpansionAnchor.Proportion(0.3f),
-            PaneExpansionAnchor.Proportion(0.5f),
-            PaneExpansionAnchor.Proportion(0.7f),
-        ),
-        initialAnchoredIndex = 1,
-    )
+    val paneExpansionState =
+        rememberPaneExpansionState(
+            anchors =
+                listOf(
+                    PaneExpansionAnchor.Proportion(0.3f),
+                    PaneExpansionAnchor.Proportion(0.5f),
+                    PaneExpansionAnchor.Proportion(0.7f),
+                ),
+            initialAnchoredIndex = 1,
+        )
 
     ListDetailPaneScaffold(
         directive = navigator.scaffoldDirective,
@@ -76,12 +75,13 @@ internal fun LogMonitorContent(
         paneExpansionDragHandle = { state ->
             val interactionSource = remember { MutableInteractionSource() }
             VerticalDragHandle(
-                modifier = Modifier.paneExpansionDraggable(
-                    state = state,
-                    minTouchTargetSize = 48.dp,
-                    interactionSource = interactionSource,
-                    semanticsProperties = null,
-                ),
+                modifier =
+                    Modifier.paneExpansionDraggable(
+                        state = state,
+                        minTouchTargetSize = 48.dp,
+                        interactionSource = interactionSource,
+                        semanticsProperties = null,
+                    ),
                 interactionSource = interactionSource,
             )
         },

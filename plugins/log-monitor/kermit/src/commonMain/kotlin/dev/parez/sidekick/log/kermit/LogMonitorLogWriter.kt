@@ -13,9 +13,7 @@ import dev.parez.sidekick.log.LogMonitorStore
  * Logger.setLogWriters(platformLogWriter(), LogMonitorLogWriter(store))
  * ```
  */
-class LogMonitorLogWriter(
-    private val store: LogMonitorStore = LogMonitorStore,
-) : LogWriter() {
+class LogMonitorLogWriter(private val store: LogMonitorStore = LogMonitorStore) : LogWriter() {
 
     override fun log(severity: Severity, message: String, tag: String, throwable: Throwable?) {
         store.record(
@@ -26,12 +24,13 @@ class LogMonitorLogWriter(
         )
     }
 
-    private fun Severity.toLogLevel(): LogLevel = when (this) {
-        Severity.Verbose -> LogLevel.VERBOSE
-        Severity.Debug   -> LogLevel.DEBUG
-        Severity.Info    -> LogLevel.INFO
-        Severity.Warn    -> LogLevel.WARN
-        Severity.Error   -> LogLevel.ERROR
-        Severity.Assert  -> LogLevel.ASSERT
-    }
+    private fun Severity.toLogLevel(): LogLevel =
+        when (this) {
+            Severity.Verbose -> LogLevel.VERBOSE
+            Severity.Debug -> LogLevel.DEBUG
+            Severity.Info -> LogLevel.INFO
+            Severity.Warn -> LogLevel.WARN
+            Severity.Error -> LogLevel.ERROR
+            Severity.Assert -> LogLevel.ASSERT
+        }
 }

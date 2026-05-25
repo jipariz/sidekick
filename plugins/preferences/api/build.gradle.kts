@@ -1,10 +1,7 @@
-plugins {
-    id("sidekick.kmp.library")
-}
+plugins { id("sidekick.kmp.library") }
+
 kotlin {
-    androidLibrary {
-        namespace = "dev.parez.sidekick.preferences"
-    }
+    androidLibrary { namespace = "dev.parez.sidekick.preferences" }
     sourceSets {
         commonMain.dependencies {
             api(projects.core.pluginApi)
@@ -12,8 +9,6 @@ kotlin {
             implementation(libs.compose.material.iconsExtended)
             implementation(libs.androidx.lifecycle.runtimeCompose)
         }
-        androidMain.dependencies {
-            implementation(libs.androidx.datastore.prefs)
-        }
+        androidMain.dependencies { implementation(libs.androidx.datastore.prefs) }
     }
 }

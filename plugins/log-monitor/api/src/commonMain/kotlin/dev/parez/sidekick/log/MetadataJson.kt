@@ -44,8 +44,16 @@ private fun String.nextUnescapedQuote(from: Int): Int {
     return i
 }
 
-private fun String.jsonEscape(): String = replace("\\", "\\\\").replace("\"", "\\\"")
-    .replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
+private fun String.jsonEscape(): String =
+    replace("\\", "\\\\")
+        .replace("\"", "\\\"")
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+        .replace("\t", "\\t")
 
-private fun String.jsonUnescape(): String = replace("\\\"", "\"").replace("\\\\", "\\")
-    .replace("\\n", "\n").replace("\\r", "\r").replace("\\t", "\t")
+private fun String.jsonUnescape(): String =
+    replace("\\\"", "\"")
+        .replace("\\\\", "\\")
+        .replace("\\n", "\n")
+        .replace("\\r", "\r")
+        .replace("\\t", "\t")

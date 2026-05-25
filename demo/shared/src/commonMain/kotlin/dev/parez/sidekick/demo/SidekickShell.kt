@@ -24,16 +24,14 @@ import dev.parez.sidekick.plugin.SidekickPlugin
 import dev.parez.sidekick.plugin.rememberSidekickAppInfo
 
 /**
- * Example host-side wrapper around [Sidekick]: a bottom-end FAB that toggles
- * overlay visibility, an [AnimatedVisibility] transition, and a close button
- * in the overlay's app-bar actions slot. The host's [content] renders behind
- * the overlay.
+ * Example host-side wrapper around [Sidekick]: a bottom-end FAB that toggles overlay visibility, an
+ * [AnimatedVisibility] transition, and a close button in the overlay's app-bar actions slot. The
+ * host's [content] renders behind the overlay.
  *
- * **This is sample code, not part of the Sidekick SDK.** Sidekick deliberately
- * ships only the [Sidekick] composable — the host owns the FAB, visibility
- * state, and any trigger gesture. Copy this file into your own app as a
- * starting point, then customize the trigger / animation / placement to taste.
- * The composeApp's main entry point ([DemoApp]) shows a richer variant with a
+ * **This is sample code, not part of the Sidekick SDK.** Sidekick deliberately ships only the
+ * [Sidekick] composable — the host owns the FAB, visibility state, and any trigger gesture. Copy
+ * this file into your own app as a starting point, then customize the trigger / animation /
+ * placement to taste. The composeApp's main entry point ([DemoApp]) shows a richer variant with a
  * first-launch Reveal hint and slide+fade transitions.
  *
  * ```kotlin
@@ -54,12 +52,12 @@ import dev.parez.sidekick.plugin.rememberSidekickAppInfo
  * }
  * ```
  *
- * @param plugins           Plugins to show in the debug panel.
- * @param appInfo           Optional host-app metadata shown in the panel header.
- * @param useSidekickTheme  When true, the overlay applies its own Material 3 color
- *                          scheme. Default `false` — most hosts want the overlay
- *                          to inherit their app's [androidx.compose.material3.MaterialTheme].
- * @param content           The app content rendered behind the overlay.
+ * @param plugins Plugins to show in the debug panel.
+ * @param appInfo Optional host-app metadata shown in the panel header.
+ * @param useSidekickTheme When true, the overlay applies its own Material 3 color scheme. Default
+ *   `false` — most hosts want the overlay to inherit their app's
+ *   [androidx.compose.material3.MaterialTheme].
+ * @param content The app content rendered behind the overlay.
  */
 @Composable
 fun SidekickShell(
@@ -74,9 +72,7 @@ fun SidekickShell(
         if (!visible) {
             SmallFloatingActionButton(
                 onClick = { visible = true },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
             ) {
                 Icon(Icons.Default.BugReport, contentDescription = "Open Sidekick")
             }

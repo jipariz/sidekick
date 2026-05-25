@@ -14,31 +14,30 @@ import kotlinx.coroutines.launch
 
 sealed interface DetailUiState {
     data object Loading : DetailUiState
+
     data class Content(val detail: PokemonDetail) : DetailUiState
+
     data class Error(val message: String) : DetailUiState
 }
 
-class PokemonDetailViewModel(
-    private val id: Int,
-    private val repository: PokemonRepository,
-) : ViewModel() {
+class PokemonDetailViewModel(private val id: Int, private val repository: PokemonRepository) :
+    ViewModel() {
 
     private val error = MutableStateFlow<String?>(null)
 
-    val uiState: StateFlow<DetailUiState> = combine(
-        repository.observeDetail(id),
-        error,
-    ) { detail, err ->
-        when {
-            err != null && detail == null -> DetailUiState.Error(err)
-            detail != null -> DetailUiState.Content(detail)
-            else -> DetailUiState.Loading
-        }
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = DetailUiState.Loading,
-    )
+    val uiState: StateFlow<DetailUiState> =
+        combine(repository.observeDetail(id), error) { detail, err ->
+                when {
+                    err != null && detail == null -> DetailUiState.Error(err)
+                    detail != null -> DetailUiState.Content(detail)
+                    else -> DetailUiState.Loading
+                }
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = DetailUiState.Loading,
+            )
 
     init {
         fetchDetail()

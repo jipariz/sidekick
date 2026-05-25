@@ -21,9 +21,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
-internal class NetworkMonitorViewModel(
-    private val store: NetworkMonitorStore,
-) : ViewModel() {
+internal class NetworkMonitorViewModel(private val store: NetworkMonitorStore) : ViewModel() {
 
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
@@ -31,22 +29,25 @@ internal class NetworkMonitorViewModel(
     private val _methodFilter = MutableStateFlow<Set<String>>(emptySet())
     val methodFilter: StateFlow<Set<String>> = _methodFilter.asStateFlow()
 
-    private val filterFlow: Flow<NetworkFilter> = combine(
-        _query.debounce(150L),
-        _methodFilter,
-    ) { q, methods -> NetworkFilter(query = q, methods = methods) }
-        .distinctUntilChanged()
+    private val filterFlow: Flow<NetworkFilter> =
+        combine(_query.debounce(150L), _methodFilter) { q, methods ->
+                NetworkFilter(query = q, methods = methods)
+            }
+            .distinctUntilChanged()
 
-    val pagedCalls: Flow<PagingData<NetworkCall>> = store.pagedCalls(filterFlow)
-        .cachedIn(viewModelScope)
+    val pagedCalls: Flow<PagingData<NetworkCall>> =
+        store.pagedCalls(filterFlow).cachedIn(viewModelScope)
 
-    val filteredCount: StateFlow<Long> = store.filteredCount(filterFlow)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0L)
+    val filteredCount: StateFlow<Long> =
+        store
+            .filteredCount(filterFlow)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0L)
 
     private val _selectedId = MutableStateFlow<String?>(null)
-    val selectedCall: StateFlow<NetworkCall?> = _selectedId
-        .flatMapLatest { id -> if (id == null) flowOf(null) else store.callById(id) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    val selectedCall: StateFlow<NetworkCall?> =
+        _selectedId
+            .flatMapLatest { id -> if (id == null) flowOf(null) else store.callById(id) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun select(id: String?) {
         _selectedId.value = id

@@ -33,13 +33,8 @@ kotlin {
         minSdk = libs.versions.android.minSdk.get().toInt()
     }
     jvm()
-    js {
-        browser()
-    }
-    @OptIn(ExperimentalWasmDsl::class)
-    wasmJs {
-        browser()
-    }
+    js { browser() }
+    @OptIn(ExperimentalWasmDsl::class) wasmJs { browser() }
     listOf(iosArm64(), iosSimulatorArm64()).forEach { iosTarget ->
         iosTarget.binaries.framework {
             baseName = "ComposeApp"
@@ -47,14 +42,11 @@ kotlin {
         }
     }
 
-    @OptIn(ExperimentalKotlinGradlePluginApi::class)
-    applyDefaultHierarchyTemplate()
+    @OptIn(ExperimentalKotlinGradlePluginApi::class) applyDefaultHierarchyTemplate()
 
     // PokemonDatabase + Room's generated PokemonDatabaseConstructor use
     // `expect`/`actual` classes. The classes-in-Beta warning is informational.
-    compilerOptions {
-        freeCompilerArgs.add("-Xexpect-actual-classes")
-    }
+    compilerOptions { freeCompilerArgs.add("-Xexpect-actual-classes") }
 
     sourceSets {
         val commonMain by getting
@@ -68,8 +60,14 @@ kotlin {
         // nonIosMain so Room (declared on nonIosMain) keeps flowing into web.
         val nonIosMain by creating { dependsOn(commonMain) }
         val nonWebMain by creating { dependsOn(commonMain) }
-        named("androidMain") { dependsOn(nonIosMain); dependsOn(nonWebMain) }
-        named("jvmMain") { dependsOn(nonIosMain); dependsOn(nonWebMain) }
+        named("androidMain") {
+            dependsOn(nonIosMain)
+            dependsOn(nonWebMain)
+        }
+        named("jvmMain") {
+            dependsOn(nonIosMain)
+            dependsOn(nonWebMain)
+        }
         named("iosMain") { dependsOn(nonWebMain) }
         named("webMain") { dependsOn(nonIosMain) }
     }
@@ -149,9 +147,7 @@ kotlin {
                 implementation(libs.androidx.navigationevent.compose.aosp)
             }
         }
-        jsMain {
-            kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/js/jsMain/kotlin"))
-        }
+        jsMain { kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/js/jsMain/kotlin")) }
         jsMain.dependencies {
             implementation(libs.ktor.client.js)
             implementation(libs.sqlite.web)
@@ -175,7 +171,11 @@ kotlin {
             kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/iosArm64/iosArm64Main/kotlin"))
         }
         val iosSimulatorArm64Main by getting {
-            kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/iosSimulatorArm64/iosSimulatorArm64Main/kotlin"))
+            kotlin.srcDir(
+                layout.buildDirectory.dir(
+                    "generated/ksp/iosSimulatorArm64/iosSimulatorArm64Main/kotlin"
+                )
+            )
         }
     }
 }
@@ -196,6 +196,4 @@ dependencies {
     add("androidRuntimeClasspath", libs.compose.ui.tooling)
 }
 
-room3 {
-    schemaDirectory("$projectDir/schemas")
-}
+room3 { schemaDirectory("$projectDir/schemas") }

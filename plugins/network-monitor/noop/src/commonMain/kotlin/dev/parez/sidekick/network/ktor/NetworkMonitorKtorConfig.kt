@@ -8,8 +8,8 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 
 /**
- * Release-variant stub for `ContentLength` — values kept identical so call sites
- * referencing `ContentLength.Default` / `ContentLength.Full` still resolve.
+ * Release-variant stub for `ContentLength` — values kept identical so call sites referencing
+ * `ContentLength.Default` / `ContentLength.Full` still resolve.
  */
 public object ContentLength {
     public const val Default: Int = 65_536
@@ -17,8 +17,8 @@ public object ContentLength {
 }
 
 /**
- * Release-variant stub for `NetworkMonitorKtorConfig`. Accepts every configuration
- * call from the real DSL but discards it.
+ * Release-variant stub for `NetworkMonitorKtorConfig`. Accepts every configuration call from the
+ * real DSL but discards it.
  */
 @KtorDsl
 @Suppress("UNUSED_PARAMETER")

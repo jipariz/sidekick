@@ -6,25 +6,27 @@ import platform.UIKit.UIDevice
 /**
  * Auto-detects [SidekickAppInfo] from the iOS runtime.
  *
- * - App name, version (`CFBundleShortVersionString`), and build code (`CFBundleVersion`)
- *   are read from the main bundle automatically.
+ * - App name, version (`CFBundleShortVersionString`), and build code (`CFBundleVersion`) are read
+ *   from the main bundle automatically.
  * - iOS version and device model are read from [UIDevice].
- * - Build type (Debug / Release / …) cannot be determined at runtime; use the [detect]
- *   overload to supply it from your build configuration.
+ * - Build type (Debug / Release / …) cannot be determined at runtime; use the [detect] overload to
+ *   supply it from your build configuration.
  */
 actual fun SidekickAppInfo.Companion.detect(): SidekickAppInfo {
     val device = UIDevice.currentDevice
     val info = NSBundle.mainBundle().infoDictionary
 
     return SidekickAppInfo(
-        platform = PlatformInfo.Ios(
-            appName = info?.get("CFBundleDisplayName") as? String
-                ?: info?.get("CFBundleName") as? String,
-            appVersion = info?.get("CFBundleShortVersionString") as? String,
-            buildCode = (info?.get("CFBundleVersion") as? String)?.toLongOrNull(),
-            systemVersion = device.systemVersion,
-            deviceModel = device.model,
-        ),
+        platform =
+            PlatformInfo.Ios(
+                appName =
+                    info?.get("CFBundleDisplayName") as? String
+                        ?: info?.get("CFBundleName") as? String,
+                appVersion = info?.get("CFBundleShortVersionString") as? String,
+                buildCode = (info?.get("CFBundleVersion") as? String)?.toLongOrNull(),
+                systemVersion = device.systemVersion,
+                deviceModel = device.model,
+            )
     )
 }
 

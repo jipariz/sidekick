@@ -1,10 +1,7 @@
-plugins {
-    id("sidekick.kmp.library")
-}
+plugins { id("sidekick.kmp.library") }
+
 kotlin {
-    androidLibrary {
-        namespace = "dev.parez.sidekick.log.kermit"
-    }
+    androidLibrary { namespace = "dev.parez.sidekick.log.kermit" }
     sourceSets {
         commonMain.dependencies {
             // api: the kermit module ships a factory that returns a
