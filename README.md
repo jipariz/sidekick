@@ -53,19 +53,18 @@
 
 ## ⚙️ Compatibility
 
-Each Sidekick BOM is built against a specific Kotlin / CMP / AGP stack. Consumers need to meet the minimums below to resolve and link cleanly.
+Each Sidekick BOM is built against a fixed Kotlin / CMP / AGP stack. Consumers need to match the Kotlin and Compose Multiplatform minor versions (klib ABI is not stable across minors) and meet the `compileSdk` constraint.
 
-| | Sidekick `2026.05.26` is built with | Required in consumer |
-|---|---|---|
-| Kotlin | 2.3.21 | 2.3.20 — 2.3.21 |
-| Compose Multiplatform | 1.11.0 | 1.10.3 — 1.11.0 |
-| Android Gradle Plugin | 9.2.1 | 9.0+ |
-| Android `compileSdk` | 37 | **37+** ¹ |
-| Android `minSdk` | 24 | 24+ |
+| BOM | Kotlin | Compose Multiplatform | Android Gradle Plugin | Android `compileSdk` |
+|---|---|---|---|---|
+| `2026.05.26` | 2.3.21 | 1.11.0       | 9.2.1  | **37+** ¹ |
+| `2026.05.18` | 2.3.20 | 1.10.3       | 8.13.0 | 36+       |
+| `2026.05.16` | 2.3.20 | 1.10.3       | 8.13.0 | 36+       |
+| `0.1.0`       | 2.3.20 | 1.10.3       | 8.13.0 | 36+       |
 
-<sub>¹ Enforced at AAR-metadata level — Sidekick transitively depends on `androidx.compose.material3.adaptive:*:1.3.0-beta01`, which requires `compileSdk ≥ 37`. Builds below 37 fail fast with `"compile against version 37 or later"`.</sub>
+Android `minSdk` 24+ across all releases.
 
-For older BOMs, see the matching GitHub release notes — earlier Sidekick versions built against earlier toolchains.
+<sub>¹ `2026.05.26` transitively depends on `androidx.compose.material3.adaptive:*:1.3.0-beta01`, which enforces `compileSdk ≥ 37` at the AAR-metadata level. Older BOMs used the CMP-namespaced `org.jetbrains.compose.material3.adaptive:adaptive:1.2.0`, which has no such constraint.</sub>
 
 ## 🚀 Quick install
 

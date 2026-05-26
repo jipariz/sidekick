@@ -12,23 +12,26 @@ The Maven Central badge at the top of the [README](../README.md) renders the lat
 
 ## Compatibility
 
-Each Sidekick BOM is built against a specific Kotlin / CMP / AGP stack. Consumers need to meet the minimums below to resolve and link cleanly.
+Each Sidekick BOM is built against a fixed Kotlin / CMP / AGP stack. Consumers need to match the Kotlin and Compose Multiplatform minor versions (klib ABI is not stable across minors) and meet the `compileSdk` constraint.
 
-| | Sidekick `2026.05.26` is built with | Required in consumer |
-|---|---|---|
-| Kotlin | 2.3.21 | 2.3.20 — 2.3.21 |
-| Compose Multiplatform | 1.11.0 | 1.10.3 — 1.11.0 |
-| Android Gradle Plugin | 9.2.1 | 9.0+ |
-| Android `compileSdk` | 37 | **37+** ¹ |
-| Android `minSdk` | 24 | 24+ |
+| BOM | Kotlin | Compose Multiplatform | Android Gradle Plugin | Android `compileSdk` |
+|---|---|---|---|---|
+| `2026.05.26` | 2.3.21 | 1.11.0       | 9.2.1  | **37+** ¹ |
+| `2026.05.18` | 2.3.20 | 1.10.3       | 8.13.0 | 36+       |
+| `2026.05.16` | 2.3.20 | 1.10.3       | 8.13.0 | 36+       |
+| `0.1.0`       | 2.3.20 | 1.10.3       | 8.13.0 | 36+       |
 
-!!! info "Why `compileSdk ≥ 37` is required"
-    Sidekick transitively depends on `androidx.compose.material3.adaptive:*:1.3.0-beta01`, which stamps an AAR-metadata constraint requiring consumers to compile against API 37. Builds below 37 fail fast with `"compile against version 37 or later"`. This affects build-time only — your app's `minSdk` and `targetSdk` are independent and unchanged.
+Android `minSdk` 24+ across all releases.
+
+!!! info "Why `compileSdk ≥ 37` is required for `2026.05.26`"
+    `2026.05.26` transitively depends on `androidx.compose.material3.adaptive:*:1.3.0-beta01`, which stamps an AAR-metadata constraint requiring consumers to compile against API 37. Builds below 37 fail fast with `"compile against version 37 or later"`. This affects build-time only — your app's `minSdk` and `targetSdk` are independent and unchanged.
+
+    Older BOMs (`2026.05.18` and earlier) shipped the CMP-namespaced `org.jetbrains.compose.material3.adaptive:adaptive:1.2.0` instead, which has no AAR-metadata constraint.
 
 !!! tip "Kotlin / CMP version drift"
-    The "Required in consumer" range is what's been validated for this BOM. Kotlin/Native klib ABI changes between minors and Compose Multiplatform klib ABI bumps between majors are the usual breakage points — if you need to use a stack outside this range, expect to encounter `Failed to build cache for … klib` or `unlinked class symbol` errors during the iOS framework-link step.
+    The matrix lists exact built-with versions. Kotlin/Native klib ABI changes between minors and Compose Multiplatform klib ABI bumps between majors are the usual breakage points — if your consumer is on a different Kotlin minor or a different CMP major than the BOM, expect to encounter `Failed to build cache for … klib` or `unlinked class symbol` errors during the iOS framework-link step.
 
-For older BOMs check the matching [GitHub release notes](https://github.com/jipariz/sidekick/releases) — earlier Sidekick versions built against earlier toolchains.
+Full release history and per-version notes: [GitHub releases](https://github.com/jipariz/sidekick/releases).
 
 ## Repository
 
