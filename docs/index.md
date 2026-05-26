@@ -1,6 +1,6 @@
 # Sidekick
 
-**A Kotlin Multiplatform debug overlay SDK** for Android, iOS, Desktop (JVM), and Web (JS / Wasm).
+**A Kotlin Multiplatform debug panel for Compose apps** on Android, iOS, Desktop (JVM), and Web (JS / Wasm).
 
 ![Android](https://img.shields.io/badge/Android-3DDC84?logo=android&logoColor=white)
 ![iOS](https://img.shields.io/badge/iOS-000000?logo=apple&logoColor=white)
@@ -11,7 +11,7 @@
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3.20-7F52FF?logo=kotlin&logoColor=white)
 ![Compose](https://img.shields.io/badge/Compose_Multiplatform-1.10.3-4285F4)
 
-Sidekick adds a floating debug panel to your app during development — network inspector, log viewer, preferences editor, custom screens. In release builds, a no-op module strips the overlay entirely with zero overhead.
+Sidekick is a debug panel composable you render in your app during development — network inspector, log viewer, preferences editor, custom screens. Your app controls when and how it's shown. In release builds, a no-op module replaces it with a passthrough composable at zero overhead.
 
 <div style="text-align: center; margin: 2rem 0;">
   <a href="demo/index.html" class="md-button md-button--primary" style="margin-right: 0.5rem;">
@@ -28,7 +28,7 @@ Sidekick adds a floating debug panel to your app during development — network 
 
 - **One panel, many tools** — built-in network inspector, log viewer, typed preferences editor, custom Composables.
 - **Pluggable** — implement `SidekickPlugin` to add anything else.
-- **Zero release cost** — `core:noop` replaces the overlay with a passthrough composable, and `network-monitor:noop` / `log-monitor:noop` strip the SQLDelight recording layer; release binaries don't contain a single byte of Sidekick UI or database code.
+- **Zero release cost** — `core:noop` replaces the panel with a passthrough composable, and `network-monitor:noop` / `log-monitor:noop` strip the recording layer; release binaries don't contain a single byte of Sidekick UI or database code.
 - **Compose Multiplatform** — single UI codebase across Android, iOS, Desktop, and Web.
 - **Visibility is yours to control** — Sidekick renders the panel; the host app decides when to show it (FAB, shake gesture, build-type check, anything).
 

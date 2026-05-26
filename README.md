@@ -1,8 +1,8 @@
 <h1 align="center">Sidekick</h1>
 
 <p align="center">
-  <strong>A Kotlin Multiplatform debug overlay SDK.</strong><br/>
-  Network inspector, log viewer, typed preferences, and custom screens — in one floating panel your app embeds during development.
+  <strong>A Kotlin Multiplatform debug panel for Compose apps.</strong><br/>
+  Network inspector, log viewer, typed preferences, and custom screens — in one composable your app renders however and whenever you want during development.
 </p>
 
 <p align="center">
@@ -35,7 +35,7 @@
 - 🪵 **View logs without ADB** — Kermit bridge ships out of the box; Timber and friends drop in via a 4-line `LogCollector`.
 - 🎚️ **Flip feature flags from the panel** — annotate a class, KSP generates the DataStore wiring and a ready-to-use UI.
 - 🧩 **Wrap any Composable as a debug screen** — internal QA dashboards, environment switchers, build-info pages.
-- ⚡ **Zero release-build cost** — `core:noop` swaps the overlay for a passthrough composable, and `network-monitor:noop` / `log-monitor:noop` strip the recording side too; release binaries don't ship one byte of Sidekick UI or database code.
+- ⚡ **Zero release-build cost** — `core:noop` swaps the panel for a passthrough composable, and `network-monitor:noop` / `log-monitor:noop` strip the recording side too; release binaries don't ship one byte of Sidekick UI or database code.
 - 🖼️ **Compose Multiplatform** — one codebase, five targets: Android, iOS, Desktop (JVM), Web (JS), Web (Wasm).
 - 🎨 **Theme-aware** — applies its own light/dark palette by default, or inherits your `MaterialTheme` with one flag.
 
@@ -50,6 +50,22 @@
 | [**Your plugin**](docs/plugins/custom-plugin.md) | Implement `SidekickPlugin` — full module, your own DI scope, anything goes. | depends on what you publish |
 
 <sub>¹ Wasm uses in-memory preferences (DataStore has no Wasm driver) — values do not persist across reloads.</sub>
+
+## ⚙️ Compatibility
+
+Each Sidekick BOM is built against a specific Kotlin / CMP / AGP stack. Consumers need to meet the minimums below to resolve and link cleanly.
+
+| | Sidekick `2026.05.26` is built with | Required in consumer |
+|---|---|---|
+| Kotlin | 2.3.21 | 2.3.20 — 2.3.21 |
+| Compose Multiplatform | 1.11.0 | 1.10.3 — 1.11.0 |
+| Android Gradle Plugin | 9.2.1 | 9.0+ |
+| Android `compileSdk` | 37 | **37+** ¹ |
+| Android `minSdk` | 24 | 24+ |
+
+<sub>¹ Enforced at AAR-metadata level — Sidekick transitively depends on `androidx.compose.material3.adaptive:*:1.3.0-beta01`, which requires `compileSdk ≥ 37`. Builds below 37 fail fast with `"compile against version 37 or later"`.</sub>
+
+For older BOMs, see the matching GitHub release notes — earlier Sidekick versions built against earlier toolchains.
 
 ## 🚀 Quick install
 

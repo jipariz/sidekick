@@ -10,6 +10,26 @@ Sidekick is a multi-module library published to **Maven Central** under the `dev
 
 The Maven Central badge at the top of the [README](../README.md) renders the latest BOM coordinate.
 
+## Compatibility
+
+Each Sidekick BOM is built against a specific Kotlin / CMP / AGP stack. Consumers need to meet the minimums below to resolve and link cleanly.
+
+| | Sidekick `2026.05.26` is built with | Required in consumer |
+|---|---|---|
+| Kotlin | 2.3.21 | 2.3.20 — 2.3.21 |
+| Compose Multiplatform | 1.11.0 | 1.10.3 — 1.11.0 |
+| Android Gradle Plugin | 9.2.1 | 9.0+ |
+| Android `compileSdk` | 37 | **37+** ¹ |
+| Android `minSdk` | 24 | 24+ |
+
+!!! info "Why `compileSdk ≥ 37` is required"
+    Sidekick transitively depends on `androidx.compose.material3.adaptive:*:1.3.0-beta01`, which stamps an AAR-metadata constraint requiring consumers to compile against API 37. Builds below 37 fail fast with `"compile against version 37 or later"`. This affects build-time only — your app's `minSdk` and `targetSdk` are independent and unchanged.
+
+!!! tip "Kotlin / CMP version drift"
+    The "Required in consumer" range is what's been validated for this BOM. Kotlin/Native klib ABI changes between minors and Compose Multiplatform klib ABI bumps between majors are the usual breakage points — if you need to use a stack outside this range, expect to encounter `Failed to build cache for … klib` or `unlinked class symbol` errors during the iOS framework-link step.
+
+For older BOMs check the matching [GitHub release notes](https://github.com/jipariz/sidekick/releases) — earlier Sidekick versions built against earlier toolchains.
+
 ## Repository
 
 Maven Central is available by default in Gradle. If your project pins a custom repository list, make sure `mavenCentral()` is included:
