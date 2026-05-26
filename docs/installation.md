@@ -19,7 +19,6 @@ Each Sidekick BOM is built against a fixed Kotlin / CMP / AGP stack. Consumers n
 | `2026.05.26` | 2.3.21 | 1.11.0       | 9.2.1  | **37+** ¹ |
 | `2026.05.18` | 2.3.20 | 1.10.3       | 8.13.0 | 36+       |
 | `2026.05.16` | 2.3.20 | 1.10.3       | 8.13.0 | 36+       |
-| `0.1.0`       | 2.3.20 | 1.10.3       | 8.13.0 | 36+       |
 
 Android `minSdk` 24+ across all releases.
 
