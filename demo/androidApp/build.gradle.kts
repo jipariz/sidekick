@@ -27,6 +27,7 @@ dependencies {
     // Sidekick plugin-api deps directly here for the MainActivity.
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.appcompat)
+    implementation(libs.compose.material3)
     implementation(projects.core.pluginApi)
     // @Preview annotation + on-device renderer for Studio's "Run on Device"
     // preview action. `ui-tooling-preview` exposes the annotation; `ui-tooling`
