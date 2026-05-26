@@ -14,11 +14,11 @@ The Maven Central badge at the top of the [README](../README.md) renders the lat
 
 Each Sidekick BOM is built against a fixed Kotlin / CMP / AGP stack. Consumers need to match the Kotlin and Compose Multiplatform minor versions (klib ABI is not stable across minors) and meet the `compileSdk` constraint.
 
-| BOM | Kotlin | Compose Multiplatform | Android Gradle Plugin | Android `compileSdk` |
-|---|---|---|---|---|
-| `2026.05.26` | 2.3.21 | 1.11.0       | 9.2.1  | **37+** ¹ |
-| `2026.05.18` | 2.3.20 | 1.10.3       | 8.13.0 | 36+       |
-| `2026.05.16` | 2.3.20 | 1.10.3       | 8.13.0 | 36+       |
+| BOM | Kotlin | Compose Multiplatform | Android `compileSdk` |
+|---|---|---|---|
+| `2026.05.26` | 2.3.21 | 1.11.0 | **37+** ¹ |
+| `2026.05.18` | 2.3.20 | 1.10.3 | 36+       |
+| `2026.05.16` | 2.3.20 | 1.10.3 | 36+       |
 
 Android `minSdk` 24+ across all releases.
 
