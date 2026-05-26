@@ -1,8 +1,8 @@
 <h1 align="center">Sidekick</h1>
 
 <p align="center">
-  <strong>A Kotlin Multiplatform debug overlay SDK.</strong><br/>
-  Network inspector, log viewer, typed preferences, and custom screens — in one floating panel your app embeds during development.
+  <strong>A Kotlin Multiplatform debug panel for Compose apps.</strong><br/>
+  Network inspector, log viewer, typed preferences, and custom screens — in one composable your app renders however and whenever you want during development.
 </p>
 
 <p align="center">
@@ -35,7 +35,7 @@
 - 🪵 **View logs without ADB** — Kermit bridge ships out of the box; Timber and friends drop in via a 4-line `LogCollector`.
 - 🎚️ **Flip feature flags from the panel** — annotate a class, KSP generates the DataStore wiring and a ready-to-use UI.
 - 🧩 **Wrap any Composable as a debug screen** — internal QA dashboards, environment switchers, build-info pages.
-- ⚡ **Zero release-build cost** — `core:noop` swaps the overlay for a passthrough composable, and `network-monitor:noop` / `log-monitor:noop` strip the recording side too; release binaries don't ship one byte of Sidekick UI or database code.
+- ⚡ **Zero release-build cost** — `core:noop` swaps the panel for a passthrough composable, and `network-monitor:noop` / `log-monitor:noop` strip the recording side too; release binaries don't ship one byte of Sidekick UI or database code.
 - 🖼️ **Compose Multiplatform** — one codebase, five targets: Android, iOS, Desktop (JVM), Web (JS), Web (Wasm).
 - 🎨 **Theme-aware** — applies its own light/dark palette by default, or inherits your `MaterialTheme` with one flag.
 
@@ -50,6 +50,20 @@
 | [**Your plugin**](docs/plugins/custom-plugin.md) | Implement `SidekickPlugin` — full module, your own DI scope, anything goes. | depends on what you publish |
 
 <sub>¹ Wasm uses in-memory preferences (DataStore has no Wasm driver) — values do not persist across reloads.</sub>
+
+## ⚙️ Compatibility
+
+Each Sidekick BOM is built against a fixed Kotlin / CMP / AGP stack. Consumers need to match the Kotlin and Compose Multiplatform minor versions (klib ABI is not stable across minors) and meet the `compileSdk` constraint.
+
+| BOM | Kotlin | Compose Multiplatform | Android Gradle Plugin | Android `compileSdk` |
+|---|---|---|---|---|
+| `2026.05.26` | 2.3.21 | 1.11.0       | 9.2.1  | **37+** ¹ |
+| `2026.05.18` | 2.3.20 | 1.10.3       | 8.13.0 | 36+       |
+| `2026.05.16` | 2.3.20 | 1.10.3       | 8.13.0 | 36+       |
+
+Android `minSdk` 24+ across all releases.
+
+<sub>¹ `2026.05.26` transitively depends on `androidx.compose.material3.adaptive:*:1.3.0-beta01`, which enforces `compileSdk ≥ 37` at the AAR-metadata level. Older BOMs used the CMP-namespaced `org.jetbrains.compose.material3.adaptive:adaptive:1.2.0`, which has no such constraint.</sub>
 
 ## 🚀 Quick install
 

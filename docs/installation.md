@@ -10,6 +10,28 @@ Sidekick is a multi-module library published to **Maven Central** under the `dev
 
 The Maven Central badge at the top of the [README](../README.md) renders the latest BOM coordinate.
 
+## Compatibility
+
+Each Sidekick BOM is built against a fixed Kotlin / CMP / AGP stack. Consumers need to match the Kotlin and Compose Multiplatform minor versions (klib ABI is not stable across minors) and meet the `compileSdk` constraint.
+
+| BOM | Kotlin | Compose Multiplatform | Android Gradle Plugin | Android `compileSdk` |
+|---|---|---|---|---|
+| `2026.05.26` | 2.3.21 | 1.11.0       | 9.2.1  | **37+** ¹ |
+| `2026.05.18` | 2.3.20 | 1.10.3       | 8.13.0 | 36+       |
+| `2026.05.16` | 2.3.20 | 1.10.3       | 8.13.0 | 36+       |
+
+Android `minSdk` 24+ across all releases.
+
+!!! info "Why `compileSdk ≥ 37` is required for `2026.05.26`"
+    `2026.05.26` transitively depends on `androidx.compose.material3.adaptive:*:1.3.0-beta01`, which stamps an AAR-metadata constraint requiring consumers to compile against API 37. Builds below 37 fail fast with `"compile against version 37 or later"`. This affects build-time only — your app's `minSdk` and `targetSdk` are independent and unchanged.
+
+    Older BOMs (`2026.05.18` and earlier) shipped the CMP-namespaced `org.jetbrains.compose.material3.adaptive:adaptive:1.2.0` instead, which has no AAR-metadata constraint.
+
+!!! tip "Kotlin / CMP version drift"
+    The matrix lists exact built-with versions. Kotlin/Native klib ABI changes between minors and Compose Multiplatform klib ABI bumps between majors are the usual breakage points — if your consumer is on a different Kotlin minor or a different CMP major than the BOM, expect to encounter `Failed to build cache for … klib` or `unlinked class symbol` errors during the iOS framework-link step.
+
+Full release history and per-version notes: [GitHub releases](https://github.com/jipariz/sidekick/releases).
+
 ## Repository
 
 Maven Central is available by default in Gradle. If your project pins a custom repository list, make sure `mavenCentral()` is included:
