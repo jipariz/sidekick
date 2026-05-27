@@ -1,12 +1,18 @@
 package dev.parez.sidekick.network.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -35,6 +41,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.VerticalDragHandle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -53,20 +60,14 @@ import dev.parez.sidekick.network.CallStatus
 import dev.parez.sidekick.network.NetworkCall
 
 /**
- * Detail pane for the Network Monitor. Works in three layouts:
- * - **Compact (single-pane)**: list collapses, detail shows with both Request / Response tabs.
- * - **Medium (two-pane)**: list + detail; tabs still drive Request / Response.
- * - **Expanded (three-pane)**: list + detail + extra. Response moves to the extra pane
- *   ([NetworkCallResponsePane]) and this pane drops the tabs, rendering Request only — controlled
- *   by [hideResponseTab].
+ * Detail pane for the Network Monitor. Used in single-pane and two-pane layouts where Request and
+ * Response coexist in a single column driven by tabs. The three-pane / side-by-side layout uses
+ * [NetworkCallDetailSplit] instead.
  *
  * @param showBackButton When true (compact mode) shows a back arrow in the TopAppBar. When false
- *   (two/three-pane) shows nothing.
+ *   (two-pane) shows nothing.
  * @param onBack Called when the back arrow is tapped (compact) or when the pane should be
  *   dismissed.
- * @param hideResponseTab When true, the Request/Response tab row is omitted and only the Request
- *   body is rendered. Set by `NetworkMonitorContent` when the scaffold's extra pane is visible so
- *   Response lives there instead.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,51 +75,31 @@ internal fun NetworkCallDetailPane(
     call: NetworkCall,
     showBackButton: Boolean = true,
     onBack: () -> Unit,
-    hideResponseTab: Boolean = false,
 ) {
     var selectedTab by remember(call.id) { mutableIntStateOf(0) }
-    // When the extra pane appears mid-flow (e.g. user resizes window from
-    // two-pane to three-pane), clamp the tab back to Request so the (now hidden)
-    // Response selection doesn't render against the wrong children.
-    if (hideResponseTab && selectedTab != 0) selectedTab = 0
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    if (hideResponseTab) {
-                        // 3-pane mode: this pane is dedicated to the request. Use a
-                        // directional "outgoing" identity (CloudUpload + REQUEST
-                        // overline + tonal accent) so it reads as the sender side
-                        // at a glance, alongside the response pane.
-                        PaneIdentity(
-                            icon = Icons.Default.CloudUpload,
-                            iconContainer = MaterialTheme.colorScheme.primaryContainer,
-                            iconTint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            label = "Request",
-                            primary = urlHost(call.url),
-                            secondary = urlPath(call.url).takeIf { it.isNotEmpty() },
+                    Column {
+                        Text(
+                            text = urlHost(call.url),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontFamily = FontFamily.Monospace,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
-                    } else {
-                        Column {
+                        val path = urlPath(call.url)
+                        if (path.isNotEmpty()) {
                             Text(
-                                text = urlHost(call.url),
-                                style = MaterialTheme.typography.titleSmall,
+                                text = path,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontFamily = FontFamily.Monospace,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
-                            val path = urlPath(call.url)
-                            if (path.isNotEmpty()) {
-                                Text(
-                                    text = path,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontFamily = FontFamily.Monospace,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
                         }
                     }
                 },
@@ -138,49 +119,128 @@ internal fun NetworkCallDetailPane(
         }
     ) {
         Column(Modifier.padding(it).fillMaxSize()) {
-            // ── Status summary strip ──────────────────────────────────────────────
-            // Show only when the response is rendered in this pane (tabs or compact).
-            // In 3-pane mode the response lives next door, so its summary goes there.
-            if (!hideResponseTab) {
-                StatusSummaryStrip(call)
+            StatusSummaryStrip(call)
+
+            PrimaryTabRow(selectedTabIndex = selectedTab) {
+                Tab(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    icon = {
+                        Icon(
+                            Icons.Default.CloudUpload,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    },
+                    text = { Text("Request") },
+                )
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    icon = {
+                        Icon(
+                            Icons.Default.CloudDownload,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    },
+                    text = { Text("Response") },
+                )
             }
 
-            // ── Tabs ──────────────────────────────────────────────────────────────
-            if (!hideResponseTab) {
-                PrimaryTabRow(selectedTabIndex = selectedTab) {
-                    Tab(
-                        selected = selectedTab == 0,
-                        onClick = { selectedTab = 0 },
-                        icon = {
-                            Icon(
-                                Icons.Default.CloudUpload,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                            )
-                        },
-                        text = { Text("Request") },
-                    )
-                    Tab(
-                        selected = selectedTab == 1,
-                        onClick = { selectedTab = 1 },
-                        icon = {
-                            Icon(
-                                Icons.Default.CloudDownload,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                            )
-                        },
-                        text = { Text("Response") },
-                    )
-                }
-            }
-
-            // ── Tab content ───────────────────────────────────────────────────────
             when (selectedTab) {
                 0 -> RequestTab(call)
                 1 -> ResponseTab(call)
             }
         }
+    }
+}
+
+/**
+ * Side-by-side Request + Response layout for wide windows, with a draggable splitter between the
+ * two columns. The splitter position is reported back via [onProportionChange] so the host can
+ * persist it (see `NetworkMonitorContent` + `PaneSizeStore`). The proportion is clamped between
+ * `0.2f` and `0.8f` so neither column can collapse fully.
+ *
+ * @param proportion 0..1 — the share of horizontal space given to the Request column. Defaults to
+ *   `0.5f` on first open for an even 50/50 split.
+ */
+@Composable
+internal fun NetworkCallDetailSplit(
+    call: NetworkCall,
+    proportion: Float,
+    onProportionChange: (Float) -> Unit,
+) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val totalWidthPx = constraints.maxWidth.toFloat()
+        Row(Modifier.fillMaxSize()) {
+            Box(Modifier.fillMaxHeight().weight(proportion.coerceIn(0.2f, 0.8f))) {
+                NetworkCallRequestPane(call)
+            }
+            VerticalSplitterHandle(
+                onDragDeltaPx = { delta ->
+                    if (totalWidthPx > 0f) {
+                        val next = (proportion + delta / totalWidthPx).coerceIn(0.2f, 0.8f)
+                        onProportionChange(next)
+                    }
+                }
+            )
+            Box(Modifier.fillMaxHeight().weight((1f - proportion).coerceIn(0.2f, 0.8f))) {
+                NetworkCallResponsePane(call)
+            }
+        }
+    }
+}
+
+@Composable
+private fun VerticalSplitterHandle(onDragDeltaPx: (Float) -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    Box(
+        modifier =
+            Modifier.fillMaxHeight()
+                .width(8.dp)
+                .background(MaterialTheme.colorScheme.surfaceContainer)
+                .draggable(
+                    orientation = Orientation.Horizontal,
+                    state = rememberDraggableState { delta -> onDragDeltaPx(delta) },
+                    interactionSource = interactionSource,
+                ),
+        contentAlignment = Alignment.Center,
+    ) {
+        VerticalDragHandle(interactionSource = interactionSource)
+    }
+}
+
+/**
+ * Request half of the side-by-side layout. Mirrors [NetworkCallResponsePane] in shape (PaneIdentity
+ * header + tab body) so the two read as paired panels — "sent" on the left, "received" on the
+ * right.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NetworkCallRequestPane(call: NetworkCall) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    PaneIdentity(
+                        icon = Icons.Default.CloudUpload,
+                        iconContainer = MaterialTheme.colorScheme.primaryContainer,
+                        iconTint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        label = "Request",
+                        primary = urlHost(call.url),
+                        secondary = urlPath(call.url).takeIf { it.isNotEmpty() },
+                    )
+                },
+                actions = { MethodBadge(call.method, modifier = Modifier.padding(end = 12.dp)) },
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    ),
+            )
+        }
+    ) { padding ->
+        Column(modifier = Modifier.padding(padding).fillMaxSize()) { RequestTab(call) }
     }
 }
 

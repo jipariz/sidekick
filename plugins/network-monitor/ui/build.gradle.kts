@@ -18,6 +18,12 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.androidx.paging.compose)
         }
-        androidMain.dependencies { implementation(libs.koin.android) }
+        androidMain.dependencies {
+            implementation(libs.koin.android)
+            // DataStore-backed persistence for the network monitor's pane sizes
+            // on Android. Other targets use the platform-native key/value store
+            // (NSUserDefaults / java.util.prefs / localStorage) via PaneSizeStore.
+            implementation(libs.androidx.datastore.prefs)
+        }
     }
 }

@@ -2,6 +2,7 @@ package dev.parez.sidekick.network.ui
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -16,26 +17,39 @@ import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.layout.AnimatedPane
 import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffold
 import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
-import androidx.compose.material3.adaptive.layout.PaneAdaptedValue
 import androidx.compose.material3.adaptive.layout.PaneExpansionAnchor
 import androidx.compose.material3.adaptive.layout.rememberPaneExpansionState
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.LazyPagingItems
 import dev.parez.sidekick.network.NetworkCall
+import dev.parez.sidekick.network.ui.persistence.NetworkMonitorPaneSizes
+import dev.parez.sidekick.network.ui.persistence.createPaneSizeStore
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
 /**
- * Root composable for the Network Monitor plugin. Uses Material 3 Adaptive ListDetailPaneScaffold:
- * - On compact screens: single-pane push navigation.
- * - On wider screens: side-by-side list + detail panes.
+ * Root composable for the Network Monitor plugin. Uses Material 3 Adaptive ListDetailPaneScaffold
+ * for the list↔detail split and a custom in-pane Row for Request↔Response on wide windows:
+ * - **Compact / medium**: single Detail pane with Request / Response tabs
+ *   ([NetworkCallDetailPane]).
+ * - **Expanded**: Detail pane renders [NetworkCallDetailSplit] — Request and Response side-by-side
+ *   in a Row with a draggable splitter between them.
+ *
+ * Both the list↔detail anchor and the request↔response splitter position are persisted per device
+ * via [createPaneSizeStore].
  */
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
@@ -60,24 +74,48 @@ internal fun NetworkMonitorContent(
         }
     }
 
-    // The extra pane is "Expanded" when the window is wide enough for three
-    // panes — on those layouts Response moves out of the detail tabs and into
-    // its own pane (see `NetworkCallResponsePane`).
-    val extraVisible =
-        navigator.scaffoldValue[ListDetailPaneScaffoldRole.Extra] == PaneAdaptedValue.Expanded
-
-    // Proportion-based anchors keep the divider in step with window resizes;
-    // dp-absolute defaults would drift the divider visually as the host shrinks.
-    val paneExpansionState =
-        rememberPaneExpansionState(
-            anchors =
-                listOf(
-                    PaneExpansionAnchor.Proportion(0.3f),
-                    PaneExpansionAnchor.Proportion(0.5f),
-                    PaneExpansionAnchor.Proportion(0.7f),
-                ),
-            initialAnchoredIndex = 1,
+    // Three discrete anchor positions for the list↔detail boundary. Centered on
+    // ~33 % so the default layout — combined with the inner 50/50 split between
+    // Request and Response — reads as roughly 33/33/33 across all three panes.
+    val anchors = remember {
+        listOf(
+            PaneExpansionAnchor.Proportion(0.2f),
+            PaneExpansionAnchor.Proportion(0.33f),
+            PaneExpansionAnchor.Proportion(0.5f),
         )
+    }
+    val paneExpansionState = rememberPaneExpansionState(anchors = anchors, initialAnchoredIndex = 1)
+
+    // Splitter proportion between Request (left) and Response (right) inside the
+    // expanded detail layout. 0.5f = even split; clamped 0.2..0.8 by the
+    // splitter handle so neither column can collapse.
+    var splitProportion by remember { mutableFloatStateOf(0.5f) }
+
+    // Persist + restore both knobs via the platform-native key/value store.
+    val store = remember { createPaneSizeStore() }
+    LaunchedEffect(Unit) {
+        store.read()?.let { saved ->
+            val clampedIndex = saved.listAnchorIndex.coerceIn(0, anchors.size - 1)
+            paneExpansionState.animateTo(anchors[clampedIndex])
+            splitProportion = saved.requestResponseProportion.coerceIn(0.2f, 0.8f)
+        }
+    }
+    LaunchedEffect(paneExpansionState, anchors) {
+        snapshotFlow {
+                val current = paneExpansionState.currentAnchor
+                val index =
+                    if (current is PaneExpansionAnchor.Proportion) {
+                        anchors.indexOf(current).takeIf { it >= 0 } ?: 1
+                    } else 1
+                NetworkMonitorPaneSizes(
+                    listAnchorIndex = index,
+                    requestResponseProportion = splitProportion,
+                )
+            }
+            .drop(1)
+            .distinctUntilChanged()
+            .collect { store.write(it) }
+    }
 
     ListDetailPaneScaffold(
         directive = navigator.scaffoldDirective,
@@ -116,24 +154,30 @@ internal fun NetworkMonitorContent(
         detailPane = {
             AnimatedPane {
                 if (selected != null) {
-                    NetworkCallDetailPane(
-                        call = selected,
-                        showBackButton = true,
-                        onBack = {
-                            onSelect(null)
-                            scope.launch { navigator.navigateBack() }
-                        },
-                        hideResponseTab = extraVisible,
-                    )
+                    // Use the side-by-side split only when the detail pane is wide
+                    // enough that both columns end up bigger than the splitter
+                    // handle + each pane's minimum content width. 600 dp matches
+                    // M3's "expanded" width-class threshold.
+                    BoxWithConstraints(Modifier.fillMaxSize()) {
+                        if (maxWidth >= 600.dp) {
+                            NetworkCallDetailSplit(
+                                call = selected,
+                                proportion = splitProportion,
+                                onProportionChange = { splitProportion = it },
+                            )
+                        } else {
+                            NetworkCallDetailPane(
+                                call = selected,
+                                showBackButton = true,
+                                onBack = {
+                                    onSelect(null)
+                                    scope.launch { navigator.navigateBack() }
+                                },
+                            )
+                        }
+                    }
                 } else {
                     DetailEmptyState()
-                }
-            }
-        },
-        extraPane = {
-            AnimatedPane {
-                if (selected != null) {
-                    NetworkCallResponsePane(call = selected)
                 }
             }
         },
