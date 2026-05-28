@@ -75,15 +75,17 @@ internal fun NetworkMonitorContent(
         }
     }
 
-    // Dp-absolute anchor positions for the list↔detail boundary. Offset (rather
-    // than proportion) anchors stay put when the window is resized — drag the
-    // divider to 320 dp, then expand the window from 1200 to 1600 px, and the
-    // list stays at 320 dp wide rather than scaling proportionally to 426.
+    // Proportional anchor positions for the list↔detail boundary. The user's
+    // chosen anchor is locked as a fraction of total width, so window resize
+    // scales the divider with the window — drag to 33% on a 1200dp window and
+    // it stays at 33% (now 600dp) when the window grows to 1800dp. Default is
+    // 33% so the initial layout reads as roughly equal thirds (list 33%,
+    // request+response sharing remaining 67% split 50/50).
     val anchors = remember {
         listOf(
-            PaneExpansionAnchor.Offset.fromStart(240.dp),
-            PaneExpansionAnchor.Offset.fromStart(320.dp),
-            PaneExpansionAnchor.Offset.fromStart(400.dp),
+            PaneExpansionAnchor.Proportion(0.2f),
+            PaneExpansionAnchor.Proportion(0.33f),
+            PaneExpansionAnchor.Proportion(0.5f),
         )
     }
     val paneExpansionState = rememberPaneExpansionState(anchors = anchors, initialAnchoredIndex = 1)
