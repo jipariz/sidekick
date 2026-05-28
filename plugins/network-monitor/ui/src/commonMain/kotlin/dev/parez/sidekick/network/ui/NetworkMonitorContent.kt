@@ -17,6 +17,7 @@ import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.layout.AnimatedPane
 import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffold
 import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
+import androidx.compose.material3.adaptive.layout.PaneAdaptedValue
 import androidx.compose.material3.adaptive.layout.PaneExpansionAnchor
 import androidx.compose.material3.adaptive.layout.rememberPaneExpansionState
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
@@ -74,14 +75,15 @@ internal fun NetworkMonitorContent(
         }
     }
 
-    // Three discrete anchor positions for the list↔detail boundary. Centered on
-    // ~33 % so the default layout — combined with the inner 50/50 split between
-    // Request and Response — reads as roughly 33/33/33 across all three panes.
+    // Dp-absolute anchor positions for the list↔detail boundary. Offset (rather
+    // than proportion) anchors stay put when the window is resized — drag the
+    // divider to 320 dp, then expand the window from 1200 to 1600 px, and the
+    // list stays at 320 dp wide rather than scaling proportionally to 426.
     val anchors = remember {
         listOf(
-            PaneExpansionAnchor.Proportion(0.2f),
-            PaneExpansionAnchor.Proportion(0.33f),
-            PaneExpansionAnchor.Proportion(0.5f),
+            PaneExpansionAnchor.Offset.fromStart(240.dp),
+            PaneExpansionAnchor.Offset.fromStart(320.dp),
+            PaneExpansionAnchor.Offset.fromStart(400.dp),
         )
     }
     val paneExpansionState = rememberPaneExpansionState(anchors = anchors, initialAnchoredIndex = 1)
@@ -103,10 +105,7 @@ internal fun NetworkMonitorContent(
     LaunchedEffect(paneExpansionState, anchors) {
         snapshotFlow {
                 val current = paneExpansionState.currentAnchor
-                val index =
-                    if (current is PaneExpansionAnchor.Proportion) {
-                        anchors.indexOf(current).takeIf { it >= 0 } ?: 1
-                    } else 1
+                val index = anchors.indexOf(current).takeIf { it >= 0 } ?: 1
                 NetworkMonitorPaneSizes(
                     listAnchorIndex = index,
                     requestResponseProportion = splitProportion,
@@ -116,6 +115,14 @@ internal fun NetworkMonitorContent(
             .distinctUntilChanged()
             .collect { store.write(it) }
     }
+
+    // M3 Adaptive can decide to hide the list pane in narrower windows (single-
+    // pane navigation). When that happens we must keep a back button on the
+    // detail pane so the user can return — and we must NOT show the side-by-
+    // side split layout (which has no back affordance) regardless of the
+    // detail pane's own measured width.
+    val listVisible =
+        navigator.scaffoldValue[ListDetailPaneScaffoldRole.List] == PaneAdaptedValue.Expanded
 
     ListDetailPaneScaffold(
         directive = navigator.scaffoldDirective,
@@ -154,12 +161,12 @@ internal fun NetworkMonitorContent(
         detailPane = {
             AnimatedPane {
                 if (selected != null) {
-                    // Use the side-by-side split only when the detail pane is wide
-                    // enough that both columns end up bigger than the splitter
-                    // handle + each pane's minimum content width. 600 dp matches
-                    // M3's "expanded" width-class threshold.
+                    // Side-by-side split only when the list is also visible AND
+                    // the detail column itself is wide enough. If the list is
+                    // hidden (single-pane mode), force the tabbed layout — it
+                    // has the back button the user needs to return to the list.
                     BoxWithConstraints(Modifier.fillMaxSize()) {
-                        if (maxWidth >= 600.dp) {
+                        if (listVisible && maxWidth >= 600.dp) {
                             NetworkCallDetailSplit(
                                 call = selected,
                                 proportion = splitProportion,
@@ -168,7 +175,7 @@ internal fun NetworkMonitorContent(
                         } else {
                             NetworkCallDetailPane(
                                 call = selected,
-                                showBackButton = true,
+                                showBackButton = !listVisible,
                                 onBack = {
                                     onSelect(null)
                                     scope.launch { navigator.navigateBack() }
