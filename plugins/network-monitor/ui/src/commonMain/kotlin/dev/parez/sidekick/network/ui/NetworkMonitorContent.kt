@@ -67,14 +67,16 @@ internal fun NetworkMonitorContent(
         }
     }
 
-    // Dp-absolute anchor positions for the list↔detail boundary. Offset
-    // anchors keep the divider at a fixed dp from the start edge across window
-    // resizes — drag to 320 dp and grow the window, list stays at 320 dp while
-    // the detail side absorbs the extra space.
+    // Anchors for the list↔detail boundary:
+    // - Narrow / wide use dp-absolute Offset so dragged-then-window-resized
+    //   keeps the divider at the same dp from the start edge.
+    // - The middle (default) anchor is Proportion(1/3) so the initial layout
+    //   is equal thirds (list 33%, request+response sharing remaining 67%
+    //   split 50/50) regardless of window size.
     val anchors = remember {
         listOf(
             PaneExpansionAnchor.Offset.fromStart(240.dp),
-            PaneExpansionAnchor.Offset.fromStart(320.dp),
+            PaneExpansionAnchor.Proportion(1f / 3f),
             PaneExpansionAnchor.Offset.fromStart(400.dp),
         )
     }
