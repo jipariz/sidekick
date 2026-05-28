@@ -1,5 +1,6 @@
 package dev.parez.sidekick.network.ui
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
@@ -46,6 +47,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +60,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.parez.sidekick.network.CallStatus
 import dev.parez.sidekick.network.NetworkCall
+import kotlin.math.abs
+import kotlinx.coroutines.launch
 
 /**
  * Detail pane for the Network Monitor. Used in single-pane and two-pane layouts where Request and
@@ -158,34 +162,33 @@ internal fun NetworkCallDetailPane(
 
 /**
  * Side-by-side Request + Response layout for wide windows, with a draggable splitter between the
- * two columns. The splitter position is reported back via [onProportionChange] so the host can
- * persist it (see `NetworkMonitorContent` + `PaneSizeStore`). The proportion is clamped between
- * `0.2f` and `0.8f` so neither column can collapse fully.
- *
- * @param proportion 0..1 — the share of horizontal space given to the Request column. Defaults to
- *   `0.5f` on first open for an even 50/50 split.
+ * two columns. Mirrors the M3 Adaptive list-pane behavior: three snap points (`0.3 / 0.5 / 0.7`)
+ * with a hard min/max clamp of `0.2..0.8`, and an animated snap-back on release to the nearest
+ * anchor.
  */
 @Composable
-internal fun NetworkCallDetailSplit(
-    call: NetworkCall,
-    proportion: Float,
-    onProportionChange: (Float) -> Unit,
-) {
+internal fun NetworkCallDetailSplit(call: NetworkCall) {
+    val snapPoints = remember { listOf(0.3f, 0.5f, 0.7f) }
+    val proportion = remember { Animatable(0.5f) }
+    val scope = rememberCoroutineScope()
+
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val totalWidthPx = constraints.maxWidth.toFloat()
         Row(Modifier.fillMaxSize()) {
-            Box(Modifier.fillMaxHeight().weight(proportion.coerceIn(0.2f, 0.8f))) {
-                NetworkCallRequestPane(call)
-            }
+            Box(Modifier.fillMaxHeight().weight(proportion.value)) { NetworkCallRequestPane(call) }
             VerticalSplitterHandle(
                 onDragDeltaPx = { delta ->
                     if (totalWidthPx > 0f) {
-                        val next = (proportion + delta / totalWidthPx).coerceIn(0.2f, 0.8f)
-                        onProportionChange(next)
+                        val next = (proportion.value + delta / totalWidthPx).coerceIn(0.2f, 0.8f)
+                        scope.launch { proportion.snapTo(next) }
                     }
-                }
+                },
+                onDragStopped = {
+                    val closest = snapPoints.minBy { abs(it - proportion.value) }
+                    proportion.animateTo(closest)
+                },
             )
-            Box(Modifier.fillMaxHeight().weight((1f - proportion).coerceIn(0.2f, 0.8f))) {
+            Box(Modifier.fillMaxHeight().weight(1f - proportion.value)) {
                 NetworkCallResponsePane(call)
             }
         }
@@ -193,7 +196,10 @@ internal fun NetworkCallDetailSplit(
 }
 
 @Composable
-private fun VerticalSplitterHandle(onDragDeltaPx: (Float) -> Unit) {
+private fun VerticalSplitterHandle(
+    onDragDeltaPx: (Float) -> Unit,
+    onDragStopped: suspend () -> Unit = {},
+) {
     val interactionSource = remember { MutableInteractionSource() }
     Box(
         modifier =
@@ -204,6 +210,7 @@ private fun VerticalSplitterHandle(onDragDeltaPx: (Float) -> Unit) {
                     orientation = Orientation.Horizontal,
                     state = rememberDraggableState { delta -> onDragDeltaPx(delta) },
                     interactionSource = interactionSource,
+                    onDragStopped = { onDragStopped() },
                 ),
         contentAlignment = Alignment.Center,
     ) {

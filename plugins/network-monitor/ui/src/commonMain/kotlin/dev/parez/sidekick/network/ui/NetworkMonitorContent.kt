@@ -23,11 +23,8 @@ import androidx.compose.material3.adaptive.layout.rememberPaneExpansionState
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -83,12 +80,6 @@ internal fun NetworkMonitorContent(
     }
     val paneExpansionState = rememberPaneExpansionState(anchors = anchors, initialAnchoredIndex = 1)
 
-    // Splitter proportion between Request (left) and Response (right) inside the
-    // expanded detail layout. 0.5f = even split; clamped 0.2..0.8 by the
-    // splitter handle so neither column can collapse. Lives only for the
-    // current session — not persisted.
-    var splitProportion by remember { mutableFloatStateOf(0.5f) }
-
     // M3 Adaptive can decide to hide the list pane in narrower windows (single-
     // pane navigation). When that happens we must keep a back button on the
     // detail pane so the user can return — and we must NOT show the side-by-
@@ -140,11 +131,7 @@ internal fun NetworkMonitorContent(
                     // has the back button the user needs to return to the list.
                     BoxWithConstraints(Modifier.fillMaxSize()) {
                         if (listVisible && maxWidth >= 600.dp) {
-                            NetworkCallDetailSplit(
-                                call = selected,
-                                proportion = splitProportion,
-                                onProportionChange = { splitProportion = it },
-                            )
+                            NetworkCallDetailSplit(call = selected)
                         } else {
                             NetworkCallDetailPane(
                                 call = selected,
