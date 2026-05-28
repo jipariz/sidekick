@@ -28,17 +28,12 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.LazyPagingItems
 import dev.parez.sidekick.network.NetworkCall
-import dev.parez.sidekick.network.ui.persistence.NetworkMonitorPaneSizes
-import dev.parez.sidekick.network.ui.persistence.createPaneSizeStore
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
 /**
@@ -49,8 +44,8 @@ import kotlinx.coroutines.launch
  * - **Expanded**: Detail pane renders [NetworkCallDetailSplit] — Request and Response side-by-side
  *   in a Row with a draggable splitter between them.
  *
- * Both the list↔detail anchor and the request↔response splitter position are persisted per device
- * via [createPaneSizeStore].
+ * The list↔detail anchor and the request↔response splitter position both reset to defaults each
+ * time the plugin is opened — no cross-session persistence.
  */
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
@@ -75,48 +70,24 @@ internal fun NetworkMonitorContent(
         }
     }
 
-    // Proportional anchor positions for the list↔detail boundary. The user's
-    // chosen anchor is locked as a fraction of total width, so window resize
-    // scales the divider with the window — drag to 33% on a 1200dp window and
-    // it stays at 33% (now 600dp) when the window grows to 1800dp. Default is
-    // 33% so the initial layout reads as roughly equal thirds (list 33%,
-    // request+response sharing remaining 67% split 50/50).
+    // Dp-absolute anchor positions for the list↔detail boundary. Offset
+    // anchors keep the divider at a fixed dp from the start edge across window
+    // resizes — drag to 320 dp and grow the window, list stays at 320 dp while
+    // the detail side absorbs the extra space.
     val anchors = remember {
         listOf(
-            PaneExpansionAnchor.Proportion(0.2f),
-            PaneExpansionAnchor.Proportion(0.33f),
-            PaneExpansionAnchor.Proportion(0.5f),
+            PaneExpansionAnchor.Offset.fromStart(240.dp),
+            PaneExpansionAnchor.Offset.fromStart(320.dp),
+            PaneExpansionAnchor.Offset.fromStart(400.dp),
         )
     }
     val paneExpansionState = rememberPaneExpansionState(anchors = anchors, initialAnchoredIndex = 1)
 
     // Splitter proportion between Request (left) and Response (right) inside the
     // expanded detail layout. 0.5f = even split; clamped 0.2..0.8 by the
-    // splitter handle so neither column can collapse.
+    // splitter handle so neither column can collapse. Lives only for the
+    // current session — not persisted.
     var splitProportion by remember { mutableFloatStateOf(0.5f) }
-
-    // Persist + restore both knobs via the platform-native key/value store.
-    val store = remember { createPaneSizeStore() }
-    LaunchedEffect(Unit) {
-        store.read()?.let { saved ->
-            val clampedIndex = saved.listAnchorIndex.coerceIn(0, anchors.size - 1)
-            paneExpansionState.animateTo(anchors[clampedIndex])
-            splitProportion = saved.requestResponseProportion.coerceIn(0.2f, 0.8f)
-        }
-    }
-    LaunchedEffect(paneExpansionState, anchors) {
-        snapshotFlow {
-                val current = paneExpansionState.currentAnchor
-                val index = anchors.indexOf(current).takeIf { it >= 0 } ?: 1
-                NetworkMonitorPaneSizes(
-                    listAnchorIndex = index,
-                    requestResponseProportion = splitProportion,
-                )
-            }
-            .drop(1)
-            .distinctUntilChanged()
-            .collect { store.write(it) }
-    }
 
     // M3 Adaptive can decide to hide the list pane in narrower windows (single-
     // pane navigation). When that happens we must keep a back button on the
