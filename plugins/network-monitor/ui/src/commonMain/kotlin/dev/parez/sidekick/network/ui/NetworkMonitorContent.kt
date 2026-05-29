@@ -2,6 +2,7 @@ package dev.parez.sidekick.network.ui
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -33,9 +34,15 @@ import dev.parez.sidekick.network.NetworkCall
 import kotlinx.coroutines.launch
 
 /**
- * Root composable for the Network Monitor plugin. Uses Material 3 Adaptive ListDetailPaneScaffold:
- * - On compact screens: single-pane push navigation.
- * - On wider screens: side-by-side list + detail panes.
+ * Root composable for the Network Monitor plugin. Uses Material 3 Adaptive ListDetailPaneScaffold
+ * for the list↔detail split and a custom in-pane Row for Request↔Response on wide windows:
+ * - **Compact / medium**: single Detail pane with Request / Response tabs
+ *   ([NetworkCallDetailPane]).
+ * - **Expanded**: Detail pane renders [NetworkCallDetailSplit] — Request and Response side-by-side
+ *   in a Row with a draggable splitter between them.
+ *
+ * The list↔detail anchor and the request↔response splitter position both reset to defaults each
+ * time the plugin is opened — no cross-session persistence.
  */
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
@@ -60,24 +67,28 @@ internal fun NetworkMonitorContent(
         }
     }
 
-    // The extra pane is "Expanded" when the window is wide enough for three
-    // panes — on those layouts Response moves out of the detail tabs and into
-    // its own pane (see `NetworkCallResponsePane`).
-    val extraVisible =
-        navigator.scaffoldValue[ListDetailPaneScaffoldRole.Extra] == PaneAdaptedValue.Expanded
-
-    // Proportion-based anchors keep the divider in step with window resizes;
-    // dp-absolute defaults would drift the divider visually as the host shrinks.
-    val paneExpansionState =
-        rememberPaneExpansionState(
-            anchors =
-                listOf(
-                    PaneExpansionAnchor.Proportion(0.3f),
-                    PaneExpansionAnchor.Proportion(0.5f),
-                    PaneExpansionAnchor.Proportion(0.7f),
-                ),
-            initialAnchoredIndex = 1,
+    // Anchors for the list↔detail boundary:
+    // - Narrow / wide use dp-absolute Offset so dragged-then-window-resized
+    //   keeps the divider at the same dp from the start edge.
+    // - The middle (default) anchor is Proportion(1/3) so the initial layout
+    //   is equal thirds (list 33%, request+response sharing remaining 67%
+    //   split 50/50) regardless of window size.
+    val anchors = remember {
+        listOf(
+            PaneExpansionAnchor.Offset.fromStart(240.dp),
+            PaneExpansionAnchor.Proportion(1f / 3f),
+            PaneExpansionAnchor.Offset.fromStart(400.dp),
         )
+    }
+    val paneExpansionState = rememberPaneExpansionState(anchors = anchors, initialAnchoredIndex = 1)
+
+    // M3 Adaptive can decide to hide the list pane in narrower windows (single-
+    // pane navigation). When that happens we must keep a back button on the
+    // detail pane so the user can return — and we must NOT show the side-by-
+    // side split layout (which has no back affordance) regardless of the
+    // detail pane's own measured width.
+    val listVisible =
+        navigator.scaffoldValue[ListDetailPaneScaffoldRole.List] == PaneAdaptedValue.Expanded
 
     ListDetailPaneScaffold(
         directive = navigator.scaffoldDirective,
@@ -116,24 +127,26 @@ internal fun NetworkMonitorContent(
         detailPane = {
             AnimatedPane {
                 if (selected != null) {
-                    NetworkCallDetailPane(
-                        call = selected,
-                        showBackButton = true,
-                        onBack = {
-                            onSelect(null)
-                            scope.launch { navigator.navigateBack() }
-                        },
-                        hideResponseTab = extraVisible,
-                    )
+                    // Side-by-side split only when the list is also visible AND
+                    // the detail column itself is wide enough. If the list is
+                    // hidden (single-pane mode), force the tabbed layout — it
+                    // has the back button the user needs to return to the list.
+                    BoxWithConstraints(Modifier.fillMaxSize()) {
+                        if (listVisible && maxWidth >= 600.dp) {
+                            NetworkCallDetailSplit(call = selected)
+                        } else {
+                            NetworkCallDetailPane(
+                                call = selected,
+                                showBackButton = !listVisible,
+                                onBack = {
+                                    onSelect(null)
+                                    scope.launch { navigator.navigateBack() }
+                                },
+                            )
+                        }
+                    }
                 } else {
                     DetailEmptyState()
-                }
-            }
-        },
-        extraPane = {
-            AnimatedPane {
-                if (selected != null) {
-                    NetworkCallResponsePane(call = selected)
                 }
             }
         },
