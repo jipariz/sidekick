@@ -60,10 +60,15 @@ class SidekickKmpLibraryPlugin : Plugin<Project> {
             jvm()
             js {
                 browser()
+                // CMP 1.12+ requires an executable binary on JS library targets so
+                // Skiko can be bundled into UI tests — CMP-4906. Harmless for
+                // klib-published libraries; only affects webpack tasks.
+                binaries.executable()
             }
             @OptIn(ExperimentalWasmDsl::class)
             wasmJs {
                 browser()
+                binaries.executable()
             }
 
             // CMP 1.11.0 deprecated `compose.runtime` / `.foundation` / `.material3` / `.ui`

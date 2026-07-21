@@ -33,8 +33,17 @@ kotlin {
         minSdk = libs.versions.android.minSdk.get().toInt()
     }
     jvm()
-    js { browser() }
-    @OptIn(ExperimentalWasmDsl::class) wasmJs { browser() }
+    js {
+        browser()
+        // CMP 1.12+ requires an executable binary on JS targets so Skiko can be
+        // bundled into UI tests — CMP-4906.
+        binaries.executable()
+    }
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmJs {
+        browser()
+        binaries.executable()
+    }
     listOf(iosArm64(), iosSimulatorArm64()).forEach { iosTarget ->
         iosTarget.binaries.framework {
             baseName = "ComposeApp"
