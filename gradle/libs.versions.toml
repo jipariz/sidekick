@@ -9,8 +9,8 @@ androidx-core = "1.18.0"
 androidx-espresso = "3.7.0"
 androidx-lifecycle = "2.11.0-beta01"
 androidx-testExt = "1.3.0"
-composeHotReload = "1.1.1"
-composeMultiplatform = "1.12.0-beta02"
+composeHotReload = "1.2.0"
+composeMultiplatform = "1.12.0"
 composeMaterial3 = "1.12.0-alpha03"
 junit = "4.13.2"
 kotlin = "2.4.0"
@@ -23,7 +23,7 @@ kotlinxSerialization = "1.11.0"
 coil = "3.5.0-beta01"
 koin = "4.2.1"
 kermit = "2.1.0"
-compose-adaptive = "1.3.0-beta01"
+compose-adaptive = "1.3.0-beta02"
 material3AdaptiveNavigationSuite = "1.9.0"
 navigation3 = "1.1.2"
 navigationeventCompose = "1.1.0"
@@ -104,7 +104,7 @@ compose-adaptive-layout = { module = "org.jetbrains.compose.material3.adaptive:a
 # the other `adaptive-*` artifacts so it follows `compose-adaptive`.
 compose-adaptive-navigation3 = { module = "org.jetbrains.compose.material3.adaptive:adaptive-navigation3", version.ref = "compose-adaptive" }
 navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
-# Force-bump from the 1.0.1 that `adaptive-navigation3` 1.3.0-beta01 transitively
+# Force-bump from the 1.0.1 that `adaptive-navigation3` 1.3.0-beta02 transitively
 # pulls — that build is Kotlin 2.2.20 (abi 2.2.0), and its Wasm klib still
 # references `kotlin.wasm.internal.externrefToBoolean`, which Kotlin 2.3 no
 # longer exports. 1.1.0 is the 2.3.20 rebuild (abi 2.3.0).
