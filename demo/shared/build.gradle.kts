@@ -122,7 +122,7 @@ kotlin {
                 // 3.0.0-alpha05 — previously iOS was carved out via nonIosMain.
                 implementation(libs.room3.runtime)
                 // Force-bump over the 1.0.1 (Kotlin 2.2.20 abi) that
-                // adaptive-navigation3:1.3.0-beta01 transitively pulls.
+                // adaptive-navigation3:1.3.0-beta02 transitively pulls.
                 implementation(libs.navigationevent.compose)
                 implementation(libs.reveal.core)
                 implementation(libs.reveal.shapes)
@@ -141,7 +141,7 @@ kotlin {
             dependencies {
                 // Wires androidx.navigation3 backstack ↔ browser History API.
                 implementation(libs.navigation3.browser)
-                // The adaptive-navigation3 1.3.0-beta01 graph still pulls
+                // The adaptive-navigation3 1.3.0-beta02 graph still pulls
                 // Kotlin-2.2-era (abi 2.2.0) AOSP klibs (lifecycle, savedstate,
                 // navigationevent). Those reference `externrefToBoolean`, a
                 // Wasm internal that Kotlin 2.3 no longer exports — the page
