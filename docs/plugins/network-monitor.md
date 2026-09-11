@@ -17,8 +17,8 @@ Capture every HTTP request and response your app makes, with searchable list, me
 - **Color-coded status** — `2xx`, `3xx`, `4xx`, `5xx`, and pending requests render distinctly.
 - **Request / response tabs** — copyable headers, pretty-printed JSON bodies.
 - **Credentials redacted by default** — `Authorization`, `Proxy-Authorization`, `Cookie`, `Set-Cookie` and `X-Api-Key` never reach storage. Add your own, or opt out.
-- **Capped memory** — bodies are truncated individually and capped in aggregate; evicted calls say so rather than showing a blank pane.
-- **Share / export** — send a single call (with a reproducing `curl`) or the whole filtered list to the platform share sheet.
+- **Capped memory** — bodies are truncated individually and capped in aggregate. Evicted calls are labelled rather than shown blank.
+- **Share / export** — send one call, with a reproducing `curl`, or the whole filtered list.
 - **Request filtering** — skip specific hosts or routes from being recorded.
 - **Body truncation** — cap captured body length to avoid log bloat.
 - **Configurable retention** — auto-prune calls older than your chosen `Duration`.
@@ -34,18 +34,16 @@ Capture every HTTP request and response your app makes, with searchable list, me
 
 ## Default redaction
 
-Captured calls are written to a Room database that survives app restarts, so any credential that
-reaches the monitor outlives the process that sent it. These headers are therefore replaced with
-`***` before anything is stored:
+Captured calls are written to a Room database that survives app restarts, so a credential reaching
+the monitor outlives the process that sent it. These headers are replaced with `***` before storage:
 
 `authorization` · `proxy-authorization` · `cookie` · `set-cookie` · `x-api-key`
 
-Matching is case-insensitive. **Redaction also survives export** — a shared call or `curl` command
-carries the placeholder, so you have to fill the real credential in by hand. An export that leaks a
-bearer token is worse than one you have to edit.
+Matching is case-insensitive. Redaction survives export: a shared call or `curl` command carries the
+placeholder, so you fill the real credential in by hand.
 
-Your own `sanitizeHeader { }` calls are evaluated first, so passing a predicate that matches a
-default-redacted name replaces the built-in placeholder rather than being shadowed by it.
+Your own `sanitizeHeader { }` calls are evaluated first, so a predicate matching a default-redacted
+name replaces the built-in placeholder rather than being shadowed by it.
 
 To turn it off entirely:
 
@@ -65,17 +63,14 @@ Two separate limits, because they solve different problems:
 | `bodyBudgetChars` | **sum** of all retained bodies | `BodyBudget.Default` (8 M chars ≈ 16 MiB) |
 
 The aggregate budget matters most on web, where the fallback list lives in the JS heap rather than a
-SQLite file. Once the total is exceeded, the oldest bodies are dropped — but the calls themselves are
-kept and flagged, and the detail pane says *"Body dropped to save memory"* rather than rendering an
-empty section. "There was no body" and "we dropped the body" are different facts when you are
-debugging.
+SQLite file. Once the total is exceeded the oldest bodies are dropped, but the calls are kept and
+flagged, and the detail pane shows *"Body dropped to save memory"* instead of an empty section.
 
 ## Share and export
 
-The list toolbar exports every call matching the current filter; the detail toolbar exports one call
-including a `curl` invocation that reproduces it. Both go through the platform's own mechanism — an
-intent chooser on Android, a share sheet on iOS, a save-or-clipboard prompt on desktop, a download in
-the browser.
+The list toolbar exports every call matching the current filter. The detail toolbar exports one call
+plus a `curl` invocation that reproduces it. Both use the platform's own mechanism: an intent chooser
+on Android, a share sheet on iOS, a save-or-clipboard prompt on desktop, a download in the browser.
 
 ## Setup
 
@@ -198,7 +193,7 @@ val httpClient = HttpClient {
 |---|---|---|---|
 | `maxContentLength` | `Int` | `ContentLength.Default` (65 536) | Use `ContentLength.Full` (`Int.MAX_VALUE`) to disable truncation. |
 | `sanitizeHeader(placeholder, predicate)` | DSL | — | Replaces matching header values with `placeholder` (default `"***"`). Call multiple times. Evaluated **before** the built-in set, so you can override a default. |
-| `disableDefaultRedaction()` | DSL | — | Stops redacting [`DefaultRedactedHeaders`](#default-redaction). Only do this when capturing credentials is intended. |
+| `disableDefaultRedaction()` | DSL | — | Stops redacting [`DefaultRedactedHeaders`](#default-redaction). Use only when capturing credentials is intended. |
 | `bodyBudgetChars` | `Int` | `BodyBudget.Default` (8 MiB chars ≈ 16 MiB) | Aggregate ceiling on captured body text. Oldest bodies are dropped past it; the call is kept and flagged. |
 | `filter(predicate)` | DSL | — | Predicate receives an `HttpRequestBuilder`. Requests where any registered predicate returns `true` are skipped. |
 

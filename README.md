@@ -35,7 +35,7 @@
 - 🪵 **View logs without ADB** — Kermit bridge ships out of the box; Timber and friends drop in via a 4-line `LogCollector`.
 - 🎚️ **Flip feature flags from the panel** — annotate a class, KSP generates the DataStore wiring and a ready-to-use UI.
 - 🧩 **Wrap any Composable as a debug screen** — internal QA dashboards, environment switchers, build-info pages.
-- ⚡ **Zero release-build cost** — `core:noop` swaps the panel for a passthrough composable, and the `network-monitor` / `log-monitor` / `database-inspector` / `crash-monitor` noops strip the recording side too; release binaries don't ship one byte of Sidekick UI or database code.
+- ⚡ **Zero release-build cost** — `core:noop` swaps the panel for a passthrough composable, and every recording plugin ships a matching noop; release binaries don't carry Sidekick UI or database code.
 - 🖼️ **Compose Multiplatform** — one codebase, five targets: Android, iOS, Desktop (JVM), Web (JS), Web (Wasm).
 - 🎨 **Theme-aware** — applies its own light/dark palette by default, or inherits your `MaterialTheme` with one flag.
 
@@ -46,12 +46,12 @@
 | [**Network Monitor**](docs/plugins/network-monitor.md) | Captures every HTTP request / response. Ktor built-in; OkHttp and others via `NetworkMonitorStore`. | ![A](https://img.shields.io/badge/-Android-3DDC84) ![i](https://img.shields.io/badge/-iOS-000) ![J](https://img.shields.io/badge/-JVM-4E8EE9) ![J](https://img.shields.io/badge/-JS-F7DF1E) ![W](https://img.shields.io/badge/-Wasm-654FF0) |
 | [**Log Monitor**](docs/plugins/log-monitor.md) | Color-coded log feed with level chips and search. Kermit bridge built-in. | ![A](https://img.shields.io/badge/-Android-3DDC84) ![i](https://img.shields.io/badge/-iOS-000) ![J](https://img.shields.io/badge/-JVM-4E8EE9) ![J](https://img.shields.io/badge/-JS-F7DF1E) ![W](https://img.shields.io/badge/-Wasm-654FF0) |
 | [**Database Inspector**](docs/plugins/database-inspector.md) | Browse and edit your app's own SQLite tables, with a read-only SQL console. | ![A](https://img.shields.io/badge/-Android-3DDC84) ![i](https://img.shields.io/badge/-iOS-000) ![J](https://img.shields.io/badge/-JVM-4E8EE9) |
-| [**Crash Monitor**](docs/plugins/crash-monitor.md) | Fatals and handled exceptions, readable on the run *after* the crash. | ![A](https://img.shields.io/badge/-Android-3DDC84) ![i](https://img.shields.io/badge/-iOS-000) ![J](https://img.shields.io/badge/-JVM-4E8EE9) ![J](https://img.shields.io/badge/-JS-F7DF1E) ![W](https://img.shields.io/badge/-Wasm-654FF0) |
+| [**Crash Monitor**](docs/plugins/crash-monitor.md) | Fatal and handled exceptions, readable on the next launch. | ![A](https://img.shields.io/badge/-Android-3DDC84) ![i](https://img.shields.io/badge/-iOS-000) ![J](https://img.shields.io/badge/-JVM-4E8EE9) ![J](https://img.shields.io/badge/-JS-F7DF1E) ![W](https://img.shields.io/badge/-Wasm-654FF0) |
 | [**Preferences**](docs/plugins/preferences.md) | Typed settings UI generated from `@Preference` annotations via KSP. | ![A](https://img.shields.io/badge/-Android-3DDC84) ![i](https://img.shields.io/badge/-iOS-000) ![J](https://img.shields.io/badge/-JVM-4E8EE9) ![J](https://img.shields.io/badge/-JS-F7DF1E) ![W](https://img.shields.io/badge/-Wasm-654FF0)¹ |
 | [**Custom Screens**](docs/plugins/custom-screen.md) | Wrap any Composable as a debug card. Full DI access. | ![A](https://img.shields.io/badge/-Android-3DDC84) ![i](https://img.shields.io/badge/-iOS-000) ![J](https://img.shields.io/badge/-JVM-4E8EE9) ![J](https://img.shields.io/badge/-JS-F7DF1E) ![W](https://img.shields.io/badge/-Wasm-654FF0) |
 | [**Your plugin**](docs/plugins/custom-plugin.md) | Implement `SidekickPlugin` — full module, your own DI scope, anything goes. | depends on what you publish |
 
-<sub>² Database inspection is native-only — `sqlite-web`'s worker mis-reports column types, so the web panel explains the limitation instead of risking a crash.</sub>
+<sub>² Database inspection is native-only — `sqlite-web` mis-reports column types, so the web panel shows an unsupported state.</sub>
 
 <sub>¹ Wasm uses in-memory preferences (DataStore has no Wasm driver) — values do not persist across reloads.</sub>
 
