@@ -94,6 +94,7 @@ Sidekick(
 
 | Parameter | Default | Purpose |
 |---|---|---|
+| `modifier` | `Modifier` | Layout for the panel's root surface — size, padding, insets. |
 | `title` | `"Sidekick"` | Title shown in the plugin-list app bar. |
 | `navigationIcon` | empty slot | Leading slot on the plugin-list app bar. |
 | `actions` | empty slot | Trailing slot — wire your close button here. |

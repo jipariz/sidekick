@@ -16,7 +16,7 @@ The public ABI is identical across `shell`/`noop` and across each `{api,plugin,k
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
+            implementation(platform("dev.parez.sidekick:bom:2026.08.28"))
             // `compileOnly` keeps the real plugin jars off the Android release
             // runtime classpath, where they would collide with the noop variant.
             compileOnly("dev.parez.sidekick:network-monitor-ui")
@@ -54,7 +54,7 @@ The recommended pattern is a property-gated swap in each leaf source set. Run pr
 val sidekickNoop = (findProperty("sidekick.noop") as? String).toBoolean()
 
 jvmMain.dependencies {
-    implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
+    implementation(platform("dev.parez.sidekick:bom:2026.08.28"))
     if (sidekickNoop) {
         implementation("dev.parez.sidekick:noop")
         implementation("dev.parez.sidekick:network-monitor-noop")
