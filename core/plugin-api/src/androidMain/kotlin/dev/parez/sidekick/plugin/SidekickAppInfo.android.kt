@@ -12,7 +12,7 @@ import android.os.Build
  *
  * Requires [ApplicationContextHolder] to be initialised in [android.app.Application.onCreate].
  */
-actual fun SidekickAppInfo.Companion.detect(): SidekickAppInfo {
+public actual fun SidekickAppInfo.Companion.detect(): SidekickAppInfo {
     if (!ApplicationContextHolder.isInitialized) return SidekickAppInfo()
     val context = ApplicationContextHolder.context
     val appInfo = context.applicationInfo
@@ -59,7 +59,7 @@ actual fun SidekickAppInfo.Companion.detect(): SidekickAppInfo {
  * @param buildType   Overrides the auto-detected build type (e.g. `BuildConfig.BUILD_TYPE`).
  * @param buildFlavor Product flavour name to display (e.g. `BuildConfig.FLAVOR`).
  */
-fun SidekickAppInfo.Companion.detect(
+public fun SidekickAppInfo.Companion.detect(
     buildType: String? = null,
     buildFlavor: String? = null,
 ): SidekickAppInfo {

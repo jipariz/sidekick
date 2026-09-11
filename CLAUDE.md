@@ -363,9 +363,11 @@ default-public declaration is an accidental API commitment nobody reviewed. New 
 must say `public` or `internal` out loud, and public declarations need explicit return
 types.
 
-Enforced by `.github/workflows/check-quality.yml` → `explicit-api`, which compiles
-`compileKotlinMetadata` for each library module. Metadata covers `commonMain`, where
-nearly all public surface lives, without dragging CI onto the native/web toolchains.
+Enforced by `.github/workflows/check-quality.yml` → `explicit-api`, which runs
+`compileKotlinMetadata compileAndroidMain`. Both are needed: metadata covers `commonMain`,
+but **`androidMain` sources are not part of the metadata compilation** and go unchecked if
+you only run the former. Native and web actuals are covered transitively by any full build;
+keeping them out of this job keeps CI off those toolchains.
 
 **Note on what this does *not* do:** it made the existing surface explicit, it did not
 narrow it. Everything marked `public` during the sweep was already public API at its
