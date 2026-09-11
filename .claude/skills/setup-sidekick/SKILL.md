@@ -277,7 +277,7 @@ generated-source directory, and orders the compile/KSP tasks — but it does
 
 ```kotlin
 dependencies {
-    add("kspCommonMainMetadata", "dev.parez.sidekick:preferences-ksp:<bom-version>")
+    add("kspCommonMainMetadata", "dev.parez.sidekick:preferences-ksp:2026.09.11")
 }
 ```
 

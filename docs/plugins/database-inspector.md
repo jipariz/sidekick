@@ -33,7 +33,7 @@ Web builds compile and show the panel, but it renders an unsupported state. See 
 
 ```kotlin
 commonMain.dependencies {
-    implementation(platform("dev.parez.sidekick:bom:<bom-version>"))
+    implementation(platform("dev.parez.sidekick:bom:2026.09.11"))
     implementation("dev.parez.sidekick:database-inspector-ui")
     implementation("dev.parez.sidekick:database-inspector-room")
 }

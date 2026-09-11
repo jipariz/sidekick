@@ -105,7 +105,7 @@ Every app needs the core shell (debug builds) and the no-op stub (release builds
 ```kotlin
 // build.gradle.kts (Android app module)
 dependencies {
-    implementation(platform("dev.parez.sidekick:bom:2026.08.28"))
+    implementation(platform("dev.parez.sidekick:bom:2026.09.11"))
     debugImplementation("dev.parez.sidekick:shell")
     releaseImplementation("dev.parez.sidekick:noop")
 }
@@ -125,7 +125,7 @@ dependencies {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(platform("dev.parez.sidekick:bom:2026.08.28"))
+            implementation(platform("dev.parez.sidekick:bom:2026.09.11"))
             // compileOnly: the type is on the compile classpath of the library,
             // but the shell impl is provided per-target by the app module below.
             compileOnly("dev.parez.sidekick:shell")
@@ -142,7 +142,7 @@ kotlin {
 // ATASSproApp/android/build.gradle.kts — Android application module
 dependencies {
     implementation(projects.feature.devtools)        // your feature module
-    implementation(platform("dev.parez.sidekick:bom:2026.08.28"))
+    implementation(platform("dev.parez.sidekick:bom:2026.09.11"))
     debugImplementation("dev.parez.sidekick:shell")
     releaseImplementation("dev.parez.sidekick:noop")
 }
@@ -158,7 +158,7 @@ The library compiles against `shell` types; on Android the app module swaps `she
 val sidekickNoop = (findProperty("sidekick.noop") as? String).toBoolean()
 
 jvmMain.dependencies {
-    implementation(platform("dev.parez.sidekick:bom:2026.08.28"))
+    implementation(platform("dev.parez.sidekick:bom:2026.09.11"))
     if (sidekickNoop) {
         implementation("dev.parez.sidekick:noop")
         implementation("dev.parez.sidekick:network-monitor-noop")
@@ -185,7 +185,7 @@ The Sidekick BOM aligns the versions of every plugin module — apply it once an
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(platform("dev.parez.sidekick:bom:2026.08.28"))
+            implementation(platform("dev.parez.sidekick:bom:2026.09.11"))
 
             // Type stubs only — Android's variant swap below provides the real
             // (debug) or noop (release) module on the runtime classpath. Without
