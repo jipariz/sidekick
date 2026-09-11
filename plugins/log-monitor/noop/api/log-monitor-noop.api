@@ -1,0 +1,112 @@
+// Signature format: 4.0
+package dev.parez.sidekick.log {
+
+  public fun interface LogCollector {
+    method public void log(dev.parez.sidekick.log.LogLevel level, String tag, String message, Throwable? throwable);
+  }
+
+  @androidx.compose.runtime.Immutable public final class LogEntry {
+    ctor public LogEntry(String id, long timestamp, dev.parez.sidekick.log.LogLevel level, String tag, String message, String? throwable, optional java.util.Map<java.lang.String,java.lang.String>? metadata);
+    method public String component1();
+    method public long component2();
+    method public dev.parez.sidekick.log.LogLevel component3();
+    method public String component4();
+    method public String component5();
+    method public String? component6();
+    method public java.util.Map<java.lang.String,java.lang.String>? component7();
+    method public dev.parez.sidekick.log.LogEntry copy(optional String id, optional long timestamp, optional dev.parez.sidekick.log.LogLevel level, optional String tag, optional String message, optional String? throwable, optional java.util.Map<java.lang.String,java.lang.String>? metadata);
+    method @InaccessibleFromKotlin public String getId();
+    method @InaccessibleFromKotlin public dev.parez.sidekick.log.LogLevel getLevel();
+    method @InaccessibleFromKotlin public String getMessage();
+    method @InaccessibleFromKotlin public java.util.Map<java.lang.String,java.lang.String>? getMetadata();
+    method @InaccessibleFromKotlin public String getTag();
+    method @InaccessibleFromKotlin public String? getThrowable();
+    method @InaccessibleFromKotlin public long getTimestamp();
+    property public String id;
+    property public dev.parez.sidekick.log.LogLevel level;
+    property public String message;
+    property public java.util.Map<java.lang.String,java.lang.String>? metadata;
+    property public String tag;
+    property public String? throwable;
+    property public long timestamp;
+  }
+
+  @androidx.compose.runtime.Immutable public final class LogFilter {
+    ctor public LogFilter();
+    ctor public LogFilter(optional String query, optional java.util.Set<? extends dev.parez.sidekick.log.LogLevel> levels);
+    method public String component1();
+    method public java.util.Set<dev.parez.sidekick.log.LogLevel> component2();
+    method public dev.parez.sidekick.log.LogFilter copy(optional String query, optional java.util.Set<? extends dev.parez.sidekick.log.LogLevel> levels);
+    method @InaccessibleFromKotlin public java.util.Set<dev.parez.sidekick.log.LogLevel> getLevels();
+    method @InaccessibleFromKotlin public String getQuery();
+    method public boolean matches(dev.parez.sidekick.log.LogEntry entry);
+    method public String toLikeToken();
+    property public java.util.Set<dev.parez.sidekick.log.LogLevel> levels;
+    property public String query;
+  }
+
+  public enum LogLevel {
+    enum_constant public static final dev.parez.sidekick.log.LogLevel ASSERT;
+    enum_constant public static final dev.parez.sidekick.log.LogLevel DEBUG;
+    enum_constant public static final dev.parez.sidekick.log.LogLevel ERROR;
+    enum_constant public static final dev.parez.sidekick.log.LogLevel INFO;
+    enum_constant public static final dev.parez.sidekick.log.LogLevel VERBOSE;
+    enum_constant public static final dev.parez.sidekick.log.LogLevel WARN;
+  }
+
+  public final class LogMonitorPlugin implements dev.parez.sidekick.plugin.SidekickBadged dev.parez.sidekick.plugin.SidekickPlugin {
+    ctor @KotlinOnly public LogMonitorPlugin(optional kotlin.time.Duration retentionPeriod);
+    method @KotlinOnly @androidx.compose.runtime.Composable public void Content();
+    method @InaccessibleFromKotlin public androidx.compose.runtime.State<java.lang.Integer?> getBadge();
+    method @InaccessibleFromKotlin public androidx.compose.ui.graphics.vector.ImageVector getIcon();
+    method @InaccessibleFromKotlin public String getId();
+    method @InaccessibleFromKotlin public String getTitle();
+    property public androidx.compose.runtime.State<java.lang.Integer?> badge;
+    property public androidx.compose.ui.graphics.vector.ImageVector icon;
+    property public String id;
+    property public String title;
+  }
+
+  public final class LogMonitorStore implements dev.parez.sidekick.log.LogCollector {
+    method public suspend Object? clear(kotlin.coroutines.Continuation<? super kotlin.Unit>);
+    method public kotlinx.coroutines.flow.Flow<dev.parez.sidekick.log.LogEntry?> entryById(String id);
+    method public suspend Object? exportAll(dev.parez.sidekick.log.LogFilter filter, kotlin.coroutines.Continuation<? super java.util.List<dev.parez.sidekick.log.LogEntry>>);
+    method public kotlinx.coroutines.flow.Flow<java.lang.Long> filteredCount(kotlinx.coroutines.flow.Flow<dev.parez.sidekick.log.LogFilter> filter);
+    method @InaccessibleFromKotlin public kotlinx.coroutines.flow.StateFlow<java.lang.Long> getRecordedCount();
+    method @KotlinOnly public void init(optional kotlin.time.Duration retentionPeriod);
+    method public void log(dev.parez.sidekick.log.LogLevel level, String tag, String message, Throwable? throwable);
+    method public kotlinx.coroutines.flow.Flow<androidx.paging.PagingData<dev.parez.sidekick.log.LogEntry>> pagedEntries(kotlinx.coroutines.flow.Flow<dev.parez.sidekick.log.LogFilter> filter);
+    method public void record(dev.parez.sidekick.log.LogLevel level, String tag, String message, Throwable? throwable, optional java.util.Map<java.lang.String,java.lang.String>? metadata);
+    property public kotlinx.coroutines.flow.StateFlow<java.lang.Long> recordedCount;
+    field public static final dev.parez.sidekick.log.LogMonitorStore INSTANCE;
+  }
+
+}
+
+package dev.parez.sidekick.log.di {
+
+  public final class LogMonitorKoinContext {
+    method public dev.parez.sidekick.log.LogMonitorStore getDefaultStore();
+    method @InaccessibleFromKotlin public org.koin.core.KoinApplication getKoinApp();
+    method public void loadViewModelModule(org.koin.core.module.Module module);
+    method public kotlinx.coroutines.CoroutineScope storeScope();
+    property public org.koin.core.KoinApplication koinApp;
+    field public static final dev.parez.sidekick.log.di.LogMonitorKoinContext INSTANCE;
+  }
+
+}
+
+package dev.parez.sidekick.log.kermit {
+
+  public final class KermitLogMonitorKt {
+    method @KotlinOnly public static dev.parez.sidekick.log.LogMonitorPlugin kermitLogMonitor(optional kotlin.time.Duration retentionPeriod);
+  }
+
+  public final class LogMonitorLogWriter extends co.touchlab.kermit.LogWriter {
+    ctor public LogMonitorLogWriter();
+    ctor public LogMonitorLogWriter(optional dev.parez.sidekick.log.LogMonitorStore store);
+    method public void log(co.touchlab.kermit.Severity severity, String message, String tag, optional Throwable? throwable);
+  }
+
+}
+

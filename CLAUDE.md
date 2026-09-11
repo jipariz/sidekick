@@ -502,6 +502,30 @@ KMP modules have no single `main` source set, so both `Detekt` **and**
 `DetektCreateBaselineTask` are pointed at `files("src")` — they are separate task types
 and do not share configuration. Getting this wrong produces empty baselines.
 
+### Metalava — API signature tracking
+
+`SidekickKmpLibraryPlugin` applies `me.tylerbwong.gradle.metalava`. Every library module commits an
+`api/<artifactId>.api` signature file describing its published surface. A breaking change then shows
+up as a **reviewable diff** rather than as a consumer's `NoSuchMethodError`.
+
+```bash
+./gradlew metalavaCheckCompatibility   # CI gate (also wired into `check` via enforceCheck)
+./gradlew metalavaGenerateSignature    # regenerate, deliberately, when the change is intended
+```
+
+The file is named after the **published artifact**, not the Gradle project — a dozen modules are
+called `api`.
+
+Two gotchas:
+
+- Metalava reads the KSP-generated source dirs that the monitor modules register as `commonMain`
+  srcDirs, so Gradle flags an undeclared task dependency. The convention plugin wires every
+  `metalava*` task to depend on every `ksp*` task via live `TaskCollection`s — a no-op where KSP
+  is absent.
+- The plugin must be declared in the root `plugins { … apply false }` block even though
+  `SidekickKmpLibraryPlugin` is what applies it, so its classes are on the build classpath when
+  build-logic references `MetalavaExtension`.
+
 ### detekt baselines
 
 Per-module `detekt-baseline.xml` files hold pre-existing findings so the gate could land

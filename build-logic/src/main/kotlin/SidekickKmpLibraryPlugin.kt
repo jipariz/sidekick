@@ -27,6 +27,11 @@ class SidekickKmpLibraryPlugin : Plugin<Project> {
         // The BOM later picks up each module's version via project.version,
         // so this must run before the coordinates() call below.
         pluginManager.apply("sidekick.version.read")
+        // Tracks the published API surface in a committed signature file so a
+        // breaking change shows up as a reviewable diff instead of a consumer's
+        // NoSuchMethodError. explicitApi() decides what is public; metalava
+        // records what that came out to be.
+        pluginManager.apply("me.tylerbwong.gradle.metalava")
 
         val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
         val compileSdkVersion = libs.findVersion("android-compileSdk").get().requiredVersion.toInt()
@@ -92,6 +97,26 @@ class SidekickKmpLibraryPlugin : Plugin<Project> {
             compilerOptions {
                 freeCompilerArgs.add("-Xexpect-actual-classes")
             }
+        }
+
+        // Signature file is named after the published artifact, not the Gradle
+        // project name — a dozen modules are called "api".
+        val artifactIdForApi = (extensions.extraProperties
+            .takeIf { it.has("sidekick.artifactId") }
+            ?.get("sidekick.artifactId") as? String)
+            ?: project.name
+        extensions.configure<me.tylerbwong.gradle.metalava.extension.MetalavaExtension> {
+            filename.set("api/$artifactIdForApi.api")
+            // Hooks metalavaCheckCompatibility into `check`, so CI fails on an
+            // unreviewed API change rather than only when someone remembers to look.
+            enforceCheck.set(true)
+        }
+
+        // The monitor modules register KSP output dirs as commonMain srcDirs, so
+        // metalava reads them and Gradle rightly objects to the undeclared
+        // dependency. Live TaskCollections, so this is a no-op where KSP is absent.
+        tasks.matching { it.name.startsWith("metalava") }.configureEach {
+            dependsOn(tasks.matching { it.name.startsWith("ksp") })
         }
 
         extensions.configure<MavenPublishBaseExtension> {

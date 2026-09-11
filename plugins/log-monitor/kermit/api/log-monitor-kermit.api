@@ -1,0 +1,15 @@
+// Signature format: 4.0
+package dev.parez.sidekick.log.kermit {
+
+  public final class KermitLogMonitorKt {
+    method @KotlinOnly public static dev.parez.sidekick.log.LogMonitorPlugin kermitLogMonitor(optional kotlin.time.Duration retentionPeriod);
+  }
+
+  public final class LogMonitorLogWriter extends co.touchlab.kermit.LogWriter {
+    ctor public LogMonitorLogWriter();
+    ctor public LogMonitorLogWriter(optional dev.parez.sidekick.log.LogMonitorStore store);
+    method public void log(co.touchlab.kermit.Severity severity, String message, String tag, optional Throwable? throwable);
+  }
+
+}
+

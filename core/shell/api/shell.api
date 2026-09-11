@@ -1,0 +1,35 @@
+// Signature format: 4.0
+package dev.parez.sidekick {
+
+  public final class SidekickKt {
+    method @KotlinOnly @androidx.compose.runtime.Composable public static void Sidekick(java.util.List<dev.parez.sidekick.plugin.SidekickPlugin> plugins, optional dev.parez.sidekick.plugin.SidekickAppInfo? appInfo, optional boolean useSidekickTheme, optional String title, optional kotlin.jvm.functions.Function0<kotlin.Unit> navigationIcon, optional kotlin.jvm.functions.Function1<androidx.compose.foundation.layout.RowScope,kotlin.Unit> actions);
+  }
+
+  @androidx.compose.runtime.Stable public final class SidekickState {
+    ctor public SidekickState(java.util.List<? extends dev.parez.sidekick.plugin.SidekickPlugin> plugins);
+    method @InaccessibleFromKotlin public dev.parez.sidekick.plugin.SidekickPlugin? getActivePlugin();
+    method @InaccessibleFromKotlin public java.util.List<dev.parez.sidekick.plugin.SidekickPlugin> getOrderedPlugins();
+    method @InaccessibleFromKotlin public java.util.List<dev.parez.sidekick.plugin.SidekickPlugin> getPlugins();
+    method public void reset();
+    property public dev.parez.sidekick.plugin.SidekickPlugin? activePlugin;
+    property public java.util.List<dev.parez.sidekick.plugin.SidekickPlugin> orderedPlugins;
+    property public java.util.List<dev.parez.sidekick.plugin.SidekickPlugin> plugins;
+  }
+
+  public final class SidekickStateKt {
+    method @KotlinOnly @androidx.compose.runtime.Composable public static dev.parez.sidekick.SidekickState rememberSidekickState(java.util.List<dev.parez.sidekick.plugin.SidekickPlugin> plugins);
+  }
+
+}
+
+package dev.parez.sidekick.ui.theme {
+
+  public final class SidekickThemeKt {
+    method @InaccessibleFromKotlin public static androidx.compose.material3.ColorScheme getSidekickDarkColorScheme();
+    method @InaccessibleFromKotlin public static androidx.compose.material3.ColorScheme getSidekickLightColorScheme();
+    property public static androidx.compose.material3.ColorScheme SidekickDarkColorScheme;
+    property public static androidx.compose.material3.ColorScheme SidekickLightColorScheme;
+  }
+
+}
+

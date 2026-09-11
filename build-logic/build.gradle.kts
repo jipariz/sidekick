@@ -14,6 +14,7 @@ dependencies {
     compileOnly(libs.plugins.composeMultiplatform.toDep())
     compileOnly(libs.plugins.composeCompiler.toDep())
     compileOnly(libs.plugins.vanniktechMavenPublish.toDep())
+    compileOnly(libs.plugins.metalava.toDep())
     // AGP DSL types (KotlinMultiplatformAndroidLibraryExtension, etc.) used by
     // SidekickKmpLibraryPlugin. The plugin-marker above resolves to this jar
     // at runtime, but the convention plugin needs the typed API at compile time.

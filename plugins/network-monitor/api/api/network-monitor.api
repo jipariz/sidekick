@@ -1,0 +1,128 @@
+// Signature format: 4.0
+package dev.parez.sidekick.network {
+
+  public final class BodyBudget {
+    property public static int Default;
+    property public static int Unlimited;
+    field public static final int Default = 8388608; // 0x800000
+    field public static final dev.parez.sidekick.network.BodyBudget INSTANCE;
+    field public static final int Unlimited = 2147483647; // 0x7fffffff
+  }
+
+  public enum CallStatus {
+    enum_constant public static final dev.parez.sidekick.network.CallStatus COMPLETE;
+    enum_constant public static final dev.parez.sidekick.network.CallStatus ERROR;
+    enum_constant public static final dev.parez.sidekick.network.CallStatus PENDING;
+  }
+
+  @androidx.compose.runtime.Immutable public final class NetworkCall {
+    ctor public NetworkCall(String id, String url, String method, java.util.Map<java.lang.String,java.lang.String> requestHeaders, String? requestBody, long requestTimestamp, Integer? responseCode, java.util.Map<java.lang.String,java.lang.String> responseHeaders, String? responseBody, Long? responseTimestamp, String? error, dev.parez.sidekick.network.CallStatus status, optional boolean bodiesEvicted);
+    method public String component1();
+    method public Long? component10();
+    method public String? component11();
+    method public dev.parez.sidekick.network.CallStatus component12();
+    method public boolean component13();
+    method public String component2();
+    method public String component3();
+    method public java.util.Map<java.lang.String,java.lang.String> component4();
+    method public String? component5();
+    method public long component6();
+    method public Integer? component7();
+    method public java.util.Map<java.lang.String,java.lang.String> component8();
+    method public String? component9();
+    method public dev.parez.sidekick.network.NetworkCall copy(optional String id, optional String url, optional String method, optional java.util.Map<java.lang.String,java.lang.String> requestHeaders, optional String? requestBody, optional long requestTimestamp, optional Integer? responseCode, optional java.util.Map<java.lang.String,java.lang.String> responseHeaders, optional String? responseBody, optional Long? responseTimestamp, optional String? error, optional dev.parez.sidekick.network.CallStatus status, optional boolean bodiesEvicted);
+    method @InaccessibleFromKotlin public boolean getBodiesEvicted();
+    method @InaccessibleFromKotlin public Long? getDurationMs();
+    method @InaccessibleFromKotlin public String? getError();
+    method @InaccessibleFromKotlin public String getId();
+    method @InaccessibleFromKotlin public String getMethod();
+    method @InaccessibleFromKotlin public String? getRequestBody();
+    method @InaccessibleFromKotlin public java.util.Map<java.lang.String,java.lang.String> getRequestHeaders();
+    method @InaccessibleFromKotlin public long getRequestTimestamp();
+    method @InaccessibleFromKotlin public String? getResponseBody();
+    method @InaccessibleFromKotlin public Integer? getResponseCode();
+    method @InaccessibleFromKotlin public java.util.Map<java.lang.String,java.lang.String> getResponseHeaders();
+    method @InaccessibleFromKotlin public Long? getResponseTimestamp();
+    method @InaccessibleFromKotlin public dev.parez.sidekick.network.CallStatus getStatus();
+    method @InaccessibleFromKotlin public String getUrl();
+    property public boolean bodiesEvicted;
+    property public Long? durationMs;
+    property public String? error;
+    property public String id;
+    property public String method;
+    property public String? requestBody;
+    property public java.util.Map<java.lang.String,java.lang.String> requestHeaders;
+    property public long requestTimestamp;
+    property public String? responseBody;
+    property public Integer? responseCode;
+    property public java.util.Map<java.lang.String,java.lang.String> responseHeaders;
+    property public Long? responseTimestamp;
+    property public dev.parez.sidekick.network.CallStatus status;
+    property public String url;
+  }
+
+  @androidx.compose.runtime.Immutable public final class NetworkFilter {
+    ctor public NetworkFilter();
+    ctor public NetworkFilter(optional String query, optional java.util.Set<java.lang.String> methods);
+    method public String component1();
+    method public java.util.Set<java.lang.String> component2();
+    method public dev.parez.sidekick.network.NetworkFilter copy(optional String query, optional java.util.Set<java.lang.String> methods);
+    method @InaccessibleFromKotlin public java.util.Set<java.lang.String> getMethods();
+    method @InaccessibleFromKotlin public String getQuery();
+    method public boolean matches(dev.parez.sidekick.network.NetworkCall call);
+    method public String toLikeToken();
+    property public java.util.Set<java.lang.String> methods;
+    property public String query;
+  }
+
+  public final class NetworkMonitorStore {
+    ctor public NetworkMonitorStore(kotlinx.coroutines.CoroutineScope scope);
+    method public kotlinx.coroutines.flow.Flow<dev.parez.sidekick.network.NetworkCall?> callById(String id);
+    method public suspend Object? clear(kotlin.coroutines.Continuation<? super kotlin.Unit>);
+    method public suspend Object? exportAll(dev.parez.sidekick.network.NetworkFilter filter, kotlin.coroutines.Continuation<? super java.util.List<dev.parez.sidekick.network.NetworkCall>>);
+    method public kotlinx.coroutines.flow.Flow<java.lang.Long> filteredCount(kotlinx.coroutines.flow.Flow<dev.parez.sidekick.network.NetworkFilter> filter);
+    method @InaccessibleFromKotlin public kotlinx.coroutines.flow.StateFlow<java.lang.Long> getRecordedCount();
+    method @KotlinOnly public void init(optional kotlin.time.Duration retentionPeriod, optional int bodyBudgetChars);
+    method public kotlinx.coroutines.flow.Flow<androidx.paging.PagingData<dev.parez.sidekick.network.NetworkCall>> pagedCalls(kotlinx.coroutines.flow.Flow<dev.parez.sidekick.network.NetworkFilter> filter);
+    method public suspend Object? recordError(String id, Throwable error, kotlin.coroutines.Continuation<? super kotlin.Unit>);
+    method public suspend Object? recordRequest(String id, String url, String method, java.util.Map<java.lang.String,java.lang.String> headers, String? body, long timestamp, kotlin.coroutines.Continuation<? super kotlin.Unit>);
+    method public suspend Object? recordResponse(String id, int code, java.util.Map<java.lang.String,java.lang.String> headers, long timestamp, kotlin.coroutines.Continuation<? super kotlin.Unit>);
+    method public suspend Object? recordResponseBody(String id, String body, kotlin.coroutines.Continuation<? super kotlin.Unit>);
+    property public kotlinx.coroutines.flow.StateFlow<java.lang.Long> recordedCount;
+  }
+
+  public final class TimeMillis_androidKt {
+    method public static long currentTimeMillis();
+  }
+
+  public final class TimeMillis_iosKt {
+    method public static long currentTimeMillis();
+  }
+
+  public final class TimeMillis_jsKt {
+    method public static long currentTimeMillis();
+  }
+
+  public final class TimeMillis_jvmKt {
+    method public static long currentTimeMillis();
+  }
+
+  public final class TimeMillis_wasmJsKt {
+    method public static long currentTimeMillis();
+  }
+
+}
+
+package dev.parez.sidekick.network.di {
+
+  public final class NetworkMonitorKoinContext {
+    method public dev.parez.sidekick.network.NetworkMonitorStore getDefaultStore();
+    method @InaccessibleFromKotlin public org.koin.core.KoinApplication getKoinApp();
+    method public void loadViewModelModule(org.koin.core.module.Module module);
+    method public kotlinx.coroutines.CoroutineScope storeScope();
+    property public org.koin.core.KoinApplication koinApp;
+    field public static final dev.parez.sidekick.network.di.NetworkMonitorKoinContext INSTANCE;
+  }
+
+}
+

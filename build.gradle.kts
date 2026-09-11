@@ -13,6 +13,9 @@ plugins {
     alias(libs.plugins.ktfmt) apply false
     // detekt — static analysis, likewise applied per-subproject below.
     alias(libs.plugins.detekt) apply false
+    // metalava — API signature tracking, applied by sidekick.kmp.library. Declared
+    // here so the plugin's classes are on the build classpath for build-logic.
+    alias(libs.plugins.metalava) apply false
     // Registers `updateModuleVersions` + `checkModuleVersions` tasks.
     id("sidekick.version.update")
 }

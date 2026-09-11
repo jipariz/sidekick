@@ -1,0 +1,75 @@
+// Signature format: 4.0
+package dev.parez.sidekick.crash {
+
+  public final class CrashMonitor {
+    method public void clear();
+    method public void install(optional String? appPackagePrefix);
+    method public void recordNonFatal(Throwable throwable, optional String origin);
+    field public static final dev.parez.sidekick.crash.CrashMonitor INSTANCE;
+  }
+
+  public final class CrashMonitorStore {
+    ctor public CrashMonitorStore();
+    method public void clear();
+    method @InaccessibleFromKotlin public kotlinx.coroutines.flow.StateFlow<java.util.List<dev.parez.sidekick.crash.CrashRecord>> getCrashes();
+    method public void recordNonFatal(Throwable throwable, String origin);
+    property public kotlinx.coroutines.flow.StateFlow<java.util.List<dev.parez.sidekick.crash.CrashRecord>> crashes;
+  }
+
+  @androidx.compose.runtime.Immutable public final class CrashRecord {
+    ctor public CrashRecord(String id, long timestamp, boolean fatal, String exceptionType, String message, String origin, String threadName, java.util.List<dev.parez.sidekick.crash.StackFrame> frames);
+    method public String component1();
+    method public long component2();
+    method public boolean component3();
+    method public String component4();
+    method public String component5();
+    method public String component6();
+    method public String component7();
+    method public java.util.List<dev.parez.sidekick.crash.StackFrame> component8();
+    method public dev.parez.sidekick.crash.CrashRecord copy(optional String id, optional long timestamp, optional boolean fatal, optional String exceptionType, optional String message, optional String origin, optional String threadName, optional java.util.List<dev.parez.sidekick.crash.StackFrame> frames);
+    method @InaccessibleFromKotlin public String getExceptionType();
+    method @InaccessibleFromKotlin public boolean getFatal();
+    method @InaccessibleFromKotlin public java.util.List<dev.parez.sidekick.crash.StackFrame> getFrames();
+    method @InaccessibleFromKotlin public String getId();
+    method @InaccessibleFromKotlin public String getMessage();
+    method @InaccessibleFromKotlin public String getOrigin();
+    method @InaccessibleFromKotlin public String getThreadName();
+    method @InaccessibleFromKotlin public long getTimestamp();
+    method @InaccessibleFromKotlin public String getTitle();
+    property public String exceptionType;
+    property public boolean fatal;
+    property public java.util.List<dev.parez.sidekick.crash.StackFrame> frames;
+    property public String id;
+    property public String message;
+    property public String origin;
+    property public String threadName;
+    property public long timestamp;
+    property public String title;
+  }
+
+  @androidx.compose.runtime.Immutable public final class StackFrame {
+    ctor public StackFrame(String text, boolean isAppFrame);
+    method public String component1();
+    method public boolean component2();
+    method public dev.parez.sidekick.crash.StackFrame copy(optional String text, optional boolean isAppFrame);
+    method @InaccessibleFromKotlin public String getText();
+    method @InaccessibleFromKotlin public boolean isAppFrame();
+    property public boolean isAppFrame;
+    property public String text;
+  }
+
+}
+
+package dev.parez.sidekick.crash.di {
+
+  public final class CrashMonitorKoinContext {
+    method public dev.parez.sidekick.crash.CrashMonitorStore getDefaultStore();
+    method @InaccessibleFromKotlin public org.koin.core.KoinApplication getKoinApp();
+    method public void loadViewModelModule(org.koin.core.module.Module module);
+    method public kotlinx.coroutines.CoroutineScope storeScope();
+    property public org.koin.core.KoinApplication koinApp;
+    field public static final dev.parez.sidekick.crash.di.CrashMonitorKoinContext INSTANCE;
+  }
+
+}
+

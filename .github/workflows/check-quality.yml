@@ -28,6 +28,25 @@ jobs:
       - name: Run detekt
         run: ./gradlew detekt
 
+  api-compatibility:
+    # Fails when the published API surface drifts from the committed signature
+    # files. A breaking change then shows up as a reviewable diff in api/*.api
+    # instead of as a consumer's NoSuchMethodError. Regenerate deliberately with
+    # `./gradlew metalavaGenerateSignature` when the change is intended.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+      - name: Check API compatibility
+        run: ./gradlew metalavaCheckCompatibility
+
   explicit-api:
     # `explicitApi()` is a compiler setting, so the gate is simply that the
     # library modules still compile. Metadata alone covers commonMain, which is
