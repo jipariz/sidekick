@@ -16,14 +16,15 @@ Build your own first-class Sidekick plugin by implementing the `SidekickPlugin` 
 
 - **One interface** — `id`, `title`, `icon`, `@Composable Content()`.
 - **No required dependencies** — just `:core:plugin-api`. Bring your own data layer, DI, and state management.
-- **Lifecycle-aware** — implement `SidekickLifecycleAware` if you need `onPanelOpened` / `onPanelClosed` hooks.
+- **Lifecycle-aware** — implement `SidekickLifecycleAware` if you need `onAttach` / `onDetach` hooks.
+- **Badged** — implement `SidekickBadged` to surface an unread count on the plugin's card, and on your own entry point.
 - **Back-navigation built in** — call `LocalSidekickBackNavigator.current` to return to the plugin grid.
 
 ## Modules
 
 | Module | Purpose |
 |---|---|
-| `:core:plugin-api` | `SidekickPlugin`, `SidekickAppInfo`, `LocalSidekickBackNavigator`, `SidekickLifecycleAware`. |
+| `:core:plugin-api` | `SidekickPlugin`, `SidekickAppInfo`, `LocalSidekickBackNavigator`, `SidekickLifecycleAware`, `SidekickBadged`, `SidekickShare`. |
 | Your own module | Implement `SidekickPlugin`, ship the data layer + UI. |
 
 ## Setup
@@ -37,7 +38,7 @@ Your plugin module should compile against `plugin-api`:
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
+            implementation(platform("dev.parez.sidekick:bom:2026.08.28"))
             implementation("dev.parez.sidekick:plugin-api")  // version from BOM
         }
     }
@@ -107,11 +108,46 @@ Implement `SidekickLifecycleAware` if your plugin needs to know when the panel o
 
 ```kotlin
 class LogsPlugin : SidekickPlugin, SidekickLifecycleAware {
-    override fun onPanelOpened() { startTailing() }
-    override fun onPanelClosed() { stopTailing() }
+    override fun onAttach() { startTailing() }
+    override fun onDetach() { stopTailing() }
     /* … */
 }
 ```
+
+### Unread badge
+
+Implement `SidekickBadged` to report how many items arrived since the user last looked. Sidekick draws
+it on your plugin's card, and the host app can read the same value to badge its own entry point:
+
+```kotlin
+class MyPlugin : SidekickPlugin, SidekickBadged, SidekickLifecycleAware {
+    private val _badge = mutableStateOf<Int?>(null)
+    override val badge: State<Int?> = _badge
+
+    override fun onAttach() { _badge.value = null }   // opened: mark read
+    /* … */
+}
+
+// In the host app:
+val count by myPlugin.badge
+BadgedBox(badge = { if (count != null) Badge { Text("$count") } }) { Fab() }
+```
+
+Back the value with a monotonic counter, not a retained row count. A store that caps its history
+stops changing size once full, so a count-based badge stops reporting new activity.
+
+### Sharing data out
+
+`SidekickShare.share(text, subject)` hands text to the platform: an intent chooser on Android, a share
+sheet on iOS, a save-or-clipboard prompt on desktop, a download in the browser.
+
+```kotlin
+IconButton(onClick = { SidekickShare.share(report(), subject = "my-plugin") }) {
+    Icon(Icons.Default.Share, contentDescription = "Export")
+}
+```
+
+Call it from the main thread. It is best-effort and swallows failures rather than throwing.
 
 ### Scaffolding with Claude Code
 

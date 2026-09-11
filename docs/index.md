@@ -38,6 +38,8 @@ Sidekick is a debug panel composable you render in your app during development �
 |--------|-------------|
 | [Network Monitor](plugins/network-monitor.md) | Captures and displays all HTTP traffic via Ktor (or any client via `NetworkMonitorStore`). |
 | [Log Monitor](plugins/log-monitor.md) | Displays app logs with level filtering and search (Kermit built-in, any SDK via `LogCollector`). |
+| [Database Inspector](plugins/database-inspector.md) | Browses and edits the app's own SQLite tables, with a read-only SQL console. Native targets only. |
+| [Crash Monitor](plugins/crash-monitor.md) | Captures fatals and handled exceptions, readable on the run after the crash. |
 | [Preferences](plugins/preferences.md) | Exposes typed settings in the panel — KSP code generation or manual DataStore bridging. |
 | [Custom Screens](plugins/custom-screen.md) | Wraps any Composable as a first-class debug screen. |
 
@@ -87,3 +89,5 @@ Ready to add Sidekick to your project? Start with [Installation](installation.md
 ## Credits
 
 The demo app uses data from [PokéAPI](https://pokeapi.co) — a free, open RESTful Pokémon API. See [pokeapi.co/about](https://pokeapi.co/about) for license and usage details.
+
+Sidekick's network monitor was inspired by [KtorMonitor](https://github.com/CosminMihuMDC/KtorMonitor) by Cosmin Mihu. Go check out all the great features the library offers.

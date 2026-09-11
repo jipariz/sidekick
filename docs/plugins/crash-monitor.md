@@ -1,6 +1,6 @@
 # Crash Monitor
 
-Captures crashes so you can read them **after** the restart that followed them. A crash you can only see with a debugger attached is a crash you have already failed to reproduce.
+Captures fatal crashes and handled exceptions. Fatals are written to disk before the process dies, so you can read them on the next launch.
 
 ## Platforms
 
@@ -12,11 +12,11 @@ Captures crashes so you can read them **after** the restart that followed them. 
 
 ## Features
 
-- **Survives the restart** — fatal crashes are written to disk before the process dies and reloaded on next launch.
+- **Survives the restart** — fatals are persisted before the process dies and reloaded at startup.
 - **Non-fatals too** — record exceptions you caught but still want to see.
-- **Readable traces** — frames from your own package are highlighted, framework frames dimmed.
-- **Unread badge** — the plugin card shows how many crashes landed since you last looked.
-- **Share** — export one crash or the whole list through the platform share sheet.
+- **Readable traces** — your own frames are highlighted, framework frames dimmed.
+- **Unread badge** — count of crashes since you last opened the panel.
+- **Share** — export one crash or the whole list.
 
 ## Modules
 
@@ -24,7 +24,7 @@ Captures crashes so you can read them **after** the restart that followed them. 
 |---|---|
 | `:plugins:crash-monitor:api` | Models, store, per-platform crash hooks. |
 | `:plugins:crash-monitor:ui` | `CrashMonitorPlugin` and its screens. |
-| `:plugins:crash-monitor:noop` | Release stub — no handler installed, nothing written. |
+| `:plugins:crash-monitor:noop` | Release stub. No handler installed, nothing written. |
 
 ## Setup
 
@@ -48,11 +48,10 @@ CrashMonitor.install(appPackagePrefix = "com.acme.app")
 ```
 
 !!! warning "Install from your app's entry point, not the plugin"
-    Plugins are constructed when the overlay is first composed. That is far too late to catch a
-    startup crash — which is exactly the crash you most want captured. Constructing
-    `CrashMonitorPlugin` deliberately does **not** install the handler.
+    Plugins are constructed when the overlay is first composed, which is too late to catch a
+    startup crash. Constructing `CrashMonitorPlugin` does not install the handler.
 
-`appPackagePrefix` decides which stack frames are marked as yours. Omit it and every frame is treated as library code, which makes the trace much harder to scan.
+`appPackagePrefix` marks which frames are yours. Omit it and every frame is treated as library code.
 
 ### 3. Register the plugin
 
@@ -71,18 +70,18 @@ runCatching { risky() }
 
 ## How it stores crashes
 
-Unlike the network and log monitors, this plugin uses **no database**. At crash time the process is being torn down, so coroutines, Room and the invalidation tracker are all unsafe to reach for. The fatal path is a synchronous append to a plain file, written before the in-memory list is updated — the file is the only copy that outlives the process.
+This plugin uses no database. At crash time the process is shutting down, so coroutines and Room are unsafe to use. The fatal path is a synchronous append to a plain file, written before the in-memory list, since only the file outlives the process.
 
-At most 50 records are kept. They are read whole at startup, which also means this plugin behaves identically on web (backed by `localStorage` there).
+At most 50 records are kept and read whole at startup. Web uses `localStorage` and behaves the same.
 
 ## Platform behaviour
 
 | Target | Hook | Note |
 |---|---|---|
-| Android / JVM | `Thread.setDefaultUncaughtExceptionHandler` | **Chained** to whatever was installed before, so Crashlytics / Sentry / the system crash dialog keep working. |
-| iOS | `setUnhandledExceptionHook` | Catches Kotlin/Native failures. `NSSetUncaughtExceptionHandler` is *not* used — it only sees Objective-C exceptions, which a Kotlin app rarely throws. |
-| JS / WasmJS | `error` + `unhandledrejection` | Both are needed: a crashing coroutine surfaces as a rejected promise, which `onerror` never sees. |
+| Android / JVM | `Thread.setDefaultUncaughtExceptionHandler` | Chained to the previous handler, so Crashlytics, Sentry and the system crash dialog keep working. |
+| iOS | `setUnhandledExceptionHook` | Catches Kotlin/Native failures. `NSSetUncaughtExceptionHandler` only sees Objective-C exceptions, which a Kotlin app rarely throws, so it is not used. |
+| JS / WasmJS | `error` + `unhandledrejection` | Both are needed. A crashing coroutine surfaces as a rejected promise, which `onerror` does not see. |
 
 ## Release builds
 
-Swap `crash-monitor-ui` for `crash-monitor-noop` — see [Release Builds](../release-builds.md). In the noop variant no handler is installed at all, so your production crash reporter keeps the handler entirely to itself.
+Swap `crash-monitor-ui` for `crash-monitor-noop`. See [Release Builds](../release-builds.md). The noop installs no handler, leaving it to your production crash reporter.

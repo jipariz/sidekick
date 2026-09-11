@@ -13,6 +13,8 @@ View your app's logs without ADB or platform-specific consoles. Level filters, f
 ## Features
 
 - **Color-coded levels** — V / D / I / W / E / A badges adapt to the active theme.
+- **Share / export** — send one entry or the whole filtered feed to the platform share sheet.
+- **Unread badge** — the plugin card shows how many entries arrived since you last opened it.
 - **Level filter chips** — toggle each level on / off independently.
 - **Full-text search** — filter by tag or message text.
 - **Error counter** — at-a-glance count of `ERROR`/`ASSERT` entries.
@@ -38,7 +40,7 @@ View your app's logs without ADB or platform-specific consoles. Level filters, f
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
+            implementation(platform("dev.parez.sidekick:bom:2026.08.28"))
             // `compileOnly` keeps the real jars off Android release's runtime
             // classpath, where they would collide with the noop variant.
             compileOnly("dev.parez.sidekick:log-monitor-ui")
@@ -48,7 +50,7 @@ kotlin {
 }
 
 dependencies {
-    implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
+    implementation(platform("dev.parez.sidekick:bom:2026.08.28"))
     debugImplementation("dev.parez.sidekick:shell")
     releaseImplementation("dev.parez.sidekick:noop")
     // Release Android: swap the recording trio (api + ui + kermit) for the
@@ -60,7 +62,7 @@ dependencies {
 }
 ```
 
-`debugImplementation` / `releaseImplementation` are Android-only. For Desktop / iOS / JS / Wasm, see [Release builds › Non-Android targets](../release-builds.md#non-android-targets-ios--desktop-jvm--js--wasm) for the property-gated swap recipe.
+`debugImplementation` / `releaseImplementation` are Android-only. For Desktop / iOS / JS / Wasm, see [Release builds › Non-Android targets](../release-builds.md#non-android-targets-ios-desktop-jvm-js-wasm) for the property-gated swap recipe.
 
 Omit `log-monitor-kermit` if you're not using Kermit; see [Advanced › Custom logging library](#custom-logging-library).
 

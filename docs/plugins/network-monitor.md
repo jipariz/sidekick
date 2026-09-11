@@ -16,7 +16,9 @@ Capture every HTTP request and response your app makes, with searchable list, me
 - **Method chips** — toggle GET / POST / PUT / DELETE / PATCH on or off.
 - **Color-coded status** — `2xx`, `3xx`, `4xx`, `5xx`, and pending requests render distinctly.
 - **Request / response tabs** — copyable headers, pretty-printed JSON bodies.
-- **Header sanitization** — drop or redact `Authorization`, `X-Api-Key`, anything you choose.
+- **Credentials redacted by default** — `Authorization`, `Proxy-Authorization`, `Cookie`, `Set-Cookie` and `X-Api-Key` never reach storage. Add your own, or opt out.
+- **Capped memory** — bodies are truncated individually and capped in aggregate. Evicted calls are labelled rather than shown blank.
+- **Share / export** — send one call, with a reproducing `curl`, or the whole filtered list.
 - **Request filtering** — skip specific hosts or routes from being recorded.
 - **Body truncation** — cap captured body length to avoid log bloat.
 - **Configurable retention** — auto-prune calls older than your chosen `Duration`.
@@ -30,6 +32,46 @@ Capture every HTTP request and response your app makes, with searchable list, me
 | `:plugins:network-monitor:ktor` | `NetworkMonitorKtor` Ktor `HttpClientPlugin` (optional). |
 | `:plugins:network-monitor:noop` | Release stub for all three above — same FQNs, empty bodies. No SQLDelight database, every `recordX` / `install` hook is a no-op. Swap in via `releaseImplementation` on Android or a build property on other targets. See [Release builds](../release-builds.md). |
 
+## Default redaction
+
+Captured calls are written to a Room database that survives app restarts, so a credential reaching
+the monitor outlives the process that sent it. These headers are replaced with `***` before storage:
+
+`authorization` · `proxy-authorization` · `cookie` · `set-cookie` · `x-api-key`
+
+Matching is case-insensitive. Redaction survives export: a shared call or `curl` command carries the
+placeholder, so you fill the real credential in by hand.
+
+Your own `sanitizeHeader { }` calls are evaluated first, so a predicate matching a default-redacted
+name replaces the built-in placeholder rather than being shadowed by it.
+
+To turn it off entirely:
+
+```kotlin
+install(NetworkMonitorKtor) {
+    disableDefaultRedaction()
+}
+```
+
+## Memory ceilings
+
+Two separate limits, because they solve different problems:
+
+| Limit | Scope | Default |
+|---|---|---|
+| `maxContentLength` | one body, at capture time | `ContentLength.Default` (64 K chars) |
+| `bodyBudgetChars` | **sum** of all retained bodies | `BodyBudget.Default` (8 M chars ≈ 16 MiB) |
+
+The aggregate budget matters most on web, where the fallback list lives in the JS heap rather than a
+SQLite file. Once the total is exceeded the oldest bodies are dropped, but the calls are kept and
+flagged, and the detail pane shows *"Body dropped to save memory"* instead of an empty section.
+
+## Share and export
+
+The list toolbar exports every call matching the current filter. The detail toolbar exports one call
+plus a `curl` invocation that reproduces it. Both use the platform's own mechanism: an intent chooser
+on Android, a share sheet on iOS, a save-or-clipboard prompt on desktop, a download in the browser.
+
 ## Setup
 
 ### 1. Add dependencies
@@ -39,7 +81,7 @@ Capture every HTTP request and response your app makes, with searchable list, me
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
+            implementation(platform("dev.parez.sidekick:bom:2026.08.28"))
             // `compileOnly` keeps the real jars off Android release's runtime
             // classpath, where they would collide with the noop variant.
             compileOnly("dev.parez.sidekick:network-monitor-ui")
@@ -49,7 +91,7 @@ kotlin {
 }
 
 dependencies {
-    implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
+    implementation(platform("dev.parez.sidekick:bom:2026.08.28"))
     debugImplementation("dev.parez.sidekick:shell")
     releaseImplementation("dev.parez.sidekick:noop")
     // Release Android: swap the recording trio (api + ui + ktor) for the
@@ -61,7 +103,7 @@ dependencies {
 }
 ```
 
-`debugImplementation` / `releaseImplementation` are Android-only. For Desktop / iOS / JS / Wasm, see [Release builds › Non-Android targets](../release-builds.md#non-android-targets-ios--desktop-jvm--js--wasm) for the property-gated swap recipe.
+`debugImplementation` / `releaseImplementation` are Android-only. For Desktop / iOS / JS / Wasm, see [Release builds › Non-Android targets](../release-builds.md#non-android-targets-ios-desktop-jvm-js-wasm) for the property-gated swap recipe.
 
 If you use a non-Ktor HTTP client, omit `network-monitor-ktor` and see [Advanced › Custom HTTP client](#custom-http-client).
 
@@ -150,7 +192,9 @@ val httpClient = HttpClient {
 | Setting | Type | Default | Notes |
 |---|---|---|---|
 | `maxContentLength` | `Int` | `ContentLength.Default` (65 536) | Use `ContentLength.Full` (`Int.MAX_VALUE`) to disable truncation. |
-| `sanitizeHeader(placeholder, predicate)` | DSL | — | Replaces matching header values with `placeholder` (default `"***"`). Call multiple times. |
+| `sanitizeHeader(placeholder, predicate)` | DSL | — | Replaces matching header values with `placeholder` (default `"***"`). Call multiple times. Evaluated **before** the built-in set, so you can override a default. |
+| `disableDefaultRedaction()` | DSL | — | Stops redacting [`DefaultRedactedHeaders`](#default-redaction). Use only when capturing credentials is intended. |
+| `bodyBudgetChars` | `Int` | `BodyBudget.Default` (8 MiB chars ≈ 16 MiB) | Aggregate ceiling on captured body text. Oldest bodies are dropped past it; the call is kept and flagged. |
 | `filter(predicate)` | DSL | — | Predicate receives an `HttpRequestBuilder`. Requests where any registered predicate returns `true` are skipped. |
 
 ### Plugin retention

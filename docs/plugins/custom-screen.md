@@ -29,7 +29,7 @@ Wrap any Composable as a first-class debug screen in the Sidekick panel. Use it 
 
 ```kotlin
 commonMain.dependencies {
-    implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
+    implementation(platform("dev.parez.sidekick:bom:2026.08.28"))
     implementation("dev.parez.sidekick:custom-screen")
 }
 ```

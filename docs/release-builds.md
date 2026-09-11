@@ -16,7 +16,7 @@ The public ABI is identical across `shell`/`noop` and across each `{api,plugin,k
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
+            implementation(platform("dev.parez.sidekick:bom:2026.08.28"))
             // `compileOnly` keeps the real plugin jars off the Android release
             // runtime classpath, where they would collide with the noop variant.
             compileOnly("dev.parez.sidekick:network-monitor-ui")
@@ -44,7 +44,7 @@ dependencies {
 
 If the module that *calls* `Sidekick()` is a KMP library, you can't put the variant-specific deps there — `debugImplementation` is an AGP concept that doesn't apply to KMP source sets. Split the wiring across two modules: the library compiles against the `compileOnly` types, the Android app module provides the per-variant impl. The full pattern is in [Installation › Multi-module KMP app](installation.md#multi-module-kmp-app).
 
-## Non-Android targets (iOS / Desktop JVM / JS / Wasm)
+## Non-Android targets (iOS, Desktop JVM, JS, Wasm)
 
 > **`debugImplementation` / `releaseImplementation` only work on Android.** AGP owns those configurations; the other KMP targets have no equivalent build-type split, so **the consumer is responsible for picking the right module per build**.
 
@@ -54,7 +54,7 @@ The recommended pattern is a property-gated swap in each leaf source set. Run pr
 val sidekickNoop = (findProperty("sidekick.noop") as? String).toBoolean()
 
 jvmMain.dependencies {
-    implementation(platform("dev.parez.sidekick:bom:2026.05.17"))
+    implementation(platform("dev.parez.sidekick:bom:2026.08.28"))
     if (sidekickNoop) {
         implementation("dev.parez.sidekick:noop")
         implementation("dev.parez.sidekick:network-monitor-noop")
