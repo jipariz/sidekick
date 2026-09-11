@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -36,8 +36,9 @@ internal fun SidekickMenu(
     title: String,
     navigationIcon: @Composable () -> Unit,
     actions: @Composable RowScope.() -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+    Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
         // ── Content — simple state-based routing with animated transitions.
         // Key on plugin id (stable String) rather than the plugin object so a
         // plugin instance swap that preserves the id doesn't retrigger.
@@ -145,10 +146,13 @@ private fun BuildTypeBadge(buildType: String) {
 @Composable
 private fun InfoBadge(
     text: String,
+    modifier: Modifier = Modifier,
     containerColor: Color = MaterialTheme.colorScheme.surfaceVariant,
     contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
-    Surface(shape = RoundedCornerShape(50), color = containerColor) {
+    // CircleShape is Compose's `shape-corner-full` token. RoundedCornerShape(50)
+    // renders identically but is a magic number that theming cannot reach.
+    Surface(shape = CircleShape, color = containerColor, modifier = modifier) {
         Text(
             text = text,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),

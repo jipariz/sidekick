@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Modifier
 import dev.parez.sidekick.persistence.createMenuOrderStore
 import dev.parez.sidekick.plugin.SidekickAppInfo
 import dev.parez.sidekick.plugin.SidekickPlugin
@@ -48,6 +49,7 @@ import kotlinx.coroutines.flow.drop
 @Composable
 public fun Sidekick(
     plugins: List<SidekickPlugin>,
+    modifier: Modifier = Modifier,
     appInfo: SidekickAppInfo? = rememberSidekickAppInfo(),
     useSidekickTheme: Boolean = true,
     title: String = "Sidekick",
@@ -68,6 +70,6 @@ public fun Sidekick(
     }
 
     SidekickTheme(useSidekickTheme = useSidekickTheme) {
-        SidekickMenu(state, appInfo, title, navigationIcon, actions)
+        SidekickMenu(state, appInfo, title, navigationIcon, actions, modifier)
     }
 }
