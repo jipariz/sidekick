@@ -31,8 +31,13 @@ settings.gradle.kts
 │   │   ├── ui            — Compose UI + LogMonitorPlugin (SidekickPlugin impl)
 │   │   ├── kermit        — Kermit LogWriter bridge that feeds entries into LogMonitorStore
 │   │   └── noop          — Release stub: LogMonitorLogWriter discards entries, no SQLDelight
-│   └── custom-screen/
-│       └── api           — CustomScreenPlugin: wraps any Composable as a SidekickPlugin
+│   ├── custom-screen/
+│   │   └── api           — CustomScreenPlugin: wraps any Composable as a SidekickPlugin
+│   └── database-inspector/
+│       ├── api           — Db models, DatabaseController contract, DatabaseInspectorStore
+│       ├── ui            — DatabaseInspectorPlugin + table browser / cell editor / SQL console
+│       ├── room          — RoomDatabaseController over Room 3's pooled-connection API
+│       └── noop          — Release stub: attach() ignores the database, panel renders nothing
 ├── demo/                  — Pokemon catalog sample exercising all SDK features.
 │   │                        Follows the new KMP default structure (kmp.new):
 │   │                        one shared library + one app module per target.
@@ -105,6 +110,7 @@ Sidekick uses **per-family semver** coordinated by a **calendar-versioned BOM**.
 | `plugins/log-monitor/` | `api`, `ui`, `kermit`, `noop` |
 | `plugins/preferences/` | `api`, `ksp`, `gradle-plugin` (included build) |
 | `plugins/custom-screen/` | `api` |
+| `plugins/database-inspector/` | `api`, `ui`, `room`, `noop` |
 
 Each family root owns a single `version.properties` (e.g. `plugins/network-monitor/version.properties`) with two keys:
 - `sdk.version` — semver `MAJOR.MINOR.PATCH`
@@ -346,6 +352,52 @@ debug/release variant publication. That mechanism is gone in AGP 9's KMP library
 plugin (see `SidekickKmpLibraryPlugin` for the rationale comment).
 
 
+### Database Inspector
+
+Browses the **consumer's** SQLite database — it owns no storage of its own. Bound explicitly:
+
+```kotlin
+DatabaseInspector.attach(database, fileName = "app.db")
+```
+
+Deliberately not auto-discovered: an overlay that goes looking for database files is guessing, and
+would find the monitors' own databases alongside the consumer's.
+
+- **Mechanism** — `RoomDatabaseController` reads through `useReaderConnection` and writes through
+  `useWriterConnection` / `usePrepared` (`androidx.room3`). This is the only portable path: on
+  desktop and iOS there is no `SupportSQLiteDatabase` under a Room 3 database.
+- **Tables** come from `sqlite_master`, excluding `sqlite_%`, `room_master_table` and
+  `android_metadata`; columns from `PRAGMA table_info`.
+- **Cell editing** needs an addressable row, so each table is read as
+  `SELECT rowid AS _sk_rowid, * FROM t LIMIT 500`. `WITHOUT ROWID` tables reject that column and
+  fall back to a read-only projection — `DbTable.editable` reflects this. After a write,
+  `invalidationTracker.refreshAsync()` wakes the host app's own Flows so its UI doesn't diverge.
+- **The SQL console is an allowlist**, not a denylist: only `SELECT` / `PRAGMA` / `EXPLAIN`, and
+  only one statement. `WITH` is excluded on purpose — SQLite lets a CTE precede INSERT/UPDATE/DELETE,
+  so `WITH x AS (…) DELETE FROM t` would pass a naive keyword check.
+- **Values are read by actual type**, not declared affinity (`getColumnType`), because SQLite is
+  dynamically typed — a column declared INTEGER can hold text.
+
+#### Why the collector lives in `nonWebMain`
+
+Two reasons, both load-bearing:
+
+1. **Web has no working implementation.** `androidx.sqlite:sqlite-web`'s worker samples
+   `sqlite3_column_type` from the *first row of a statement* and reports that type for every
+   subsequent row. A column non-null in row 0 and NULL later would be read with the wrong typed
+   getter and throw inside the JS bridge. The monitors dodge this by having no nullable columns; a
+   browser over an arbitrary consumer schema cannot. `attachRoomDatabase` on js/wasmJs marks the
+   panel unsupported instead.
+2. **Room's connection API is not usable from `commonMain`.** `PooledConnection.usePrepared`'s
+   lambda parameter is `androidx.sqlite.SQLiteStatement`, which is not on the common metadata
+   compile classpath — `statement.step()` there resolves against `IntProgression.step` instead.
+   `log-monitor:api` gets away with `api(libs.room3.runtime)` in commonMain only because it uses
+   Room *annotations*, never its connection calls.
+
+`nonWebMain` is wired by hand and hooked to `androidMain` / `jvmMain` / `iosArm64Main` /
+`iosSimulatorArm64Main` — not `iosMain`, which the hierarchy template materialises lazily and which
+is therefore absent while the build script is evaluated.
+
 ### Theming
 `Sidekick()` accepts `useSidekickTheme: Boolean = true`:
 - `true` → applies the library's own light/dark Material 3 color scheme based on system dark-mode
@@ -486,3 +538,4 @@ The processor reads each property's Kotlin initializer (`= …`) directly from t
 | KSP + KotlinPoet | Code generation for preferences | preferences/ksp |
 | Room 3 + `androidx.sqlite` | Local Pokemon cache on every target (Android/JVM/iOS file-backed, web in-memory via sqlite-web worker) | demo/shared |
 | Coil 3 | Image loading | demo/shared |
+| Room 3 pooled connections | Schema browsing + cell edits over the consumer's own DB | database-inspector/room |

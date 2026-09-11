@@ -27,6 +27,10 @@ dependencies {
         api(projects.plugins.logMonitor.kermit)
         api(projects.plugins.logMonitor.noop)
         api(projects.plugins.customScreen.api)
+        api(projects.plugins.databaseInspector.api)
+        api(projects.plugins.databaseInspector.ui)
+        api(projects.plugins.databaseInspector.room)
+        api(projects.plugins.databaseInspector.noop)
     }
 }
 

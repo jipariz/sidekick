@@ -6,7 +6,7 @@ import androidx.sqlite.driver.web.WebWorkerSQLiteDriver
 actual fun createPokemonCache(): PokemonCache {
     val driver = WebWorkerSQLiteDriver(jsWorker())
     val database = Room.inMemoryDatabaseBuilder<PokemonDatabase>().setDriver(driver).build()
-    return RoomPokemonCache(database.pokemonCacheDao())
+    return RoomPokemonCache(database.pokemonCacheDao(), database)
 }
 
 @OptIn(ExperimentalWasmJsInterop::class)

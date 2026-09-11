@@ -48,6 +48,10 @@ include(":plugins:log-monitor:ui")
 include(":plugins:log-monitor:kermit")
 include(":plugins:log-monitor:noop")
 include(":plugins:custom-screen:api")
+include(":plugins:database-inspector:api")
+include(":plugins:database-inspector:ui")
+include(":plugins:database-inspector:room")
+include(":plugins:database-inspector:noop")
 include(":bom")
 // Demo app — new KMP default structure (kmp.new / Kotlin 2026.05 blog post):
 // the demo lives under demo/ with one shared KMP library + per-platform app
