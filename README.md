@@ -264,3 +264,5 @@ Apache 2.0 — see [LICENSE](LICENSE).
 ## 🙏 Credits
 
 The demo app uses data from [PokéAPI](https://pokeapi.co) — a free, open RESTful Pokémon API. See [pokeapi.co/about](https://pokeapi.co/about) for license and usage details.
+
+I took inspiration from [KtorMonitor](https://github.com/CosminMihuMDC/KtorMonitor) by Cosmin Mihu — an Apache 2.0 licensed monitor for Ktor, OkHttp and http4k — when building Sidekick's network monitor.
