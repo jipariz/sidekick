@@ -4,7 +4,7 @@ package dev.parez.sidekick.network {
   public final class BodyBudget {
     property public static int Default;
     property public static int Unlimited;
-    field public static final int Default = 16777216; // 0x1000000
+    field public static final int Default = 8388608; // 0x800000
     field public static final dev.parez.sidekick.network.BodyBudget INSTANCE;
     field public static final int Unlimited = 2147483647; // 0x7fffffff
   }
