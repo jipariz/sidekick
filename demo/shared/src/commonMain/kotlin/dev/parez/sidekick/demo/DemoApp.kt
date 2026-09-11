@@ -29,6 +29,7 @@ import com.svenjacobs.reveal.RevealCanvas
 import com.svenjacobs.reveal.RevealShape
 import com.svenjacobs.reveal.rememberRevealCanvasState
 import com.svenjacobs.reveal.rememberRevealState
+import dev.parez.sidekick.crash.CrashMonitorPlugin
 import dev.parez.sidekick.database.DatabaseInspectorPlugin
 import dev.parez.sidekick.database.room.DatabaseInspector
 import dev.parez.sidekick.demo.db.PokemonCache
@@ -60,6 +61,7 @@ fun DemoApp() {
     KoinIsolatedContext(context = LibraryKoinContext.koinApp) {
         val prefsPlugin = remember { AppPreferencesPlugin() }
         val networkPlugin = remember { NetworkMonitorPlugin(retentionPeriod = 1.hours) }
+        val crashPlugin = remember { CrashMonitorPlugin() }
         val pokemonCache: PokemonCache = koinInject()
         val databasePlugin = remember {
             DatabaseInspectorPlugin().also {
@@ -107,6 +109,7 @@ fun DemoApp() {
                 networkPlugin,
                 logPlugin,
                 databasePlugin,
+                crashPlugin,
                 buildInfoPlugin,
                 customDebugPlugin,
             ) {
@@ -115,6 +118,7 @@ fun DemoApp() {
                     networkPlugin,
                     logPlugin,
                     databasePlugin,
+                    crashPlugin,
                     buildInfoPlugin,
                     customDebugPlugin,
                 )

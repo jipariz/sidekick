@@ -33,11 +33,15 @@ settings.gradle.kts
 │   │   └── noop          — Release stub: LogMonitorLogWriter discards entries, no SQLDelight
 │   ├── custom-screen/
 │   │   └── api           — CustomScreenPlugin: wraps any Composable as a SidekickPlugin
-│   └── database-inspector/
-│       ├── api           — Db models, DatabaseController contract, DatabaseInspectorStore
-│       ├── ui            — DatabaseInspectorPlugin + table browser / cell editor / SQL console
-│       ├── room          — RoomDatabaseController over Room 3's pooled-connection API
-│       └── noop          — Release stub: attach() ignores the database, panel renders nothing
+│   ├── database-inspector/
+│   │   ├── api           — Db models, DatabaseController contract, DatabaseInspectorStore
+│   │   ├── ui            — DatabaseInspectorPlugin + table browser / cell editor / SQL console
+│   │   ├── room          — RoomDatabaseController over Room 3's pooled-connection API
+│   │   └── noop          — Release stub: attach() ignores the database, panel renders nothing
+│   └── crash-monitor/
+│       ├── api           — CrashRecord/StackFrame, file-backed store, per-platform crash hooks
+│       ├── ui            — CrashMonitorPlugin + crash list / stack-trace detail
+│       └── noop          — Release stub: no handler installed, nothing written
 ├── demo/                  — Pokemon catalog sample exercising all SDK features.
 │   │                        Follows the new KMP default structure (kmp.new):
 │   │                        one shared library + one app module per target.
@@ -111,6 +115,7 @@ Sidekick uses **per-family semver** coordinated by a **calendar-versioned BOM**.
 | `plugins/preferences/` | `api`, `ksp`, `gradle-plugin` (included build) |
 | `plugins/custom-screen/` | `api` |
 | `plugins/database-inspector/` | `api`, `ui`, `room`, `noop` |
+| `plugins/crash-monitor/` | `api`, `ui`, `noop` |
 
 Each family root owns a single `version.properties` (e.g. `plugins/network-monitor/version.properties`) with two keys:
 - `sdk.version` — semver `MAJOR.MINOR.PATCH`
@@ -397,6 +402,54 @@ Two reasons, both load-bearing:
 `nonWebMain` is wired by hand and hooked to `androidMain` / `jvmMain` / `iosArm64Main` /
 `iosSimulatorArm64Main` — not `iosMain`, which the hierarchy template materialises lazily and which
 is therefore absent while the build script is evaluated.
+
+### Crash Monitor
+
+Captures crashes so they can be read **after** the restart that followed them — a crash you can
+only see with a debugger attached is one you have already failed to reproduce.
+
+```kotlin
+CrashMonitor.install(appPackagePrefix = "com.acme.app")
+```
+
+Install from the app's entry point (`Application.onCreate`, `fun main`), **not** from the plugin
+constructor: plugins are built when the overlay is first composed, far too late to catch a startup
+crash. On Android it must run after `ApplicationContextHolder.initialize`, since storage needs the
+context.
+
+#### No database, on purpose
+
+Every other stateful plugin uses Room. This one does not. At crash time the process is being torn
+down — coroutines, Room and the invalidation tracker are all unsafe to reach for — so the fatal path
+is a **synchronous append to a plain file**, written *before* the in-memory list is updated, because
+the file is the only copy that outlives the process. Crash volumes are small (`MAX_CRASHES = 50`),
+so the log is read whole at startup and held in memory. A useful side effect: no SQLite means this
+plugin works identically on web, where the monitors fall back to in-memory anyway.
+
+`CrashCodec` uses a line-oriented format rather than JSON, for the same reason: one record is one
+`C` line plus its `F` lines, appending is a single string write, and a tail truncated by a dying
+process costs at most the record being written — every earlier record still parses.
+
+#### Platform hooks
+
+| Target | Hook |
+|---|---|
+| Android / JVM | `Thread.setDefaultUncaughtExceptionHandler`, **chaining to the previous handler** |
+| iOS | `kotlin.native.setUnhandledExceptionHook` |
+| JS / WasmJS | `window` `error` **and** `unhandledrejection` |
+
+Two traps worth naming:
+
+- **Android/JVM chaining is not optional.** Swallowing the exception would break Crashlytics,
+  Sentry, and the platform's own crash dialog.
+- **iOS needs the Kotlin hook, not the ObjC one.** `NSSetUncaughtExceptionHandler` catches
+  Objective-C exceptions, which a Kotlin/Native app almost never throws; real failures go through
+  `setUnhandledExceptionHook`. Wiring only the former looks correct and catches nothing.
+- **Web needs both events.** `onerror` catches synchronous throws; a crashing coroutine on
+  Kotlin/JS surfaces as a rejected promise and only `unhandledrejection` sees it.
+
+`StackFrame.isAppFrame` is derived from `appPackagePrefix`; the detail pane dims framework frames so
+the app's own lines are findable at a glance.
 
 ### Theming
 `Sidekick()` accepts `useSidekickTheme: Boolean = true`:

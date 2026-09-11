@@ -52,6 +52,9 @@ include(":plugins:database-inspector:api")
 include(":plugins:database-inspector:ui")
 include(":plugins:database-inspector:room")
 include(":plugins:database-inspector:noop")
+include(":plugins:crash-monitor:api")
+include(":plugins:crash-monitor:ui")
+include(":plugins:crash-monitor:noop")
 include(":bom")
 // Demo app — new KMP default structure (kmp.new / Kotlin 2026.05 blog post):
 // the demo lives under demo/ with one shared KMP library + per-platform app

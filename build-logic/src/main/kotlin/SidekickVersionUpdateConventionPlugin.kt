@@ -13,7 +13,7 @@ import java.util.Properties
  *
  * A *family* is a directory containing one or more publishable modules
  * that share internal API surface and therefore must move together. The
- * six families are:
+ * seven families are:
  *
  *   core                       — plugin-api, runtime, noop
  *   plugins/network-monitor    — api, plugin, ktor
@@ -21,6 +21,7 @@ import java.util.Properties
  *   plugins/preferences        — api, ksp, gradle-plugin (included build)
  *   plugins/custom-screen      — api
  *   plugins/database-inspector — api, ui, room, noop
+ *   plugins/crash-monitor      — api, ui, noop
  *
  * Each family root owns a single `version.properties`:
  *   sdk.version       — semver (MAJOR.MINOR.PATCH)
@@ -71,6 +72,7 @@ class SidekickVersionUpdateConventionPlugin : Plugin<Project> {
         "plugins/preferences",
         "plugins/custom-screen",
         "plugins/database-inspector",
+        "plugins/crash-monitor",
     )
 
     override fun apply(target: Project) {
