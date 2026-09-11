@@ -3,7 +3,7 @@ package dev.parez.sidekick.preferences
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-class InMemoryPreferenceStore : PreferenceStore {
+public class InMemoryPreferenceStore : PreferenceStore {
     private val data = HashMap<String, MutableStateFlow<Any>>()
 
     @Suppress("UNCHECKED_CAST")

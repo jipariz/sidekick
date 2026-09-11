@@ -6,11 +6,11 @@ import dev.parez.sidekick.plugin.SidekickAppInfo
 import dev.parez.sidekick.plugin.SidekickPlugin
 
 @Composable
-fun Sidekick(
+public fun Sidekick(
     plugins: List<SidekickPlugin>,
     appInfo: SidekickAppInfo? = null,
     useSidekickTheme: Boolean = true,
     title: String = "Sidekick",
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
-) = Unit
+): Unit = Unit

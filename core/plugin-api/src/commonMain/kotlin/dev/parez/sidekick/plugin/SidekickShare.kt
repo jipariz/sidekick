@@ -14,8 +14,8 @@ package dev.parez.sidekick.plugin
  * @param subject a short title. Used as the chooser title on Android, the file name on desktop and
  *   web (sanitized), and ignored on iOS.
  */
-expect object SidekickShare {
-    fun share(text: String, subject: String)
+public expect object SidekickShare {
+    public fun share(text: String, subject: String)
 }
 
 /**

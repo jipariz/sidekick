@@ -2,10 +2,10 @@ package dev.parez.sidekick.preferences
 
 import kotlinx.coroutines.flow.StateFlow
 
-interface PreferenceStore {
-    fun <T : Any> observe(key: String, defaultValue: T): StateFlow<T>
+public interface PreferenceStore {
+    public fun <T : Any> observe(key: String, defaultValue: T): StateFlow<T>
 
-    suspend fun <T : Any> set(key: String, value: T)
+    public suspend fun <T : Any> set(key: String, value: T)
 }
 
-expect fun createPreferenceStore(storeName: String): PreferenceStore
+public expect fun createPreferenceStore(storeName: String): PreferenceStore

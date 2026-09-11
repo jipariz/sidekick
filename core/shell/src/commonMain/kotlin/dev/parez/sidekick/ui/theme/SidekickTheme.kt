@@ -12,7 +12,7 @@ import androidx.compose.ui.graphics.Color
  * Default dark Material 3 color scheme for the Sidekick overlay. Used when [useSidekickTheme] is
  * `true` and the system is in dark mode.
  */
-val SidekickDarkColorScheme: ColorScheme =
+public val SidekickDarkColorScheme: ColorScheme =
     darkColorScheme(
         primary = Color(0xFFBAC3FF),
         onPrimary = Color(0xFF15267B),
@@ -52,7 +52,7 @@ val SidekickDarkColorScheme: ColorScheme =
  * Light variant of the Sidekick library color scheme. Used when [useSidekickTheme] is `true` and
  * the system is in light mode.
  */
-val SidekickLightColorScheme: ColorScheme =
+public val SidekickLightColorScheme: ColorScheme =
     lightColorScheme(
         primary = Color(0xFF4A5798),
         onPrimary = Color(0xFFFFFFFF),

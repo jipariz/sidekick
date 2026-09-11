@@ -1,5 +1,6 @@
 package dev.parez.sidekick.plugin
 
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 
 /**
@@ -26,10 +27,11 @@ import androidx.compose.runtime.State
  * Declared as a separate interface rather than a member of [SidekickPlugin] so adding it does not
  * break existing implementations — the same reason [SidekickLifecycleAware] is separate.
  */
-interface SidekickBadged {
+@Stable
+public interface SidekickBadged {
     /**
      * Unread count, or `null` when there is nothing to show. Read from composition, so implementers
      * should back this with snapshot state (`mutableStateOf`) rather than a plain field.
      */
-    val badge: State<Int?>
+    public val badge: State<Int?>
 }

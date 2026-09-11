@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 import org.koin.compose.KoinIsolatedContext
 import org.koin.compose.viewmodel.koinViewModel
 
-class NetworkMonitorPlugin(
+public class NetworkMonitorPlugin(
     retentionPeriod: Duration = 1.hours,
     bodyBudgetChars: Int = BodyBudget.Default,
 ) : SidekickPlugin, SidekickBadged, SidekickLifecycleAware {

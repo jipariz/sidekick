@@ -10,5 +10,5 @@ import kotlin.time.Duration.Companion.hours
  * untouched and no log entries are recorded.
  */
 @Suppress("UNUSED_PARAMETER")
-fun kermitLogMonitor(retentionPeriod: Duration = 1.hours): LogMonitorPlugin =
+public fun kermitLogMonitor(retentionPeriod: Duration = 1.hours): LogMonitorPlugin =
     LogMonitorPlugin(retentionPeriod = retentionPeriod)

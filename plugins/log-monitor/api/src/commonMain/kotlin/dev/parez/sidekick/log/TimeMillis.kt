@@ -1,3 +1,3 @@
 package dev.parez.sidekick.log
 
-expect fun currentTimeMillis(): Long
+public expect fun currentTimeMillis(): Long

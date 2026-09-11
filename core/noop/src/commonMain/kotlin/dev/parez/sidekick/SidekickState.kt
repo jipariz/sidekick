@@ -4,16 +4,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import dev.parez.sidekick.plugin.SidekickPlugin
 
-class SidekickState(val plugins: List<SidekickPlugin>) {
-    val orderedPlugins: List<SidekickPlugin>
+public class SidekickState(public val plugins: List<SidekickPlugin>) {
+    public val orderedPlugins: List<SidekickPlugin>
         get() = plugins
 
-    val activePlugin: SidekickPlugin?
+    public val activePlugin: SidekickPlugin?
         get() = null
 
-    fun reset() {}
+    public fun reset() {}
 }
 
 @Composable
-fun rememberSidekickState(plugins: List<SidekickPlugin>): SidekickState =
+public fun rememberSidekickState(plugins: List<SidekickPlugin>): SidekickState =
     remember(plugins) { SidekickState(plugins) }

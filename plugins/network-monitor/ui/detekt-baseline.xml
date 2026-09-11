@@ -1,0 +1,8 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComposableParamOrder:NetworkCallListScreen.kt$NetworkCallListPane</ID>
+    <ID>ParameterNaming:NetworkCallDetailScreen.kt$onDragStopped</ID>
+  </CurrentIssues>
+</SmellBaseline>

@@ -84,8 +84,14 @@ class SidekickVersionUpdateConventionPlugin : Plugin<Project> {
                 description = "Bumps PATCH of every Sidekick family whose source has changed."
                 outputs.upToDateWhen { false }
 
+                // Resolved at configuration time, like checkModuleVersions below.
+                // Calling managedFamilies(project) from inside doLast captures a
+                // Project reference in the task action, which the configuration
+                // cache cannot serialize — the task would do its work and then fail
+                // on cache store.
+                val families = managedFamilies(this@with)
+
                 doLast {
-                    val families = managedFamilies(this@with)
                     var bumped = 0
                     var seeded = 0
                     families.forEach { family ->

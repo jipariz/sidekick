@@ -1,5 +1,6 @@
 package dev.parez.sidekick.plugin
 
+import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.compositionLocalOf
 
 /**
@@ -17,7 +18,7 @@ import androidx.compose.runtime.compositionLocalOf
  * }
  * ```
  */
-val LocalSidekickBackNavigator =
+public val LocalSidekickBackNavigator: ProvidableCompositionLocal<() -> Unit> =
     compositionLocalOf<() -> Unit> {
         error(
             "LocalSidekickBackNavigator not provided — is this composable running inside Sidekick?"

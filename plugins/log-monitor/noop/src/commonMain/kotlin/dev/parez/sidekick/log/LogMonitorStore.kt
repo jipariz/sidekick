@@ -12,28 +12,29 @@ import kotlinx.coroutines.flow.flowOf
  * results.
  */
 @Suppress("UNUSED_PARAMETER")
-object LogMonitorStore : LogCollector {
+public object LogMonitorStore : LogCollector {
 
-    fun init(retentionPeriod: Duration = 1.hours) = Unit
+    public fun init(retentionPeriod: Duration = 1.hours): Unit = Unit
 
-    fun pagedEntries(filter: Flow<LogFilter>): Flow<PagingData<LogEntry>> =
+    public fun pagedEntries(filter: Flow<LogFilter>): Flow<PagingData<LogEntry>> =
         flowOf(PagingData.empty())
 
-    fun filteredCount(filter: Flow<LogFilter>): Flow<Long> = flowOf(0L)
+    public fun filteredCount(filter: Flow<LogFilter>): Flow<Long> = flowOf(0L)
 
-    fun entryById(id: String): Flow<LogEntry?> = flowOf(null)
+    public fun entryById(id: String): Flow<LogEntry?> = flowOf(null)
 
-    override fun log(level: LogLevel, tag: String, message: String, throwable: Throwable?) = Unit
+    override fun log(level: LogLevel, tag: String, message: String, throwable: Throwable?): Unit =
+        Unit
 
-    fun record(
+    public fun record(
         level: LogLevel,
         tag: String,
         message: String,
         throwable: Throwable?,
         metadata: Map<String, String>? = null,
-    ) = Unit
+    ): Unit = Unit
 
-    suspend fun exportAll(filter: LogFilter): List<LogEntry> = emptyList()
+    public suspend fun exportAll(filter: LogFilter): List<LogEntry> = emptyList()
 
-    suspend fun clear() = Unit
+    public suspend fun clear(): Unit = Unit
 }

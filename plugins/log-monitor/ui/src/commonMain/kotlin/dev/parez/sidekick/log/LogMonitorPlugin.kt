@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 import org.koin.compose.KoinIsolatedContext
 import org.koin.compose.viewmodel.koinViewModel
 
-class LogMonitorPlugin(retentionPeriod: Duration = 1.hours) :
+public class LogMonitorPlugin(retentionPeriod: Duration = 1.hours) :
     SidekickPlugin, SidekickBadged, SidekickLifecycleAware {
 
     private val _badge = mutableStateOf<Int?>(null)

@@ -6,13 +6,13 @@ import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
 import java.io.File
 
-actual object SidekickShare {
+public actual object SidekickShare {
     /**
      * Desktop has no share sheet. Writes the payload to a temp file and opens it in the default
      * text handler; if that isn't available (headless CI, a stripped desktop environment), falls
      * back to putting the text on the clipboard so the data is still recoverable.
      */
-    actual fun share(text: String, subject: String) {
+    public actual fun share(text: String, subject: String) {
         val file = File(System.getProperty("java.io.tmpdir"), "${subject.toSafeFileName()}.txt")
         val opened =
             runCatching {

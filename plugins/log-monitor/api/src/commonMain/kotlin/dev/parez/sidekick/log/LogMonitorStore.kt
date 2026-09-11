@@ -43,7 +43,7 @@ private const val PENDING_CAPACITY = 4096
 private const val MAX_BATCH = 200
 
 @OptIn(ExperimentalCoroutinesApi::class)
-object LogMonitorStore : LogCollector {
+public object LogMonitorStore : LogCollector {
 
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
@@ -64,7 +64,7 @@ object LogMonitorStore : LogCollector {
 
     private val initialized = MutableStateFlow(false)
 
-    fun init(retentionPeriod: Duration = 1.hours) {
+    public fun init(retentionPeriod: Duration = 1.hours) {
         if (!initialized.compareAndSet(expect = false, update = true)) return
 
         scope.launch {
@@ -105,7 +105,7 @@ object LogMonitorStore : LogCollector {
         }
     }
 
-    fun pagedEntries(filter: Flow<LogFilter>): Flow<PagingData<LogEntry>> =
+    public fun pagedEntries(filter: Flow<LogFilter>): Flow<PagingData<LogEntry>> =
         combine(_database, filter.distinctUntilChanged()) { db, f -> db to f }
             .flatMapLatest { (db, f) ->
                 if (db != null) {
@@ -124,7 +124,7 @@ object LogMonitorStore : LogCollector {
                 }
             }
 
-    fun filteredCount(filter: Flow<LogFilter>): Flow<Long> =
+    public fun filteredCount(filter: Flow<LogFilter>): Flow<Long> =
         combine(_database, filter.distinctUntilChanged()) { db, f -> db to f }
             .flatMapLatest { (db, f) ->
                 if (db != null) {
@@ -139,7 +139,7 @@ object LogMonitorStore : LogCollector {
                 }
             }
 
-    fun entryById(id: String): Flow<LogEntry?> = _database.flatMapLatest { db ->
+    public fun entryById(id: String): Flow<LogEntry?> = _database.flatMapLatest { db ->
         if (db != null) {
             db.logEntryDao().selectById(id).map { it?.toDomain() }
         } else {
@@ -151,7 +151,7 @@ object LogMonitorStore : LogCollector {
         record(level, tag, message, throwable, metadata = null)
     }
 
-    fun record(
+    public fun record(
         level: LogLevel,
         tag: String,
         message: String,
@@ -190,7 +190,7 @@ object LogMonitorStore : LogCollector {
     /**
      * Snapshot of every entry matching [filter], for export. Bounded by the store's own row cap.
      */
-    suspend fun exportAll(filter: LogFilter): List<LogEntry> {
+    public suspend fun exportAll(filter: LogFilter): List<LogEntry> {
         val db = _database.value
         return if (db != null) {
             db.logEntryDao()
@@ -207,7 +207,7 @@ object LogMonitorStore : LogCollector {
         }
     }
 
-    suspend fun clear() {
+    public suspend fun clear() {
         _database.value?.logEntryDao()?.deleteAll()
         if (_inMemory.value != null) _inMemory.value = emptyList()
     }

@@ -12,7 +12,7 @@ import kotlinx.browser.window
  * SidekickAppInfo.detect().withExtras("Version" to "1.0.0", "Build" to "release")
  * ```
  */
-actual fun SidekickAppInfo.Companion.detect(): SidekickAppInfo {
+public actual fun SidekickAppInfo.Companion.detect(): SidekickAppInfo {
     val ua = window.navigator.userAgent
     return SidekickAppInfo(
         platform = PlatformInfo.Web(userAgent = ua, browserName = parseBrowserName(ua))

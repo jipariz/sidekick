@@ -3,8 +3,8 @@ package dev.parez.sidekick.log
 import androidx.compose.runtime.Immutable
 
 @Immutable
-data class LogFilter(val query: String = "", val levels: Set<LogLevel> = emptySet()) {
-    fun matches(entry: LogEntry): Boolean = false
+public data class LogFilter(val query: String = "", val levels: Set<LogLevel> = emptySet()) {
+    public fun matches(entry: LogEntry): Boolean = false
 
-    fun toLikeToken(): String = "%"
+    public fun toLikeToken(): String = "%"
 }

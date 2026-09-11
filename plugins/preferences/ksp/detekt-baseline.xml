@@ -1,0 +1,10 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:SidekickPreferencesProcessor.kt$SidekickPreferencesProcessor$c == '=' &amp;&amp; joined.getOrNull(i + 1) != '=' &amp;&amp; joined.getOrNull(i - 1).let { it != '=' &amp;&amp; it != '&lt;' &amp;&amp; it != '&gt;' &amp;&amp; it != '!' }</ID>
+    <ID>UnusedPrivateProperty:AccessorGenerator.kt$AccessorGenerator$private val logger: KSPLogger</ID>
+    <ID>UnusedPrivateProperty:PluginGenerator.kt$PluginGenerator$private val logger: KSPLogger</ID>
+    <ID>UnusedPrivateProperty:SidekickPreferencesProcessor.kt$SidekickPreferencesProcessor$private val options: Map&lt;String, String&gt;</ID>
+  </CurrentIssues>
+</SmellBaseline>

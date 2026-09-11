@@ -8,8 +8,8 @@ import platform.UIKit.UIWindow
 import platform.UIKit.popoverPresentationController
 
 @OptIn(ExperimentalForeignApi::class)
-actual object SidekickShare {
-    actual fun share(text: String, subject: String) {
+public actual object SidekickShare {
+    public actual fun share(text: String, subject: String) {
         val presenter = topMostViewController() ?: return
         val controller =
             UIActivityViewController(activityItems = listOf(text), applicationActivities = null)

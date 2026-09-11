@@ -1,6 +1,7 @@
 package dev.parez.sidekick.plugin
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.vector.ImageVector
 
 /**
@@ -31,16 +32,17 @@ import androidx.compose.ui.graphics.vector.ImageVector
  * Inside [Content], read [LocalSidekickBackNavigator] to obtain a `() -> Unit` that returns to the
  * plugin list — typically wired to a `TopAppBar` nav icon.
  */
-interface SidekickPlugin {
+@Stable
+public interface SidekickPlugin {
     /** Stable, host-unique identifier. See class KDoc. */
-    val id: String
+    public val id: String
     /**
      * Display name shown on the plugin grid card and (typically) in the detail screen's app bar.
      */
-    val title: String
+    public val title: String
     /** Icon shown on the plugin grid card. From `androidx.compose.material.icons.*`. */
-    val icon: ImageVector
+    public val icon: ImageVector
 
     /** Renders the plugin detail screen. Called when the user taps this plugin's card. */
-    @Composable fun Content()
+    @Composable public fun Content()
 }

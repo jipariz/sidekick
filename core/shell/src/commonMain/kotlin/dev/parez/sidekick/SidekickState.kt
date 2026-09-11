@@ -14,7 +14,7 @@ import dev.parez.sidekick.plugin.SidekickPlugin
 // ── State ────────────────────────────────────────────────────────────────────
 
 @Stable
-class SidekickState(val plugins: List<SidekickPlugin>) {
+public class SidekickState(public val plugins: List<SidekickPlugin>) {
 
     init {
         val duplicates = plugins.groupingBy { it.id }.eachCount().filter { it.value > 1 }.keys
@@ -36,12 +36,12 @@ class SidekickState(val plugins: List<SidekickPlugin>) {
         mutableStateListOf<String>().apply { addAll(plugins.map { it.id }) }
 
     /** Plugins in user-chosen order. Drives the menu grid and the public list view. */
-    val orderedPlugins: List<SidekickPlugin> by derivedStateOf {
+    public val orderedPlugins: List<SidekickPlugin> by derivedStateOf {
         orderedPluginIds.mapNotNull { id -> plugins.firstOrNull { it.id == id } }
     }
 
     /** The currently active plugin, derived from the selected plugin ID. */
-    val activePlugin: SidekickPlugin?
+    public val activePlugin: SidekickPlugin?
         get() = selectedPluginId?.let { id -> plugins.firstOrNull { it.id == id } }
 
     internal fun selectPlugin(p: SidekickPlugin) {
@@ -89,7 +89,7 @@ class SidekickState(val plugins: List<SidekickPlugin>) {
     }
 
     /** Resets internal navigation state. Called when the menu is dismissed. */
-    fun reset() {
+    public fun reset() {
         selectedPluginId = null
     }
 }
@@ -102,5 +102,5 @@ class SidekickState(val plugins: List<SidekickPlugin>) {
  * directly (e.g. for testing), pass a list reference that is itself stable across recompositions.
  */
 @Composable
-fun rememberSidekickState(plugins: List<SidekickPlugin>): SidekickState =
+public fun rememberSidekickState(plugins: List<SidekickPlugin>): SidekickState =
     remember(plugins) { SidekickState(plugins) }

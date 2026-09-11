@@ -27,8 +27,8 @@ package dev.parez.sidekick.plugin
  * }
  * ```
  */
-interface SidekickLifecycleAware {
-    fun onAttach() {}
+public interface SidekickLifecycleAware {
+    public fun onAttach() {}
 
-    fun onDetach() {}
+    public fun onDetach() {}
 }

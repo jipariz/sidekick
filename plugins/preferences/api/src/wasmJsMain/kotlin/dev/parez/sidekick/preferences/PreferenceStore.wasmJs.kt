@@ -4,10 +4,10 @@ import kotlinx.browser.localStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-actual fun createPreferenceStore(storeName: String): PreferenceStore =
+public actual fun createPreferenceStore(storeName: String): PreferenceStore =
     LocalStoragePreferenceStore(storeName)
 
-class LocalStoragePreferenceStore(private val storeName: String) : PreferenceStore {
+public class LocalStoragePreferenceStore(private val storeName: String) : PreferenceStore {
     private val cache = HashMap<String, MutableStateFlow<Any>>()
 
     @Suppress("UNCHECKED_CAST")

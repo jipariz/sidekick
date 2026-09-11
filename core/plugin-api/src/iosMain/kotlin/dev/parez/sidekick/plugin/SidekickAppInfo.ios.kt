@@ -12,7 +12,7 @@ import platform.UIKit.UIDevice
  * - Build type (Debug / Release / …) cannot be determined at runtime; use the [detect] overload to
  *   supply it from your build configuration.
  */
-actual fun SidekickAppInfo.Companion.detect(): SidekickAppInfo {
+public actual fun SidekickAppInfo.Companion.detect(): SidekickAppInfo {
     val device = UIDevice.currentDevice
     val info = NSBundle.mainBundle().infoDictionary
 
@@ -39,7 +39,7 @@ actual fun SidekickAppInfo.Companion.detect(): SidekickAppInfo {
  *
  * @param buildType Build configuration name (e.g. "Debug", "Release", "Staging").
  */
-fun SidekickAppInfo.Companion.detect(buildType: String?): SidekickAppInfo {
+public fun SidekickAppInfo.Companion.detect(buildType: String?): SidekickAppInfo {
     val base = detect()
     val p = base.platform as? PlatformInfo.Ios ?: return base
     return base.copy(platform = p.copy(buildType = buildType))
