@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
@@ -43,6 +44,16 @@ public class NetworkMonitorStore(private val scope: CoroutineScope) {
     // ViewModel-scoped pagers.
     private val inMemorySnapshot: StateFlow<List<NetworkCall>> =
         _inMemory.filterNotNull().stateIn(scope, SharingStarted.Eagerly, emptyList())
+
+    /**
+     * Entries ever accepted, never decreasing.
+     *
+     * The unread badge cannot be derived from the retained row count: once the store is at its cap
+     * — the normal steady state — every new entry evicts an old one and the count stops moving, so
+     * a count-based badge silently stops reporting new activity.
+     */
+    private val _recordedCount = MutableStateFlow(0L)
+    public val recordedCount: StateFlow<Long> = _recordedCount.asStateFlow()
 
     private val initialized = MutableStateFlow(false)
 
@@ -132,6 +143,7 @@ public class NetworkMonitorStore(private val scope: CoroutineScope) {
         body: String?,
         timestamp: Long,
     ) {
+        _recordedCount.update { it + 1 }
         val db = _database.value
         if (db != null) {
             db.networkCallDao()
@@ -210,6 +222,10 @@ public class NetworkMonitorStore(private val scope: CoroutineScope) {
         val db = _database.value
         if (db != null) {
             db.networkCallDao().updateResponseBody(id = id, body = body.truncate())
+            // Response bodies are the large ones and they land *after* their request,
+            // so leaving enforcement to recordRequest let a burst of big responses sit
+            // over budget indefinitely whenever traffic stopped.
+            evictBodiesOverBudget(db)
         } else if (_inMemory.value != null) {
             _inMemory.update { list ->
                 list
@@ -270,9 +286,12 @@ public class NetworkMonitorStore(private val scope: CoroutineScope) {
         val count = db.networkCallDao().countAll()
         val over = count - MAX_CALLS
         if (over > 0) db.networkCallDao().deleteOldestOverLimit(over)
-        if (bodyBudgetChars != BodyBudget.Unlimited) {
-            db.networkCallDao().evictBodiesOverBudget(bodyBudgetChars.toLong())
-        }
+        evictBodiesOverBudget(db)
+    }
+
+    private suspend fun evictBodiesOverBudget(db: NetworkMonitorDatabase) {
+        if (bodyBudgetChars == BodyBudget.Unlimited) return
+        db.networkCallDao().evictBodiesOverBudget(bodyBudgetChars.toLong())
     }
 
     /**
