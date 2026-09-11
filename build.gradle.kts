@@ -36,6 +36,9 @@ val artifactIdMap = mapOf(
     ":plugins:database-inspector:ui" to "database-inspector-ui",
     ":plugins:database-inspector:room" to "database-inspector-room",
     ":plugins:database-inspector:noop" to "database-inspector-noop",
+    ":plugins:crash-monitor:api" to "crash-monitor",
+    ":plugins:crash-monitor:ui" to "crash-monitor-ui",
+    ":plugins:crash-monitor:noop" to "crash-monitor-noop",
 )
 
 subprojects {

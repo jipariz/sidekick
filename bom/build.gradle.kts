@@ -31,6 +31,9 @@ dependencies {
         api(projects.plugins.databaseInspector.ui)
         api(projects.plugins.databaseInspector.room)
         api(projects.plugins.databaseInspector.noop)
+        api(projects.plugins.crashMonitor.api)
+        api(projects.plugins.crashMonitor.ui)
+        api(projects.plugins.crashMonitor.noop)
     }
 }
 

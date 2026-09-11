@@ -8,6 +8,7 @@ plugins {
 
 dependencies {
     implementation(projects.demo.shared)
+    implementation(projects.plugins.crashMonitor.api)
     implementation(compose.desktop.currentOs)
     implementation(libs.kotlinx.coroutinesSwing)
 }

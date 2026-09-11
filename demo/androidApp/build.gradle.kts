@@ -29,6 +29,7 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.compose.material3)
     implementation(projects.core.pluginApi)
+    implementation(projects.plugins.crashMonitor.api)
     // @Preview annotation + on-device renderer for Studio's "Run on Device"
     // preview action. `ui-tooling-preview` exposes the annotation; `ui-tooling`
     // is debug-only and ships the runtime needed to actually render previews
