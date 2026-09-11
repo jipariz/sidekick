@@ -5,6 +5,16 @@ import androidx.room3.Database
 import androidx.room3.RoomDatabase
 import androidx.room3.RoomDatabaseConstructor
 
+/**
+ * Schema 2 added `bodiesEvicted`.
+ *
+ * The persistent builders keep `fallbackToDestructiveMigration`, so an upgrade drops captured calls
+ * rather than migrating them. That is deliberate, not an oversight: this table is an ephemeral
+ * debug capture — purged on an hourly retention sweep and capped at 500 rows — so a migration would
+ * preserve data that is minutes from being deleted anyway, at the cost of owning a migration chain
+ * for a throwaway cache. (A hand-written `ALTER TABLE` also cannot live in commonMain: neither
+ * `execSQL` nor `prepare` is part of androidx.sqlite's common metadata.)
+ */
 @Database(entities = [NetworkCallEntity::class], version = 2)
 @ConstructedBy(NetworkMonitorDatabaseConstructor::class)
 internal abstract class NetworkMonitorDatabase : RoomDatabase() {

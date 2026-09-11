@@ -14,6 +14,10 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The default stores GITHUB_TOKEN in .git/config, where PR-controlled
+          # Gradle code could read it. Nothing here needs to push.
+          persist-credentials: false
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -33,6 +37,10 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The default stores GITHUB_TOKEN in .git/config, where PR-controlled
+          # Gradle code could read it. Nothing here needs to push.
+          persist-credentials: false
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -42,7 +50,33 @@ jobs:
           cache-read-only: true
       - name: Compile under explicit API mode
         # Unqualified task names run in every project that has them, so there is no
-        # hand-maintained module list to drift. Metadata covers commonMain;
-        # compileAndroidMain is included because androidMain sources are NOT part of
-        # the metadata compilation and would otherwise go unchecked.
-        run: ./gradlew compileKotlinMetadata compileAndroidMain
+        # hand-maintained module list to drift.
+        #
+        # Every target is listed because explicit-API violations are per-source-set:
+        # metadata covers commonMain only, and a public declaration added to
+        # androidMain/jsMain/wasmJsMain with inferred visibility would otherwise pass.
+        # Missing androidMain here is exactly how the original sweep shipped
+        # incomplete. iOS cannot build on Linux and is covered by the macOS job below.
+        run: >
+          ./gradlew compileKotlinMetadata compileAndroidMain
+          compileKotlinJvm compileKotlinJs compileKotlinWasmJs
+
+  explicit-api-apple:
+    # iOS needs a macOS runner, and it is worth the minutes: the crash monitor's
+    # Kotlin/Native behaviour differs enough from the JVM that a target-specific
+    # regression is realistic.
+    runs-on: macos-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+      - name: Compile Apple targets under explicit API mode
+        run: ./gradlew compileKotlinIosSimulatorArm64
