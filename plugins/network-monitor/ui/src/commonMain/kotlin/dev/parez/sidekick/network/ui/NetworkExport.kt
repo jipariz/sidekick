@@ -47,7 +47,8 @@ internal fun NetworkCall.toShareText(): String = buildString {
 
 /** One line per call, newest first — the list-screen export. */
 internal fun List<NetworkCall>.toShareText(): String = buildString {
-    appendLine("Sidekick network export — ${this@toShareText.size} calls")
+    val count = this@toShareText.size
+    appendLine("Sidekick network export — $count ${if (count == 1) "call" else "calls"}")
     appendLine()
     this@toShareText.forEach { call ->
         val code = call.responseCode?.toString() ?: call.status.label()

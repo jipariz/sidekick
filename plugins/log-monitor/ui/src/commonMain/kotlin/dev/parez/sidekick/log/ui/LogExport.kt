@@ -22,7 +22,8 @@ internal fun LogEntry.toShareText(): String = buildString {
  * multi-line throwable stays visually attached to the line that produced it.
  */
 internal fun List<LogEntry>.toShareText(): String = buildString {
-    appendLine("Sidekick log export — ${this@toShareText.size} entries")
+    val count = this@toShareText.size
+    appendLine("Sidekick log export — $count ${if (count == 1) "entry" else "entries"}")
     appendLine()
     this@toShareText.forEach { entry ->
         appendLine("${entry.level.name.first()}/${entry.tag}: ${entry.message}")
