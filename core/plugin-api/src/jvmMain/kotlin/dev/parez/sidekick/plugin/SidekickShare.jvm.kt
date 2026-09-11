@@ -6,6 +6,8 @@ import java.awt.GraphicsEnvironment
 import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.attribute.PosixFilePermissions
 import javax.swing.JOptionPane
 import javax.swing.SwingUtilities
 
@@ -27,9 +29,24 @@ public actual object SidekickShare {
         if (GraphicsEnvironment.isHeadless()) {
             // Nothing to ask with. Still write the file so headless runs (CI, a
             // stripped desktop environment) produce something recoverable.
+            //
+            // createTempFile rather than a predictable path in the shared temp
+            // directory: a fixed name is guessable, and writing to it would follow a
+            // pre-existing symlink and clobber its target (CWE-377). The randomised
+            // file is created exclusively, and owner-only where the filesystem
+            // supports POSIX permissions.
             runCatching {
-                File(System.getProperty("java.io.tmpdir"), "${subject.toSafeFileName()}.txt")
-                    .writeText(text)
+                val file =
+                    File.createTempFile("${subject.toSafeFileName()}-", ".txt").apply {
+                        deleteOnExit()
+                    }
+                runCatching {
+                    Files.setPosixFilePermissions(
+                        file.toPath(),
+                        PosixFilePermissions.fromString("rw-------"),
+                    )
+                }
+                file.writeText(text)
             }
             return
         }
