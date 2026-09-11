@@ -64,6 +64,19 @@ jobs:
       - name: Check API compatibility
         run: ./gradlew metalavaCheckCompatibility
 
+      # metalavaCheckCompatibility only rejects *breaking* changes, so a purely
+      # additive change leaves the committed signature stale and still passes —
+      # which defeats the point of reviewing API changes as a diff. Regenerating
+      # and requiring a clean tree makes additions show up too.
+      - name: Check API signatures are up to date
+        run: |
+          ./gradlew metalavaGenerateSignature
+          if ! git diff --quiet -- '*/api/*.api'; then
+            echo "::error::API signatures are stale. Run ./gradlew metalavaGenerateSignature and commit."
+            git --no-pager diff -- '*/api/*.api'
+            exit 1
+          fi
+
   explicit-api:
     # `explicitApi()` is a compiler setting, so the gate is simply that the
     # library modules still compile. Metadata alone covers commonMain, which is

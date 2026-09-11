@@ -1,5 +1,9 @@
 package dev.parez.sidekick.ui
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -102,9 +106,40 @@ internal fun SidekickPluginList(
                                 val unread = (plugin as? SidekickBadged)?.badge?.value
                                 BadgedBox(
                                     badge = {
-                                        if (unread != null && unread > 0) {
+                                        // Animated: the badge's whole job is to say
+                                        // "something happened while you were away", and
+                                        // an abrupt pop-in reads as a redraw glitch
+                                        // rather than an event. Spec comes from the
+                                        // theme's motion scheme, not a hardcoded curve.
+                                        // Fully qualified: the badge slot carries a
+                                        // scope receiver, so the bare name resolves to
+                                        // the ColumnScope overload instead of this one.
+                                        androidx.compose.animation.AnimatedVisibility(
+                                            visible = unread != null && unread > 0,
+                                            enter =
+                                                scaleIn(
+                                                    MaterialTheme.motionScheme.defaultSpatialSpec()
+                                                ) +
+                                                    fadeIn(
+                                                        MaterialTheme.motionScheme
+                                                            .defaultEffectsSpec()
+                                                    ),
+                                            exit =
+                                                scaleOut(
+                                                    MaterialTheme.motionScheme.fastSpatialSpec()
+                                                ) +
+                                                    fadeOut(
+                                                        MaterialTheme.motionScheme.fastEffectsSpec()
+                                                    ),
+                                        ) {
                                             Badge {
-                                                Text(if (unread > 99) "99+" else unread.toString())
+                                                Text(
+                                                    if ((unread ?: 0) > 99) {
+                                                        "99+"
+                                                    } else {
+                                                        (unread ?: 0).toString()
+                                                    }
+                                                )
                                             }
                                         }
                                     }

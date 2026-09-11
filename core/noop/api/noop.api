@@ -2,7 +2,7 @@
 package dev.parez.sidekick {
 
   public final class SidekickKt {
-    method @KotlinOnly @androidx.compose.runtime.Composable public static void Sidekick(java.util.List<dev.parez.sidekick.plugin.SidekickPlugin> plugins, optional dev.parez.sidekick.plugin.SidekickAppInfo? appInfo, optional boolean useSidekickTheme, optional String title, optional kotlin.jvm.functions.Function0<kotlin.Unit> navigationIcon, optional kotlin.jvm.functions.Function1<androidx.compose.foundation.layout.RowScope,kotlin.Unit> actions);
+    method @KotlinOnly @androidx.compose.runtime.Composable public static void Sidekick(java.util.List<dev.parez.sidekick.plugin.SidekickPlugin> plugins, optional androidx.compose.ui.Modifier modifier, optional dev.parez.sidekick.plugin.SidekickAppInfo? appInfo, optional boolean useSidekickTheme, optional String title, optional kotlin.jvm.functions.Function0<kotlin.Unit> navigationIcon, optional kotlin.jvm.functions.Function1<androidx.compose.foundation.layout.RowScope,kotlin.Unit> actions);
   }
 
   public final class SidekickState {

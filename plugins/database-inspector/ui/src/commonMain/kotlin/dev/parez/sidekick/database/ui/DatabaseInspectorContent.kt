@@ -1,6 +1,8 @@
 package dev.parez.sidekick.database.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -128,7 +130,14 @@ internal fun DatabaseInspectorContent(
         },
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
-            AnimatedVisibility(visible = state.refreshing) {
+            // MotionScheme rather than AnimatedVisibility's defaults: M3 expresses
+            // enter/exit through the theme's motion spec, so this matches whatever
+            // scheme the host app sets instead of hardcoding a curve.
+            AnimatedVisibility(
+                visible = state.refreshing,
+                enter = fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
+                exit = fadeOut(MaterialTheme.motionScheme.defaultEffectsSpec()),
+            ) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
             state.error?.let { message -> DbErrorBanner(message) }
