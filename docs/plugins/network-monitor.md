@@ -108,7 +108,7 @@ dependencies {
 }
 ```
 
-`debugImplementation` / `releaseImplementation` are Android-only. For Desktop / iOS / JS / Wasm, see [Release builds › Non-Android targets](../release-builds.md#non-android-targets-ios--desktop-jvm--js--wasm) for the property-gated swap recipe.
+`debugImplementation` / `releaseImplementation` are Android-only. For Desktop / iOS / JS / Wasm, see [Release builds › Non-Android targets](../release-builds.md#non-android-targets-ios-desktop-jvm-js-wasm) for the property-gated swap recipe.
 
 If you use a non-Ktor HTTP client, omit `network-monitor-ktor` and see [Advanced › Custom HTTP client](#custom-http-client).
 

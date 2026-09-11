@@ -45,6 +45,25 @@ jobs:
       - name: Run unit tests
         run: ./gradlew jvmTest
 
+  docs:
+    # The docs site is only built by the manually-dispatched deploy workflow, so
+    # broken links and dead anchors survived until someone happened to deploy.
+    # --strict promotes mkdocs' link warnings to failures, which is the whole
+    # point: a warning nobody reads is not a gate.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install MkDocs Material
+        run: pip install mkdocs-material
+      - name: Build docs strictly
+        run: mkdocs build --strict
+
   api-compatibility:
     # Fails when the published API surface drifts from the committed signature
     # files. A breaking change then shows up as a reviewable diff in api/*.api

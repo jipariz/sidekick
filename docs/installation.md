@@ -8,7 +8,7 @@ Sidekick is a multi-module library published to **Maven Central** under the `dev
 - **Plugin modules are per-family semver under the hood.** Each family (`core`, `network-monitor`, `log-monitor`, `preferences`, `custom-screen`) has its own `MAJOR.MINOR.PATCH` version that can drift independently. You don't need to know these — the BOM pins them.
 - **The Gradle plugin tracks the BOM too.** `dev.parez.sidekick.preferences`'s marker artifact is republished at the BOM's calendar version every release, so you pin the same number in `plugins { id("…") version "…" }` (or via `version.ref = "sidekick"` in the catalog). The marker resolves transparently to the impl at its current preferences-family version — you never see that number.
 
-The Maven Central badge at the top of the [README](../README.md) renders the latest BOM coordinate.
+The Maven Central badge at the top of the [README](https://github.com/jipariz/sidekick#readme) renders the latest BOM coordinate.
 
 ## Compatibility
 
@@ -150,7 +150,7 @@ dependencies {
 
 The library compiles against `shell` types; on Android the app module swaps `shell` (debug) for `noop` (release); on iOS the shell ships in both configurations.
 
-### Non-Android targets (Desktop / iOS / JS / Wasm)
+### Non-Android targets (Desktop, iOS, JS, Wasm)
 
 `debugImplementation` / `releaseImplementation` are Android Gradle Plugin configurations. Other KMP targets don't have a Gradle-level build-type split, so **the consumer picks the real or noop module manually per build**. The recommended pattern is a property-gated swap — run prod builds with `-Psidekick.noop=true`:
 
@@ -173,7 +173,7 @@ jvmMain.dependencies {
 }
 ```
 
-Mirror the same shape in `iosMain.dependencies`, `jsMain.dependencies`, and `wasmJsMain.dependencies`. See [Release builds › Non-Android targets](release-builds.md#non-android-targets-ios--desktop-jvm--js--wasm) for the rationale and alternatives (hand-rolled swap, runtime opt-out).
+Mirror the same shape in `iosMain.dependencies`, `jsMain.dependencies`, and `wasmJsMain.dependencies`. See [Release builds › Non-Android targets](release-builds.md#non-android-targets-ios-desktop-jvm-js-wasm) for the rationale and alternatives (hand-rolled swap, runtime opt-out).
 
 The simplest dev-only setup omits the property entirely and ships the real modules unconditionally on these targets — `Sidekick()` is gated by your app's FAB anyway.
 
@@ -214,7 +214,7 @@ dependencies {
 }
 ```
 
-For non-Android targets, use the property-gated pattern shown above in [Non-Android targets](#non-android-targets-desktop--ios--js--wasm).
+For non-Android targets, use the property-gated pattern shown above in [Non-Android targets](#non-android-targets-desktop-ios-js-wasm).
 
 ## Android Context
 

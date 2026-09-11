@@ -62,7 +62,7 @@ dependencies {
 }
 ```
 
-`debugImplementation` / `releaseImplementation` are Android-only. For Desktop / iOS / JS / Wasm, see [Release builds › Non-Android targets](../release-builds.md#non-android-targets-ios--desktop-jvm--js--wasm) for the property-gated swap recipe.
+`debugImplementation` / `releaseImplementation` are Android-only. For Desktop / iOS / JS / Wasm, see [Release builds › Non-Android targets](../release-builds.md#non-android-targets-ios-desktop-jvm-js-wasm) for the property-gated swap recipe.
 
 Omit `log-monitor-kermit` if you're not using Kermit; see [Advanced › Custom logging library](#custom-logging-library).
 
