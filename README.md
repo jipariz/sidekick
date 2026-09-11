@@ -81,7 +81,7 @@ kotlin {
             // BOM pins every Sidekick artifact. Constraints propagate to all
             // configurations that extend `implementation` — including the
             // Android `debugImplementation` / `releaseImplementation` below.
-            implementation(platform("dev.parez.sidekick:bom:2026.08.28"))
+            implementation(platform("dev.parez.sidekick:bom:2026.09.11"))
             // `compileOnly` here gives commonMain the type stubs without
             // putting the real plugin jars on Android release's runtime
             // classpath — they would collide with the noop variants.

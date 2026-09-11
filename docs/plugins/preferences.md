@@ -40,14 +40,14 @@ Expose typed app settings inside the Sidekick panel — flip feature flags, chan
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(platform("dev.parez.sidekick:bom:2026.08.28"))
+            implementation(platform("dev.parez.sidekick:bom:2026.09.11"))
             implementation("dev.parez.sidekick:preferences")
         }
     }
 }
 
 dependencies {
-    implementation(platform("dev.parez.sidekick:bom:2026.08.28"))
+    implementation(platform("dev.parez.sidekick:bom:2026.09.11"))
     debugImplementation("dev.parez.sidekick:shell")     // version from BOM
     releaseImplementation("dev.parez.sidekick:noop")    // version from BOM
 }

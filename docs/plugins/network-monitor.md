@@ -81,7 +81,7 @@ on Android, a share sheet on iOS, a save-or-clipboard prompt on desktop, a downl
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(platform("dev.parez.sidekick:bom:2026.08.28"))
+            implementation(platform("dev.parez.sidekick:bom:2026.09.11"))
             // `compileOnly` keeps the real jars off Android release's runtime
             // classpath, where they would collide with the noop variant.
             compileOnly("dev.parez.sidekick:network-monitor-ui")
@@ -91,7 +91,7 @@ kotlin {
 }
 
 dependencies {
-    implementation(platform("dev.parez.sidekick:bom:2026.08.28"))
+    implementation(platform("dev.parez.sidekick:bom:2026.09.11"))
     debugImplementation("dev.parez.sidekick:shell")
     releaseImplementation("dev.parez.sidekick:noop")
     // Release Android: swap the recording trio (api + ui + ktor) for the

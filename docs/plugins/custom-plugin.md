@@ -38,7 +38,7 @@ Your plugin module should compile against `plugin-api`:
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(platform("dev.parez.sidekick:bom:2026.08.28"))
+            implementation(platform("dev.parez.sidekick:bom:2026.09.11"))
             implementation("dev.parez.sidekick:plugin-api")  // version from BOM
         }
     }
