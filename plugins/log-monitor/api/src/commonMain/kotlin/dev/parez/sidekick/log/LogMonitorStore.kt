@@ -11,6 +11,8 @@ import dev.parez.sidekick.log.db.createLogMonitorDatabase
 import dev.parez.sidekick.log.paging.LogEntryPagingSource
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -57,7 +59,7 @@ public object LogMonitorStore : LogCollector {
     // coroutine drains the channel and writes in batches. DROP_OLDEST means a
     // pathological burst loses the oldest pending lines rather than the host app.
     private val pending =
-        Channel<LogEntryEntity>(
+        Channel<WriteCommand>(
             capacity = PENDING_CAPACITY,
             onBufferOverflow = BufferOverflow.DROP_OLDEST,
         )
@@ -95,14 +97,75 @@ public object LogMonitorStore : LogCollector {
         val batch = ArrayList<LogEntryEntity>(MAX_BATCH)
         while (isActive) {
             batch.clear()
-            // Suspends until there is at least one entry, then takes whatever else
-            // has already queued up without waiting for more.
-            batch += pending.receive()
-            while (batch.size < MAX_BATCH) {
-                batch += pending.tryReceive().getOrNull() ?: break
+            // Suspends until there is at least one command, then takes whatever else
+            // has already queued up without waiting for more. A barrier ends the
+            // batch so everything recorded before it is written first.
+            var barrier: WriteCommand.Barrier? = null
+            when (val first = pending.receive()) {
+                is WriteCommand.Append -> batch += first.entity
+                is WriteCommand.Barrier -> barrier = first
             }
-            writeBatch(batch)
+            while (barrier == null && batch.size < MAX_BATCH) {
+                when (val next = pending.tryReceive().getOrNull()) {
+                    null -> break
+                    is WriteCommand.Append -> batch += next.entity
+                    is WriteCommand.Barrier -> barrier = next
+                }
+            }
+
+            if (batch.isNotEmpty()) {
+                // A failed write costs this batch — not every log line for the rest
+                // of the process. Before batching, each entry had its own coroutine,
+                // so one storage failure lost one line; letting the exception escape
+                // here would terminate the sole writer and silently stop all logging.
+                try {
+                    writeBatch(batch)
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (_: Throwable) {
+                    // Dropped. There is no safe way to report this from inside the
+                    // logger itself.
+                }
+            }
+            barrier?.let { command ->
+                try {
+                    command.action()
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (_: Throwable) {
+                    // Same reasoning as above.
+                } finally {
+                    command.completion.complete(Unit)
+                }
+            }
         }
+    }
+
+    /**
+     * Runs [action] on the writer, after every entry recorded before this call.
+     *
+     * `record()` returns as soon as the entry is queued, so anything that touches storage directly
+     * — clearing, exporting — would otherwise race the pending writes: a record immediately
+     * followed by a clear could be written *after* the delete.
+     */
+    private suspend fun barrier(action: suspend () -> Unit) {
+        val command = WriteCommand.Barrier(action)
+        if (pending.trySend(command).isSuccess) {
+            command.completion.await()
+        } else {
+            // Writer not running (init() not called yet): nothing is queued to order
+            // against, so run inline.
+            action()
+        }
+    }
+
+    private sealed interface WriteCommand {
+        data class Append(val entity: LogEntryEntity) : WriteCommand
+
+        class Barrier(
+            val action: suspend () -> Unit,
+            val completion: CompletableDeferred<Unit> = CompletableDeferred(),
+        ) : WriteCommand
     }
 
     public fun pagedEntries(filter: Flow<LogFilter>): Flow<PagingData<LogEntry>> =
@@ -161,14 +224,16 @@ public object LogMonitorStore : LogCollector {
         // Timestamped here, not at write time, so batching never reorders or skews
         // entries. trySend never suspends — a LogWriter must not block its caller.
         pending.trySend(
-            LogEntryEntity(
-                id = randomUuid(),
-                timestamp = currentTimeMillis(),
-                level = level.name,
-                tag = tag,
-                message = message.truncate(),
-                throwable = throwable?.stackTraceToString()?.truncate(),
-                metadata = metadata?.encodeToJson(),
+            WriteCommand.Append(
+                LogEntryEntity(
+                    id = randomUuid(),
+                    timestamp = currentTimeMillis(),
+                    level = level.name,
+                    tag = tag,
+                    message = message.truncate(),
+                    throwable = throwable?.stackTraceToString()?.truncate(),
+                    metadata = metadata?.encodeToJson(),
+                )
             )
         )
     }
@@ -191,6 +256,14 @@ public object LogMonitorStore : LogCollector {
      * Snapshot of every entry matching [filter], for export. Bounded by the store's own row cap.
      */
     public suspend fun exportAll(filter: LogFilter): List<LogEntry> {
+        // Behind the barrier so an export taken right after a burst of logging
+        // actually contains that burst rather than racing it.
+        var result: List<LogEntry> = emptyList()
+        barrier { result = readAll(filter) }
+        return result
+    }
+
+    private suspend fun readAll(filter: LogFilter): List<LogEntry> {
         val db = _database.value
         return if (db != null) {
             db.logEntryDao()
@@ -207,7 +280,7 @@ public object LogMonitorStore : LogCollector {
         }
     }
 
-    public suspend fun clear() {
+    public suspend fun clear(): Unit = barrier {
         _database.value?.logEntryDao()?.deleteAll()
         if (_inMemory.value != null) _inMemory.value = emptyList()
     }
