@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
@@ -63,6 +64,16 @@ public object LogMonitorStore : LogCollector {
             capacity = PENDING_CAPACITY,
             onBufferOverflow = BufferOverflow.DROP_OLDEST,
         )
+
+    /**
+     * Entries ever accepted, never decreasing.
+     *
+     * The unread badge cannot be derived from the retained row count: once the store is at its cap
+     * — the normal steady state — every new entry evicts an old one and the count stops moving, so
+     * a count-based badge silently stops reporting new activity.
+     */
+    private val _recordedCount = MutableStateFlow(0L)
+    public val recordedCount: StateFlow<Long> = _recordedCount.asStateFlow()
 
     private val initialized = MutableStateFlow(false)
 
@@ -223,6 +234,7 @@ public object LogMonitorStore : LogCollector {
     ) {
         // Timestamped here, not at write time, so batching never reorders or skews
         // entries. trySend never suspends — a LogWriter must not block its caller.
+        _recordedCount.update { it + 1 }
         pending.trySend(
             WriteCommand.Append(
                 LogEntryEntity(
