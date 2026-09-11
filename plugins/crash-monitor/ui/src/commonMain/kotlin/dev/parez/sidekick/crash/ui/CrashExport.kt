@@ -10,7 +10,8 @@ internal fun CrashRecord.toShareText(): String = buildString {
 }
 
 internal fun List<CrashRecord>.toShareText(): String = buildString {
-    appendLine("Sidekick crash export — ${this@toShareText.size} records")
+    val count = this@toShareText.size
+    appendLine("Sidekick crash export — $count ${if (count == 1) "record" else "records"}")
     this@toShareText.asReversed().forEach { crash ->
         appendLine()
         append(crash.toShareText())
