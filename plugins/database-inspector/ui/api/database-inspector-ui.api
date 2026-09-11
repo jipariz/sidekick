@@ -1,0 +1,16 @@
+// Signature format: 4.0
+package dev.parez.sidekick.database {
+
+  public final class DatabaseInspectorPlugin implements dev.parez.sidekick.plugin.SidekickLifecycleAware dev.parez.sidekick.plugin.SidekickPlugin {
+    ctor public DatabaseInspectorPlugin();
+    method @KotlinOnly @androidx.compose.runtime.Composable public void Content();
+    method @InaccessibleFromKotlin public androidx.compose.ui.graphics.vector.ImageVector getIcon();
+    method @InaccessibleFromKotlin public String getId();
+    method @InaccessibleFromKotlin public String getTitle();
+    property public androidx.compose.ui.graphics.vector.ImageVector icon;
+    property public String id;
+    property public String title;
+  }
+
+}
+

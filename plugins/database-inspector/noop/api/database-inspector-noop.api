@@ -1,0 +1,182 @@
+// Signature format: 4.0
+package dev.parez.sidekick.database {
+
+  @androidx.compose.runtime.Stable public interface DatabaseController {
+    method public suspend Object? query(String sql, kotlin.coroutines.Continuation<? super dev.parez.sidekick.database.DbTable>);
+    method public void refresh();
+    method public void updateCell(String table, long rowId, String column, String? value);
+  }
+
+  public final class DatabaseInspectorNoopKt {
+    method public static boolean isReadOnlySql(String sql);
+    property public static int ROW_LIMIT;
+    field public static final int ROW_LIMIT = 500; // 0x1f4
+  }
+
+  public final class DatabaseInspectorPlugin implements dev.parez.sidekick.plugin.SidekickPlugin {
+    ctor public DatabaseInspectorPlugin();
+    method @KotlinOnly @androidx.compose.runtime.Composable public void Content();
+    method @InaccessibleFromKotlin public androidx.compose.ui.graphics.vector.ImageVector getIcon();
+    method @InaccessibleFromKotlin public String getId();
+    method @InaccessibleFromKotlin public String getTitle();
+    property public androidx.compose.ui.graphics.vector.ImageVector icon;
+    property public String id;
+    property public String title;
+  }
+
+  @androidx.compose.runtime.Immutable public final class DatabaseInspectorState {
+    ctor public DatabaseInspectorState();
+    ctor public DatabaseInspectorState(optional dev.parez.sidekick.database.DbSupport support, optional dev.parez.sidekick.database.DbInfo? info, optional java.util.List<dev.parez.sidekick.database.DbTable> tables, optional dev.parez.sidekick.database.DatabaseController? controller, optional boolean refreshing, optional String? error);
+    method public dev.parez.sidekick.database.DbSupport component1();
+    method public dev.parez.sidekick.database.DbInfo? component2();
+    method public java.util.List<dev.parez.sidekick.database.DbTable> component3();
+    method public dev.parez.sidekick.database.DatabaseController? component4();
+    method public boolean component5();
+    method public String? component6();
+    method public dev.parez.sidekick.database.DatabaseInspectorState copy(optional dev.parez.sidekick.database.DbSupport support, optional dev.parez.sidekick.database.DbInfo? info, optional java.util.List<dev.parez.sidekick.database.DbTable> tables, optional dev.parez.sidekick.database.DatabaseController? controller, optional boolean refreshing, optional String? error);
+    method @InaccessibleFromKotlin public dev.parez.sidekick.database.DatabaseController? getController();
+    method @InaccessibleFromKotlin public String? getError();
+    method @InaccessibleFromKotlin public dev.parez.sidekick.database.DbInfo? getInfo();
+    method @InaccessibleFromKotlin public boolean getRefreshing();
+    method @InaccessibleFromKotlin public dev.parez.sidekick.database.DbSupport getSupport();
+    method @InaccessibleFromKotlin public java.util.List<dev.parez.sidekick.database.DbTable> getTables();
+    property public dev.parez.sidekick.database.DatabaseController? controller;
+    property public String? error;
+    property public dev.parez.sidekick.database.DbInfo? info;
+    property public boolean refreshing;
+    property public dev.parez.sidekick.database.DbSupport support;
+    property public java.util.List<dev.parez.sidekick.database.DbTable> tables;
+  }
+
+  public final class DatabaseInspectorStore {
+    ctor public DatabaseInspectorStore();
+    method public void attach(dev.parez.sidekick.database.DatabaseController controller);
+    method @InaccessibleFromKotlin public kotlinx.coroutines.flow.StateFlow<dev.parez.sidekick.database.DatabaseInspectorState> getState();
+    method public void markUnsupported(String reason);
+    method public void publish(dev.parez.sidekick.database.DbInfo info, java.util.List<dev.parez.sidekick.database.DbTable> tables);
+    method public void publishError(String message);
+    method public void refresh();
+    method public void setRefreshing(boolean refreshing);
+    property public kotlinx.coroutines.flow.StateFlow<dev.parez.sidekick.database.DatabaseInspectorState> state;
+  }
+
+  @androidx.compose.runtime.Immutable public final class DbColumn {
+    ctor public DbColumn(String name, String type);
+    method public String component1();
+    method public String component2();
+    method public dev.parez.sidekick.database.DbColumn copy(optional String name, optional String type);
+    method @InaccessibleFromKotlin public String getName();
+    method @InaccessibleFromKotlin public String getType();
+    property public String name;
+    property public String type;
+  }
+
+  @androidx.compose.runtime.Immutable public final class DbInfo {
+    ctor public DbInfo(String fileName, String engine, String rowCountLabel);
+    method public String component1();
+    method public String component2();
+    method public String component3();
+    method public dev.parez.sidekick.database.DbInfo copy(optional String fileName, optional String engine, optional String rowCountLabel);
+    method @InaccessibleFromKotlin public String getEngine();
+    method @InaccessibleFromKotlin public String getFileName();
+    method @InaccessibleFromKotlin public String getRowCountLabel();
+    property public String engine;
+    property public String fileName;
+    property public String rowCountLabel;
+  }
+
+  public sealed exhaustive interface DbSupport {
+  }
+
+  public static final class DbSupport.Available implements dev.parez.sidekick.database.DbSupport {
+    field public static final dev.parez.sidekick.database.DbSupport.Available INSTANCE;
+  }
+
+  public static final class DbSupport.Detached implements dev.parez.sidekick.database.DbSupport {
+    field public static final dev.parez.sidekick.database.DbSupport.Detached INSTANCE;
+  }
+
+  public static final class DbSupport.Unsupported implements dev.parez.sidekick.database.DbSupport {
+    ctor public DbSupport.Unsupported(String reason);
+    method public String component1();
+    method public dev.parez.sidekick.database.DbSupport.Unsupported copy(optional String reason);
+    method @InaccessibleFromKotlin public String getReason();
+    property public String reason;
+  }
+
+  @androidx.compose.runtime.Immutable public final class DbTable {
+    ctor public DbTable(String name, java.util.List<dev.parez.sidekick.database.DbColumn> columns, java.util.List<? extends java.util.List<? extends dev.parez.sidekick.database.DbValue>> rows, optional java.util.List<java.lang.Long>? rowIds);
+    method public String component1();
+    method public java.util.List<dev.parez.sidekick.database.DbColumn> component2();
+    method public java.util.List<java.util.List<dev.parez.sidekick.database.DbValue>> component3();
+    method public java.util.List<java.lang.Long>? component4();
+    method public dev.parez.sidekick.database.DbTable copy(optional String name, optional java.util.List<dev.parez.sidekick.database.DbColumn> columns, optional java.util.List<? extends java.util.List<? extends dev.parez.sidekick.database.DbValue>> rows, optional java.util.List<java.lang.Long>? rowIds);
+    method @InaccessibleFromKotlin public java.util.List<dev.parez.sidekick.database.DbColumn> getColumns();
+    method @InaccessibleFromKotlin public boolean getEditable();
+    method @InaccessibleFromKotlin public String getName();
+    method @InaccessibleFromKotlin public int getRowCount();
+    method @InaccessibleFromKotlin public java.util.List<java.lang.Long>? getRowIds();
+    method @InaccessibleFromKotlin public java.util.List<java.util.List<dev.parez.sidekick.database.DbValue>> getRows();
+    property public java.util.List<dev.parez.sidekick.database.DbColumn> columns;
+    property public boolean editable;
+    property public String name;
+    property public int rowCount;
+    property public java.util.List<java.lang.Long>? rowIds;
+    property public java.util.List<java.util.List<dev.parez.sidekick.database.DbValue>> rows;
+  }
+
+  @androidx.compose.runtime.Immutable public sealed exhaustive interface DbValue {
+  }
+
+  @androidx.compose.runtime.Immutable public static final class DbValue.Blob implements dev.parez.sidekick.database.DbValue {
+    ctor public DbValue.Blob(long bytes);
+    method public long component1();
+    method public dev.parez.sidekick.database.DbValue.Blob copy(optional long bytes);
+    method @InaccessibleFromKotlin public long getBytes();
+    property public long bytes;
+  }
+
+  @androidx.compose.runtime.Immutable public static final class DbValue.Null implements dev.parez.sidekick.database.DbValue {
+    field public static final dev.parez.sidekick.database.DbValue.Null INSTANCE;
+  }
+
+  @androidx.compose.runtime.Immutable public static final class DbValue.Number implements dev.parez.sidekick.database.DbValue {
+    ctor public DbValue.Number(String value);
+    method public String component1();
+    method public dev.parez.sidekick.database.DbValue.Number copy(optional String value);
+    method @InaccessibleFromKotlin public String getValue();
+    property public String value;
+  }
+
+  @androidx.compose.runtime.Immutable public static final class DbValue.Text implements dev.parez.sidekick.database.DbValue {
+    ctor public DbValue.Text(String value);
+    method public String component1();
+    method public dev.parez.sidekick.database.DbValue.Text copy(optional String value);
+    method @InaccessibleFromKotlin public String getValue();
+    property public String value;
+  }
+
+}
+
+package dev.parez.sidekick.database.di {
+
+  public final class DatabaseInspectorKoinContext {
+    method public dev.parez.sidekick.database.DatabaseInspectorStore getDefaultStore();
+    method @InaccessibleFromKotlin public org.koin.core.KoinApplication getKoinApp();
+    method public void loadViewModelModule(org.koin.core.module.Module module);
+    method public kotlinx.coroutines.CoroutineScope storeScope();
+    property public org.koin.core.KoinApplication koinApp;
+    field public static final dev.parez.sidekick.database.di.DatabaseInspectorKoinContext INSTANCE;
+  }
+
+}
+
+package dev.parez.sidekick.database.room {
+
+  public final class DatabaseInspector {
+    method public void attach(androidx.room3.RoomDatabase database, optional String? fileName);
+    field public static final dev.parez.sidekick.database.room.DatabaseInspector INSTANCE;
+  }
+
+}
+

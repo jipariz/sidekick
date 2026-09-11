@@ -59,12 +59,17 @@ jvmMain.dependencies {
         implementation("dev.parez.sidekick:noop")
         implementation("dev.parez.sidekick:network-monitor-noop")
         implementation("dev.parez.sidekick:log-monitor-noop")
+        implementation("dev.parez.sidekick:database-inspector-noop")
+        implementation("dev.parez.sidekick:crash-monitor-noop")
     } else {
         implementation("dev.parez.sidekick:shell")
         implementation("dev.parez.sidekick:network-monitor-ui")
         implementation("dev.parez.sidekick:network-monitor-ktor")
         implementation("dev.parez.sidekick:log-monitor-ui")
         implementation("dev.parez.sidekick:log-monitor-kermit")
+        implementation("dev.parez.sidekick:database-inspector-ui")
+        implementation("dev.parez.sidekick:database-inspector-room")
+        implementation("dev.parez.sidekick:crash-monitor-ui")
     }
 }
 ```
@@ -79,7 +84,13 @@ Mirror the same `if (sidekickNoop) { … } else { … }` block in `iosMain.depen
 Alternative approaches (use what fits your CI):
 
 - **Hand-rolled swap.** Edit the leaf source set's dependencies before cutting a release. Simplest, no Gradle property logic needed.
-- **Runtime opt-out.** Don't call `install(NetworkMonitorKtor)` / don't register `LogMonitorLogWriter` when a feature flag is off. Works cross-platform without changing build config, but the SQLDelight DB still initialises at construction time (`NetworkMonitorPlugin(...)` runs `store.init()`).
+- **Runtime opt-out.** Don't call `install(NetworkMonitorKtor)` / don't register `LogMonitorLogWriter` / don't call `DatabaseInspector.attach(…)` or `CrashMonitor.install(…)` when a feature flag is off. Works cross-platform without changing build config, but the monitors' database still initialises at construction time (`NetworkMonitorPlugin(...)` runs `store.init()`).
+
+!!! note "Crash Monitor is worth swapping, not just disabling"
+    The noop variant installs no uncaught-exception handler at all. That matters more than it does
+    for the other plugins: the real variant chains to whatever handler was already installed, which
+    is correct in development but is one more thing between a production crash and your real
+    reporter.
 
 ## What gets stripped in noop
 
@@ -91,6 +102,8 @@ Alternative approaches (use what fits your CI):
 | `NetworkMonitorKtor` Ktor `ClientPlugin` | ❌ Still registers hooks. | ✅ Registers no `on(...)` hooks. |
 | `LogMonitorLogWriter` | ❌ Still records. | ✅ `log()` discards entries. |
 | SQLDelight `NetworkMonitorDatabase` / `LogMonitorDatabase` classes | ❌ Generated and dexed. | ✅ Absent from the binary entirely. |
+| `DatabaseInspector.attach(database)` | ❌ Still called. | ✅ Accepts the database and ignores it — no connection opened, no schema read. |
+| `CrashMonitor.install()` | ❌ Still called. | ✅ Installs **no** uncaught-exception handler, so your production crash reporter keeps it entirely to itself. |
 
 For Android release builds with both swaps wired, `NetworkMonitorDatabase` and `LogMonitorDatabase` symbols are absent from the merged DEX. (Verified by inspecting `demo/androidApp`'s release APK: 0 references in release vs 20 in debug for each.)
 

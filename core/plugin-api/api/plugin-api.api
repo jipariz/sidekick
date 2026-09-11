@@ -1,0 +1,174 @@
+// Signature format: 4.0
+package dev.parez.sidekick.plugin {
+
+  public final class ApplicationContextHolder {
+    method @InaccessibleFromKotlin public android.content.Context getContext();
+    method public void initialize(android.content.Context ctx);
+    method @InaccessibleFromKotlin public boolean isInitialized();
+    property public android.content.Context context;
+    property public boolean isInitialized;
+    field public static final dev.parez.sidekick.plugin.ApplicationContextHolder INSTANCE;
+  }
+
+  public final class LocalSidekickBackNavigatorKt {
+    method @InaccessibleFromKotlin public static androidx.compose.runtime.ProvidableCompositionLocal<kotlin.jvm.functions.Function0<kotlin.Unit>> getLocalSidekickBackNavigator();
+    property public static androidx.compose.runtime.ProvidableCompositionLocal<kotlin.jvm.functions.Function0<kotlin.Unit>> LocalSidekickBackNavigator;
+  }
+
+  @androidx.compose.runtime.Immutable public sealed exhaustive interface PlatformInfo {
+  }
+
+  @androidx.compose.runtime.Immutable public static final class PlatformInfo.Android implements dev.parez.sidekick.plugin.PlatformInfo {
+    ctor public PlatformInfo.Android(String appName, String? appVersion, Long? buildCode, String buildType, int apiLevel, String deviceModel, String manufacturer, optional String? buildFlavor);
+    method public String component1();
+    method public String? component2();
+    method public Long? component3();
+    method public String component4();
+    method public int component5();
+    method public String component6();
+    method public String component7();
+    method public String? component8();
+    method public dev.parez.sidekick.plugin.PlatformInfo.Android copy(optional String appName, optional String? appVersion, optional Long? buildCode, optional String buildType, optional int apiLevel, optional String deviceModel, optional String manufacturer, optional String? buildFlavor);
+    method @InaccessibleFromKotlin public int getApiLevel();
+    method @InaccessibleFromKotlin public String getAppName();
+    method @InaccessibleFromKotlin public String? getAppVersion();
+    method @InaccessibleFromKotlin public Long? getBuildCode();
+    method @InaccessibleFromKotlin public String? getBuildFlavor();
+    method @InaccessibleFromKotlin public String getBuildType();
+    method @InaccessibleFromKotlin public String getDeviceModel();
+    method @InaccessibleFromKotlin public String getManufacturer();
+    property public int apiLevel;
+    property public String appName;
+    property public String? appVersion;
+    property public Long? buildCode;
+    property public String? buildFlavor;
+    property public String buildType;
+    property public String deviceModel;
+    property public String manufacturer;
+  }
+
+  @androidx.compose.runtime.Immutable public static final class PlatformInfo.Desktop implements dev.parez.sidekick.plugin.PlatformInfo {
+    ctor public PlatformInfo.Desktop(String osName, String osVersion, String jvmVersion, int availableProcessors);
+    method public String component1();
+    method public String component2();
+    method public String component3();
+    method public int component4();
+    method public dev.parez.sidekick.plugin.PlatformInfo.Desktop copy(optional String osName, optional String osVersion, optional String jvmVersion, optional int availableProcessors);
+    method @InaccessibleFromKotlin public int getAvailableProcessors();
+    method @InaccessibleFromKotlin public String getJvmVersion();
+    method @InaccessibleFromKotlin public String getOsName();
+    method @InaccessibleFromKotlin public String getOsVersion();
+    property public int availableProcessors;
+    property public String jvmVersion;
+    property public String osName;
+    property public String osVersion;
+  }
+
+  @androidx.compose.runtime.Immutable public static final class PlatformInfo.Ios implements dev.parez.sidekick.plugin.PlatformInfo {
+    ctor public PlatformInfo.Ios(String? appName, String? appVersion, Long? buildCode, optional String? buildType, String systemVersion, String deviceModel);
+    method public String? component1();
+    method public String? component2();
+    method public Long? component3();
+    method public String? component4();
+    method public String component5();
+    method public String component6();
+    method public dev.parez.sidekick.plugin.PlatformInfo.Ios copy(optional String? appName, optional String? appVersion, optional Long? buildCode, optional String? buildType, optional String systemVersion, optional String deviceModel);
+    method @InaccessibleFromKotlin public String? getAppName();
+    method @InaccessibleFromKotlin public String? getAppVersion();
+    method @InaccessibleFromKotlin public Long? getBuildCode();
+    method @InaccessibleFromKotlin public String? getBuildType();
+    method @InaccessibleFromKotlin public String getDeviceModel();
+    method @InaccessibleFromKotlin public String getSystemVersion();
+    property public String? appName;
+    property public String? appVersion;
+    property public Long? buildCode;
+    property public String? buildType;
+    property public String deviceModel;
+    property public String systemVersion;
+  }
+
+  public static final class PlatformInfo.Unknown implements dev.parez.sidekick.plugin.PlatformInfo {
+    field public static final dev.parez.sidekick.plugin.PlatformInfo.Unknown INSTANCE;
+  }
+
+  @androidx.compose.runtime.Immutable public static final class PlatformInfo.Web implements dev.parez.sidekick.plugin.PlatformInfo {
+    ctor public PlatformInfo.Web(String userAgent, optional String? browserName);
+    method public String component1();
+    method public String? component2();
+    method public dev.parez.sidekick.plugin.PlatformInfo.Web copy(optional String userAgent, optional String? browserName);
+    method @InaccessibleFromKotlin public String? getBrowserName();
+    method @InaccessibleFromKotlin public String getUserAgent();
+    property public String? browserName;
+    property public String userAgent;
+  }
+
+  @androidx.compose.runtime.Immutable public final class SidekickAppInfo {
+    ctor public SidekickAppInfo();
+    ctor public SidekickAppInfo(optional dev.parez.sidekick.plugin.PlatformInfo platform, optional java.util.Map<java.lang.String,java.lang.String> extras);
+    method public dev.parez.sidekick.plugin.PlatformInfo component1();
+    method public java.util.Map<java.lang.String,java.lang.String> component2();
+    method public dev.parez.sidekick.plugin.SidekickAppInfo copy(optional dev.parez.sidekick.plugin.PlatformInfo platform, optional java.util.Map<java.lang.String,java.lang.String> extras);
+    method @InaccessibleFromKotlin public java.util.Map<java.lang.String,java.lang.String> getExtras();
+    method @InaccessibleFromKotlin public dev.parez.sidekick.plugin.PlatformInfo getPlatform();
+    property public java.util.Map<java.lang.String,java.lang.String> extras;
+    property public dev.parez.sidekick.plugin.PlatformInfo platform;
+    field public static final dev.parez.sidekick.plugin.SidekickAppInfo.Companion Companion;
+  }
+
+  public static final class SidekickAppInfo.Companion {
+  }
+
+  public final class SidekickAppInfoKt {
+    method @KotlinOnly @androidx.compose.runtime.Composable public static dev.parez.sidekick.plugin.SidekickAppInfo rememberSidekickAppInfo();
+    method public static dev.parez.sidekick.plugin.SidekickAppInfo withExtras(dev.parez.sidekick.plugin.SidekickAppInfo, kotlin.Pair<java.lang.String,java.lang.String>... pairs);
+  }
+
+  public final class SidekickAppInfo_androidKt {
+    method public static dev.parez.sidekick.plugin.SidekickAppInfo detect(dev.parez.sidekick.plugin.SidekickAppInfo.Companion);
+    method public static dev.parez.sidekick.plugin.SidekickAppInfo detect(dev.parez.sidekick.plugin.SidekickAppInfo.Companion, optional String? buildType, optional String? buildFlavor);
+  }
+
+  public final class SidekickAppInfo_iosKt {
+    method public static dev.parez.sidekick.plugin.SidekickAppInfo detect(dev.parez.sidekick.plugin.SidekickAppInfo.Companion);
+    method public static dev.parez.sidekick.plugin.SidekickAppInfo detect(dev.parez.sidekick.plugin.SidekickAppInfo.Companion, String? buildType);
+  }
+
+  public final class SidekickAppInfo_jsKt {
+    method public static dev.parez.sidekick.plugin.SidekickAppInfo detect(dev.parez.sidekick.plugin.SidekickAppInfo.Companion);
+  }
+
+  public final class SidekickAppInfo_jvmKt {
+    method public static dev.parez.sidekick.plugin.SidekickAppInfo detect(dev.parez.sidekick.plugin.SidekickAppInfo.Companion);
+  }
+
+  public final class SidekickAppInfo_wasmJsKt {
+    method public static dev.parez.sidekick.plugin.SidekickAppInfo detect(dev.parez.sidekick.plugin.SidekickAppInfo.Companion);
+  }
+
+  @androidx.compose.runtime.Stable public interface SidekickBadged {
+    method @InaccessibleFromKotlin public androidx.compose.runtime.State<java.lang.Integer?> getBadge();
+    property public abstract androidx.compose.runtime.State<java.lang.Integer?> badge;
+  }
+
+  public interface SidekickLifecycleAware {
+    method public default void onAttach();
+    method public default void onDetach();
+  }
+
+  @androidx.compose.runtime.Stable public interface SidekickPlugin {
+    method @KotlinOnly @androidx.compose.runtime.Composable public void Content();
+    method @InaccessibleFromKotlin public androidx.compose.ui.graphics.vector.ImageVector getIcon();
+    method @InaccessibleFromKotlin public String getId();
+    method @InaccessibleFromKotlin public String getTitle();
+    property public abstract androidx.compose.ui.graphics.vector.ImageVector icon;
+    property public abstract String id;
+    property public abstract String title;
+  }
+
+  public final class SidekickShare {
+    method public void share(String text, String subject);
+    field public static final dev.parez.sidekick.plugin.SidekickShare INSTANCE;
+  }
+
+}
+

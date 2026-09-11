@@ -1,0 +1,10 @@
+// Signature format: 4.0
+package dev.parez.sidekick.database.room {
+
+  public final class DatabaseInspector {
+    method public void attach(androidx.room3.RoomDatabase database, optional String? fileName);
+    field public static final dev.parez.sidekick.database.room.DatabaseInspector INSTANCE;
+  }
+
+}
+

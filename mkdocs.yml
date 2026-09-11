@@ -61,6 +61,8 @@ nav:
       - Network Monitor: plugins/network-monitor.md
       - Log Monitor: plugins/log-monitor.md
       - Preferences: plugins/preferences.md
+      - Database Inspector: plugins/database-inspector.md
+      - Crash Monitor: plugins/crash-monitor.md
       - Custom Screens: plugins/custom-screen.md
       - Creating a Custom Plugin: plugins/custom-plugin.md
   - Theming: theming.md

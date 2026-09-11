@@ -1,0 +1,41 @@
+// Signature format: 4.0
+package dev.parez.sidekick.network.ktor {
+
+  public final class ContentLength {
+    property public static int Default;
+    property public static int Full;
+    field public static final int Default = 65536; // 0x10000
+    field public static final int Full = 2147483647; // 0x7fffffff
+    field public static final dev.parez.sidekick.network.ktor.ContentLength INSTANCE;
+  }
+
+  public final class InstallSidekickKt {
+    method public static void installSidekick(io.ktor.client.HttpClientConfig<? extends java.lang.Object?>, optional kotlin.jvm.functions.Function1<? super dev.parez.sidekick.network.ktor.NetworkMonitorKtorConfig,kotlin.Unit> configure);
+  }
+
+  @io.ktor.utils.io.KtorDsl public final class NetworkMonitorKtorConfig {
+    ctor public NetworkMonitorKtorConfig();
+    method public void disableDefaultRedaction();
+    method public void filter(kotlin.jvm.functions.Function1<? super io.ktor.client.request.HttpRequestBuilder,java.lang.Boolean> predicate);
+    method @InaccessibleFromKotlin public int getMaxContentLength();
+    method @InaccessibleFromKotlin public dev.parez.sidekick.network.NetworkMonitorStore getStore();
+    method public void sanitizeHeader(optional String placeholder, kotlin.jvm.functions.Function1<? super java.lang.String,java.lang.Boolean> predicate);
+    method @InaccessibleFromKotlin public void setMaxContentLength(int);
+    method @InaccessibleFromKotlin public void setStore(dev.parez.sidekick.network.NetworkMonitorStore);
+    property public int maxContentLength;
+    property public kotlin.time.Duration retentionPeriod;
+    property public dev.parez.sidekick.network.NetworkMonitorStore store;
+  }
+
+  public final class NetworkMonitorKtorConfigKt {
+    method @InaccessibleFromKotlin public static java.util.Set<java.lang.String> getDefaultRedactedHeaders();
+    property public static java.util.Set<java.lang.String> DefaultRedactedHeaders;
+  }
+
+  public final class NetworkMonitorKtorKt {
+    method @InaccessibleFromKotlin public static io.ktor.client.plugins.api.ClientPlugin<dev.parez.sidekick.network.ktor.NetworkMonitorKtorConfig> getNetworkMonitorKtor();
+    property public static io.ktor.client.plugins.api.ClientPlugin<dev.parez.sidekick.network.ktor.NetworkMonitorKtorConfig> NetworkMonitorKtor;
+  }
+
+}
+

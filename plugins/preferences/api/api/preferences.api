@@ -1,0 +1,125 @@
+// Signature format: 4.0
+package dev.parez.sidekick.preferences {
+
+  public final class BooleanPref extends dev.parez.sidekick.preferences.PreferenceDefinition<java.lang.Boolean> {
+    ctor public BooleanPref(String key, String label, String description, boolean defaultValue);
+  }
+
+  public final class DataStorePreferenceStore implements dev.parez.sidekick.preferences.PreferenceStore {
+    ctor public DataStorePreferenceStore(androidx.datastore.core.DataStore<androidx.datastore.preferences.core.Preferences> dataStore);
+    method public <T> kotlinx.coroutines.flow.StateFlow<T> observe(String key, T defaultValue);
+    method public suspend <T> Object? set(String key, T value, kotlin.coroutines.Continuation<? super kotlin.Unit>);
+  }
+
+  public final class DoublePref extends dev.parez.sidekick.preferences.PreferenceDefinition<java.lang.Double> {
+    ctor public DoublePref(String key, String label, String description, double defaultValue);
+  }
+
+  public final class EnumPref extends dev.parez.sidekick.preferences.PreferenceDefinition<java.lang.String> {
+    ctor public EnumPref(String key, String label, String description, String defaultValue, java.util.List<java.lang.String> options);
+    method @InaccessibleFromKotlin public java.util.List<java.lang.String> getOptions();
+    property public java.util.List<java.lang.String> options;
+  }
+
+  public final class FloatPref extends dev.parez.sidekick.preferences.PreferenceDefinition<java.lang.Float> {
+    ctor public FloatPref(String key, String label, String description, float defaultValue);
+  }
+
+  @kotlin.annotation.Retention(kotlin.annotation.AnnotationRetention.SOURCE) @kotlin.annotation.Target(allowedTargets=kotlin.annotation.AnnotationTarget.PROPERTY) public @interface IgnorePreference {
+  }
+
+  public final class InMemoryPreferenceStore implements dev.parez.sidekick.preferences.PreferenceStore {
+    ctor public InMemoryPreferenceStore();
+    method public <T> kotlinx.coroutines.flow.StateFlow<T> observe(String key, T defaultValue);
+    method public suspend <T> Object? set(String key, T value, kotlin.coroutines.Continuation<? super kotlin.Unit>);
+  }
+
+  public final class IntPref extends dev.parez.sidekick.preferences.PreferenceDefinition<java.lang.Integer> {
+    ctor public IntPref(String key, String label, String description, int defaultValue);
+  }
+
+  public final class LocalStoragePreferenceStore implements dev.parez.sidekick.preferences.PreferenceStore {
+    ctor public LocalStoragePreferenceStore(String storeName);
+    method public <T> kotlinx.coroutines.flow.StateFlow<T> observe(String key, T defaultValue);
+    method public suspend <T> Object? set(String key, T value, kotlin.coroutines.Continuation<? super kotlin.Unit>);
+  }
+
+  public final class LongPref extends dev.parez.sidekick.preferences.PreferenceDefinition<java.lang.Long> {
+    ctor public LongPref(String key, String label, String description, long defaultValue);
+  }
+
+  @kotlin.annotation.Retention(kotlin.annotation.AnnotationRetention.SOURCE) @kotlin.annotation.Target(allowedTargets=kotlin.annotation.AnnotationTarget.PROPERTY) public @interface Preference {
+    ctor @KotlinOnly public Preference(optional String label, optional String description);
+    method @InaccessibleFromKotlin public abstract String description() default "";
+    method @InaccessibleFromKotlin public abstract String label() default "";
+    property public abstract String description;
+    property public abstract String label;
+  }
+
+  public abstract sealed exhaustive class PreferenceDefinition<T> {
+    method @InaccessibleFromKotlin public final T getDefaultValue();
+    method @InaccessibleFromKotlin public final String getDescription();
+    method @InaccessibleFromKotlin public final String getKey();
+    method @InaccessibleFromKotlin public final String getLabel();
+    property public final T defaultValue;
+    property public final String description;
+    property public final String key;
+    property public final String label;
+  }
+
+  public interface PreferenceStore {
+    method public <T> kotlinx.coroutines.flow.StateFlow<T> observe(String key, T defaultValue);
+    method public suspend <T> Object? set(String key, T value, kotlin.coroutines.Continuation<? super kotlin.Unit>);
+  }
+
+  public final class PreferenceStore_androidKt {
+    method public static dev.parez.sidekick.preferences.PreferenceStore createPreferenceStore(String storeName);
+  }
+
+  public final class PreferenceStore_iosKt {
+    method public static dev.parez.sidekick.preferences.PreferenceStore createPreferenceStore(String storeName);
+  }
+
+  public final class PreferenceStore_jsKt {
+    method public static dev.parez.sidekick.preferences.PreferenceStore createPreferenceStore(String storeName);
+  }
+
+  public final class PreferenceStore_jvmKt {
+    method public static dev.parez.sidekick.preferences.PreferenceStore createPreferenceStore(String storeName);
+  }
+
+  public final class PreferenceStore_wasmJsKt {
+    method public static dev.parez.sidekick.preferences.PreferenceStore createPreferenceStore(String storeName);
+  }
+
+  public abstract class PreferencesPlugin implements dev.parez.sidekick.plugin.SidekickPlugin {
+    ctor public PreferencesPlugin(String pluginTitle, java.util.List<? extends dev.parez.sidekick.preferences.PreferenceDefinition<? extends java.lang.Object?>> definitions, java.util.Map<java.lang.String,? extends kotlinx.coroutines.flow.StateFlow<?>> valueFlows, kotlin.jvm.functions.Function3<? super java.lang.String,? super java.lang.Object,? super kotlin.coroutines.Continuation<? super kotlin.Unit>,? extends java.lang.Object?> onSet);
+    method @KotlinOnly @androidx.compose.runtime.Composable public void Content();
+    method @InaccessibleFromKotlin public final java.util.List<dev.parez.sidekick.preferences.PreferenceDefinition<? extends java.lang.Object?>> getDefinitions();
+    method @InaccessibleFromKotlin public androidx.compose.ui.graphics.vector.ImageVector getIcon();
+    method @InaccessibleFromKotlin public String getId();
+    method @InaccessibleFromKotlin public final kotlin.jvm.functions.Function3<java.lang.String,java.lang.Object,kotlin.coroutines.Continuation<? super kotlin.Unit>,java.lang.Object?> getOnSet();
+    method @InaccessibleFromKotlin public String getTitle();
+    method @InaccessibleFromKotlin public final java.util.Map<java.lang.String,kotlinx.coroutines.flow.StateFlow<java.lang.Object>> getValueFlows();
+    property public final java.util.List<dev.parez.sidekick.preferences.PreferenceDefinition<? extends java.lang.Object?>> definitions;
+    property public androidx.compose.ui.graphics.vector.ImageVector icon;
+    property public String id;
+    property public final kotlin.jvm.functions.Function3<java.lang.String,java.lang.Object,kotlin.coroutines.Continuation<? super kotlin.Unit>,?> onSet;
+    property public String title;
+    property public final java.util.Map<java.lang.String,kotlinx.coroutines.flow.StateFlow<java.lang.Object>> valueFlows;
+  }
+
+  @kotlin.annotation.Retention(kotlin.annotation.AnnotationRetention.SOURCE) @kotlin.annotation.Target(allowedTargets=kotlin.annotation.AnnotationTarget.CLASS) public @interface SidekickPreferences {
+    ctor @KotlinOnly public SidekickPreferences(optional String title, optional String storeName);
+    method @InaccessibleFromKotlin public abstract String storeName() default "";
+    method @InaccessibleFromKotlin public abstract String title() default "";
+    property public abstract String storeName;
+    property public abstract String title;
+  }
+
+  public final class StringPref extends dev.parez.sidekick.preferences.PreferenceDefinition<java.lang.String> {
+    ctor public StringPref(String key, String label, String description, String defaultValue);
+  }
+
+}
+
