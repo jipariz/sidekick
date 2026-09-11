@@ -51,6 +51,21 @@ class NetworkExportTest {
     }
 
     @Test
+    fun `curl escapes an apostrophe in the url`() {
+        // A captured URL may legitimately contain an apostrophe. Unescaped it closes
+        // the shell-quoted argument, and the remainder runs as shell syntax on
+        // whatever machine the exported command is pasted into.
+        val curl = call().copy(url = "https://acme.com/x'; rm -rf /; echo '").toCurl()
+        assertTrue(curl.contains("""x'\''; rm -rf /; echo '\''"""), curl)
+    }
+
+    @Test
+    fun `curl escapes an apostrophe in a header name`() {
+        val curl = call(headers = mapOf("X-It's" to "v")).toCurl()
+        assertTrue(curl.contains("""X-It'\''s"""), curl)
+    }
+
+    @Test
     fun `a redacted header stays redacted in the export`() {
         val curl = call(headers = mapOf("Authorization" to "***")).toCurl()
         assertTrue(curl.contains("Authorization: ***"))
