@@ -10,7 +10,12 @@ import dev.parez.sidekick.log.LogMonitorStore
  * instead of forwarding to the store.
  */
 @Suppress("UNUSED_PARAMETER")
-class LogMonitorLogWriter(store: LogMonitorStore = LogMonitorStore) : LogWriter() {
+public class LogMonitorLogWriter(store: LogMonitorStore = LogMonitorStore) : LogWriter() {
 
-    override fun log(severity: Severity, message: String, tag: String, throwable: Throwable?) = Unit
+    override fun log(
+        severity: Severity,
+        message: String,
+        tag: String,
+        throwable: Throwable?,
+    ): Unit = Unit
 }

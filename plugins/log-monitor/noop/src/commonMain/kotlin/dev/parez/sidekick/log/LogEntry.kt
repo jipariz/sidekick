@@ -3,7 +3,7 @@ package dev.parez.sidekick.log
 import androidx.compose.runtime.Immutable
 
 @Immutable
-data class LogEntry(
+public data class LogEntry(
     val id: String,
     val timestamp: Long,
     val level: LogLevel,
@@ -13,7 +13,7 @@ data class LogEntry(
     val metadata: Map<String, String>? = null,
 )
 
-enum class LogLevel {
+public enum class LogLevel {
     VERBOSE,
     DEBUG,
     INFO,

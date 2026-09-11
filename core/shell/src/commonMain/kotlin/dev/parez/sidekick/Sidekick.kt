@@ -46,7 +46,7 @@ import kotlinx.coroutines.flow.drop
  *   button here.
  */
 @Composable
-fun Sidekick(
+public fun Sidekick(
     plugins: List<SidekickPlugin>,
     appInfo: SidekickAppInfo? = rememberSidekickAppInfo(),
     useSidekickTheme: Boolean = true,

@@ -1,7 +1,7 @@
 package dev.parez.sidekick.log.ui
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Article
+import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Info
@@ -84,7 +84,7 @@ internal fun LogLevel.onContainerColor(): Color =
 /** Severity-specific icon for the pane-identity disc. */
 internal fun LogLevel.icon(): ImageVector =
     when (this) {
-        LogLevel.VERBOSE -> Icons.Default.Article
+        LogLevel.VERBOSE -> Icons.AutoMirrored.Filled.Article
         LogLevel.DEBUG -> Icons.Default.BugReport
         LogLevel.INFO -> Icons.Default.Info
         LogLevel.WARN -> Icons.Default.Warning

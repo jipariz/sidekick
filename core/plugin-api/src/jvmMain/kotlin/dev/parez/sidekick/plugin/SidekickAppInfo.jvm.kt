@@ -10,7 +10,7 @@ package dev.parez.sidekick.plugin
  * SidekickAppInfo.detect().withExtras("Version" to "1.0.0", "Build" to "debug")
  * ```
  */
-actual fun SidekickAppInfo.Companion.detect(): SidekickAppInfo =
+public actual fun SidekickAppInfo.Companion.detect(): SidekickAppInfo =
     SidekickAppInfo(
         platform =
             PlatformInfo.Desktop(

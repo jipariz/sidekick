@@ -11,6 +11,8 @@ import dev.parez.sidekick.log.db.createLogMonitorDatabase
 import dev.parez.sidekick.log.paging.LogEntryPagingSource
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -21,6 +23,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
@@ -43,7 +46,7 @@ private const val PENDING_CAPACITY = 4096
 private const val MAX_BATCH = 200
 
 @OptIn(ExperimentalCoroutinesApi::class)
-object LogMonitorStore : LogCollector {
+public object LogMonitorStore : LogCollector {
 
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
@@ -57,14 +60,24 @@ object LogMonitorStore : LogCollector {
     // coroutine drains the channel and writes in batches. DROP_OLDEST means a
     // pathological burst loses the oldest pending lines rather than the host app.
     private val pending =
-        Channel<LogEntryEntity>(
+        Channel<WriteCommand>(
             capacity = PENDING_CAPACITY,
             onBufferOverflow = BufferOverflow.DROP_OLDEST,
         )
 
+    /**
+     * Entries ever accepted, never decreasing.
+     *
+     * The unread badge cannot be derived from the retained row count: once the store is at its cap
+     * — the normal steady state — every new entry evicts an old one and the count stops moving, so
+     * a count-based badge silently stops reporting new activity.
+     */
+    private val _recordedCount = MutableStateFlow(0L)
+    public val recordedCount: StateFlow<Long> = _recordedCount.asStateFlow()
+
     private val initialized = MutableStateFlow(false)
 
-    fun init(retentionPeriod: Duration = 1.hours) {
+    public fun init(retentionPeriod: Duration = 1.hours) {
         if (!initialized.compareAndSet(expect = false, update = true)) return
 
         scope.launch {
@@ -95,17 +108,78 @@ object LogMonitorStore : LogCollector {
         val batch = ArrayList<LogEntryEntity>(MAX_BATCH)
         while (isActive) {
             batch.clear()
-            // Suspends until there is at least one entry, then takes whatever else
-            // has already queued up without waiting for more.
-            batch += pending.receive()
-            while (batch.size < MAX_BATCH) {
-                batch += pending.tryReceive().getOrNull() ?: break
+            // Suspends until there is at least one command, then takes whatever else
+            // has already queued up without waiting for more. A barrier ends the
+            // batch so everything recorded before it is written first.
+            var barrier: WriteCommand.Barrier? = null
+            when (val first = pending.receive()) {
+                is WriteCommand.Append -> batch += first.entity
+                is WriteCommand.Barrier -> barrier = first
             }
-            writeBatch(batch)
+            while (barrier == null && batch.size < MAX_BATCH) {
+                when (val next = pending.tryReceive().getOrNull()) {
+                    null -> break
+                    is WriteCommand.Append -> batch += next.entity
+                    is WriteCommand.Barrier -> barrier = next
+                }
+            }
+
+            if (batch.isNotEmpty()) {
+                // A failed write costs this batch — not every log line for the rest
+                // of the process. Before batching, each entry had its own coroutine,
+                // so one storage failure lost one line; letting the exception escape
+                // here would terminate the sole writer and silently stop all logging.
+                try {
+                    writeBatch(batch)
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (_: Throwable) {
+                    // Dropped. There is no safe way to report this from inside the
+                    // logger itself.
+                }
+            }
+            barrier?.let { command ->
+                try {
+                    command.action()
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (_: Throwable) {
+                    // Same reasoning as above.
+                } finally {
+                    command.completion.complete(Unit)
+                }
+            }
         }
     }
 
-    fun pagedEntries(filter: Flow<LogFilter>): Flow<PagingData<LogEntry>> =
+    /**
+     * Runs [action] on the writer, after every entry recorded before this call.
+     *
+     * `record()` returns as soon as the entry is queued, so anything that touches storage directly
+     * — clearing, exporting — would otherwise race the pending writes: a record immediately
+     * followed by a clear could be written *after* the delete.
+     */
+    private suspend fun barrier(action: suspend () -> Unit) {
+        val command = WriteCommand.Barrier(action)
+        if (pending.trySend(command).isSuccess) {
+            command.completion.await()
+        } else {
+            // Writer not running (init() not called yet): nothing is queued to order
+            // against, so run inline.
+            action()
+        }
+    }
+
+    private sealed interface WriteCommand {
+        data class Append(val entity: LogEntryEntity) : WriteCommand
+
+        class Barrier(
+            val action: suspend () -> Unit,
+            val completion: CompletableDeferred<Unit> = CompletableDeferred(),
+        ) : WriteCommand
+    }
+
+    public fun pagedEntries(filter: Flow<LogFilter>): Flow<PagingData<LogEntry>> =
         combine(_database, filter.distinctUntilChanged()) { db, f -> db to f }
             .flatMapLatest { (db, f) ->
                 if (db != null) {
@@ -124,7 +198,7 @@ object LogMonitorStore : LogCollector {
                 }
             }
 
-    fun filteredCount(filter: Flow<LogFilter>): Flow<Long> =
+    public fun filteredCount(filter: Flow<LogFilter>): Flow<Long> =
         combine(_database, filter.distinctUntilChanged()) { db, f -> db to f }
             .flatMapLatest { (db, f) ->
                 if (db != null) {
@@ -139,7 +213,7 @@ object LogMonitorStore : LogCollector {
                 }
             }
 
-    fun entryById(id: String): Flow<LogEntry?> = _database.flatMapLatest { db ->
+    public fun entryById(id: String): Flow<LogEntry?> = _database.flatMapLatest { db ->
         if (db != null) {
             db.logEntryDao().selectById(id).map { it?.toDomain() }
         } else {
@@ -151,7 +225,7 @@ object LogMonitorStore : LogCollector {
         record(level, tag, message, throwable, metadata = null)
     }
 
-    fun record(
+    public fun record(
         level: LogLevel,
         tag: String,
         message: String,
@@ -160,15 +234,18 @@ object LogMonitorStore : LogCollector {
     ) {
         // Timestamped here, not at write time, so batching never reorders or skews
         // entries. trySend never suspends — a LogWriter must not block its caller.
+        _recordedCount.update { it + 1 }
         pending.trySend(
-            LogEntryEntity(
-                id = randomUuid(),
-                timestamp = currentTimeMillis(),
-                level = level.name,
-                tag = tag,
-                message = message.truncate(),
-                throwable = throwable?.stackTraceToString()?.truncate(),
-                metadata = metadata?.encodeToJson(),
+            WriteCommand.Append(
+                LogEntryEntity(
+                    id = randomUuid(),
+                    timestamp = currentTimeMillis(),
+                    level = level.name,
+                    tag = tag,
+                    message = message.truncate(),
+                    throwable = throwable?.stackTraceToString()?.truncate(),
+                    metadata = metadata?.encodeToJson(),
+                )
             )
         )
     }
@@ -190,7 +267,15 @@ object LogMonitorStore : LogCollector {
     /**
      * Snapshot of every entry matching [filter], for export. Bounded by the store's own row cap.
      */
-    suspend fun exportAll(filter: LogFilter): List<LogEntry> {
+    public suspend fun exportAll(filter: LogFilter): List<LogEntry> {
+        // Behind the barrier so an export taken right after a burst of logging
+        // actually contains that burst rather than racing it.
+        var result: List<LogEntry> = emptyList()
+        barrier { result = readAll(filter) }
+        return result
+    }
+
+    private suspend fun readAll(filter: LogFilter): List<LogEntry> {
         val db = _database.value
         return if (db != null) {
             db.logEntryDao()
@@ -207,7 +292,7 @@ object LogMonitorStore : LogCollector {
         }
     }
 
-    suspend fun clear() {
+    public suspend fun clear(): Unit = barrier {
         _database.value?.logEntryDao()?.deleteAll()
         if (_inMemory.value != null) _inMemory.value = emptyList()
     }

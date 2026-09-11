@@ -3,20 +3,21 @@ package dev.parez.sidekick.preferences
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.vector.ImageVector
 import dev.parez.sidekick.plugin.LocalSidekickBackNavigator
 import dev.parez.sidekick.plugin.SidekickPlugin
 import dev.parez.sidekick.preferences.ui.PreferencesContent
 import kotlinx.coroutines.flow.StateFlow
 
-abstract class PreferencesPlugin(
+public abstract class PreferencesPlugin(
     pluginTitle: String,
-    val definitions: List<PreferenceDefinition<*>>,
-    val valueFlows: Map<String, StateFlow<Any>>,
-    val onSet: suspend (key: String, value: Any) -> Unit,
+    public val definitions: List<PreferenceDefinition<*>>,
+    public val valueFlows: Map<String, StateFlow<Any>>,
+    public val onSet: suspend (key: String, value: Any) -> Unit,
 ) : SidekickPlugin {
     override val id: String = "sidekick.preferences.${pluginTitle.lowercase().replace(" ", "_")}"
     override val title: String = pluginTitle
-    override val icon = Icons.Default.Settings
+    override val icon: ImageVector = Icons.Default.Settings
 
     @Composable
     override fun Content() {

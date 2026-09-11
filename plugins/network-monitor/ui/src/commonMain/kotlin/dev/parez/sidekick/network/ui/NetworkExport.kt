@@ -11,10 +11,18 @@ import dev.parez.sidekick.network.NetworkCall
  * intended trade: an export that leaks a bearer token is worse than one you have to edit.
  */
 internal fun NetworkCall.toCurl(): String = buildString {
-    append("curl -X ").append(method).append(" '").append(url).append('\'')
+    // url and method go through the same escaping as the headers below: a captured
+    // URL can legitimately contain an apostrophe, which would otherwise terminate the
+    // shell-quoted argument and let the rest of the URL run as shell syntax on
+    // whatever machine the exported command is pasted into.
+    append("curl -X ")
+        .append(method.escapeSingleQuotes())
+        .append(" '")
+        .append(url.escapeSingleQuotes())
+        .append('\'')
     requestHeaders.forEach { (name, value) ->
         append(" \\\n  -H '")
-            .append(name)
+            .append(name.escapeSingleQuotes())
             .append(": ")
             .append(value.escapeSingleQuotes())
             .append('\'')

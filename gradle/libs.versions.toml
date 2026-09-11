@@ -41,8 +41,11 @@ androidxPaging = "3.5.0"
 navigation3Browser = "1.0.0"
 reorderable = "3.1.0"
 ktfmt = "0.26.0"
+detekt = "1.23.8"
+detektComposeRules = "0.4.22"
 
 [libraries]
+detekt-composeRules = { module = "io.nlopez.compose.rules:detekt", version.ref = "detektComposeRules" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 junit = { module = "junit:junit", version.ref = "junit" }
@@ -151,3 +154,4 @@ kotlinxSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 room3               = { id = "androidx.room3",                              version.ref = "room3" }
 vanniktechMavenPublish = { id = "com.vanniktech.maven.publish",             version.ref = "vanniktechMavenPublish" }
 ktfmt = { id = "com.ncorti.ktfmt.gradle", version.ref = "ktfmt" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }

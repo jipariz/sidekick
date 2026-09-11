@@ -34,7 +34,7 @@ import dev.parez.sidekick.plugin.SidekickPlugin
  * @param icon Icon shown in the plugin grid card.
  * @param content Composable rendered when the user opens this screen.
  */
-class CustomScreenPlugin(
+public class CustomScreenPlugin(
     override val id: String,
     override val title: String,
     override val icon: ImageVector,

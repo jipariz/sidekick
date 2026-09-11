@@ -84,6 +84,10 @@ Use typesafe project accessors: `projects.core.shell`, `projects.plugins.prefere
 
 # Publish to Maven Local
 ./gradlew publishToMavenLocal --no-configuration-cache
+
+# Static analysis + formatting (both run on every PR)
+./gradlew detekt
+./gradlew ktfmtFormat      # ktfmtCheck to verify only
 ```
 
 iOS: open `iosApp/` in Xcode or use an IDE run configuration.
@@ -346,6 +350,68 @@ plugin (see `SidekickKmpLibraryPlugin` for the rationale comment).
 `Sidekick()` accepts `useSidekickTheme: Boolean = true`:
 - `true` → applies the library's own light/dark Material 3 color scheme based on system dark-mode
 - `false` → inherits the host app's ambient `MaterialTheme` as-is
+
+## Quality Gates
+
+Three gates run on every PR, each covering something the others cannot see.
+
+### Explicit API mode
+
+`SidekickKmpLibraryPlugin` enables **strict `explicitApi()`** on every library module.
+Sidekick publishes 14 modules across 5 independently-versioned families, so a
+default-public declaration is an accidental API commitment nobody reviewed. New code
+must say `public` or `internal` out loud, and public declarations need explicit return
+types.
+
+Enforced by `.github/workflows/check-quality.yml` → `explicit-api`, which runs
+`compileKotlinMetadata compileAndroidMain`. Both are needed: metadata covers `commonMain`,
+but **`androidMain` sources are not part of the metadata compilation** and go unchecked if
+you only run the former. Native and web actuals are covered transitively by any full build;
+keeping them out of this job keeps CI off those toolchains.
+
+**Note on what this does *not* do:** it made the existing surface explicit, it did not
+narrow it. Everything marked `public` during the sweep was already public API at its
+published version. Declarations that arguably should be `internal` — `TimeMillis.kt`
+helpers, some `di` plumbing — are candidates for a follow-up, but narrowing is a
+breaking change and belongs to a deliberate MINOR/MAJOR bump, not a hygiene pass.
+
+### detekt
+
+Config in `config/detekt.yml`, applied to every subproject from the root
+`build.gradle.kts` alongside ktfmt. Deliberately narrow — ktfmt owns formatting and
+`explicitApi()` owns visibility, so detekt covers only what neither can see:
+
+- **Compose rules** (`io.nlopez.compose.rules:detekt`) — missing/misplaced/reused
+  modifiers, `ViewModel` forwarding and injection, mutable params, content emitters,
+  CompositionLocal allowlist.
+- A narrow correctness set; most style and complexity rules are off because they fight
+  Compose's idioms (slot APIs are parameter-heavy, composable trees are long,
+  exhaustive `when` mappers score high on cyclomatic complexity without being complex).
+
+**Type resolution is off.** detekt 1.23 embeds the Kotlin 1.9 frontend and this repo is
+on Kotlin 2.4, so a typed pass cannot resolve our sources. The syntactic rules we keep
+do not need it. `FunctionOnlyReturningConstant` is disabled because without types it
+misreads guard-clause functions like `NetworkFilter.matches` as constant returns.
+
+KMP modules have no single `main` source set, so both `Detekt` **and**
+`DetektCreateBaselineTask` are pointed at `files("src")` — they are separate task types
+and do not share configuration. Getting this wrong produces empty baselines.
+
+### detekt baselines
+
+Per-module `detekt-baseline.xml` files hold pre-existing findings so the gate could land
+green. They are **debt to burn down, not permanent exemptions** — mostly `ModifierMissing`
+on demo screens, `ComposableParamOrder` in the two monitor list panes, and past-tense
+lambda names (`onQueryChanged` → `onQueryChange`). Regenerate with `./gradlew detektBaseline`
+only when intentionally accepting a new finding; prefer fixing.
+
+### Stability annotations
+
+`SidekickPlugin`, `SidekickBadged` and `SidekickLifecycleAware` are `@Stable`. Plugin
+instances are passed to composables and held in the plugin grid's `items()`; without the
+annotation the compiler infers them unstable and no grid item can ever skip
+recomposition. The contract holds because their public properties are stable (`String`,
+`ImageVector`) and implementations expose mutable data only behind `State<T>`.
 
 ## Build-Logic Convention Plugin
 

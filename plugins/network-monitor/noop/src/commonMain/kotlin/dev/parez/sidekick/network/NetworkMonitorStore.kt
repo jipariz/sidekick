@@ -5,6 +5,9 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
 
 /**
@@ -13,38 +16,44 @@ import kotlinx.coroutines.flow.flowOf
  * results.
  */
 @Suppress("UNUSED_PARAMETER")
-class NetworkMonitorStore(scope: CoroutineScope? = null) {
+public class NetworkMonitorStore(scope: CoroutineScope? = null) {
 
-    fun init(retentionPeriod: Duration = 1.hours, bodyBudgetChars: Int = BodyBudget.Default) = Unit
+    public fun init(
+        retentionPeriod: Duration = 1.hours,
+        bodyBudgetChars: Int = BodyBudget.Default,
+    ): Unit = Unit
 
-    fun pagedCalls(filter: Flow<NetworkFilter>): Flow<PagingData<NetworkCall>> =
+    /** Release-variant stub — nothing is ever recorded, so the sequence never moves. */
+    public val recordedCount: StateFlow<Long> = MutableStateFlow(0L).asStateFlow()
+
+    public fun pagedCalls(filter: Flow<NetworkFilter>): Flow<PagingData<NetworkCall>> =
         flowOf(PagingData.empty())
 
-    fun filteredCount(filter: Flow<NetworkFilter>): Flow<Long> = flowOf(0L)
+    public fun filteredCount(filter: Flow<NetworkFilter>): Flow<Long> = flowOf(0L)
 
-    fun callById(id: String): Flow<NetworkCall?> = flowOf(null)
+    public fun callById(id: String): Flow<NetworkCall?> = flowOf(null)
 
-    suspend fun recordRequest(
+    public suspend fun recordRequest(
         id: String,
         url: String,
         method: String,
         headers: Map<String, String>,
         body: String?,
         timestamp: Long,
-    ) = Unit
+    ): Unit = Unit
 
-    suspend fun recordResponse(
+    public suspend fun recordResponse(
         id: String,
         code: Int,
         headers: Map<String, String>,
         timestamp: Long,
-    ) = Unit
+    ): Unit = Unit
 
-    suspend fun recordResponseBody(id: String, body: String) = Unit
+    public suspend fun recordResponseBody(id: String, body: String): Unit = Unit
 
-    suspend fun recordError(id: String, error: Throwable) = Unit
+    public suspend fun recordError(id: String, error: Throwable): Unit = Unit
 
-    suspend fun exportAll(filter: NetworkFilter): List<NetworkCall> = emptyList()
+    public suspend fun exportAll(filter: NetworkFilter): List<NetworkCall> = emptyList()
 
-    suspend fun clear() = Unit
+    public suspend fun clear(): Unit = Unit
 }

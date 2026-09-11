@@ -18,12 +18,11 @@ import dev.parez.sidekick.plugin.SidekickLifecycleAware
 import dev.parez.sidekick.plugin.SidekickPlugin
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import org.koin.compose.KoinIsolatedContext
 import org.koin.compose.viewmodel.koinViewModel
 
-class LogMonitorPlugin(retentionPeriod: Duration = 1.hours) :
+public class LogMonitorPlugin(retentionPeriod: Duration = 1.hours) :
     SidekickPlugin, SidekickBadged, SidekickLifecycleAware {
 
     private val _badge = mutableStateOf<Int?>(null)
@@ -31,9 +30,12 @@ class LogMonitorPlugin(retentionPeriod: Duration = 1.hours) :
     /** Entries recorded since the user last opened this plugin. */
     override val badge: State<Int?> = _badge
 
-    // Total at the moment the plugin was last opened. Everything past it is unread.
-    private var seenCount = 0L
-    private var totalCount = 0L
+    // Sequence position at the moment the plugin was last opened. Everything past it
+    // is unread. `seen` stays null until the first value arrives, so attaching before
+    // the store has reported anything cannot baseline against a phantom zero and mark
+    // already-visible restored rows as new.
+    private var seen: Long? = null
+    private var total = 0L
 
     init {
         LogMonitorKoinContext.loadViewModelModule(logMonitorViewModelModule)
@@ -43,18 +45,16 @@ class LogMonitorPlugin(retentionPeriod: Duration = 1.hours) :
         // Unfiltered count — the badge reflects everything captured, not whatever
         // filter the list screen happens to have applied.
         LogMonitorKoinContext.storeScope().launch {
-            store.filteredCount(flowOf(LogFilter())).collect { total ->
-                totalCount = total
-                // The store trims old rows, so the total can fall. Re-baseline when it
-                // does, otherwise the badge would stay stuck at zero afterwards.
-                if (total < seenCount) seenCount = total
-                _badge.value = (total - seenCount).takeIf { it > 0 }?.toInt()
+            store.recordedCount.collect { recorded ->
+                total = recorded
+                val baseline = seen ?: recorded.also { seen = it }
+                _badge.value = (recorded - baseline).takeIf { it > 0 }?.toInt()
             }
         }
     }
 
     override fun onAttach() {
-        seenCount = totalCount
+        seen = total
         _badge.value = null
     }
 

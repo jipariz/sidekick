@@ -33,6 +33,11 @@ class SidekickKmpLibraryPlugin : Plugin<Project> {
         val minSdkVersion = libs.findVersion("android-minSdk").get().requiredVersion.toInt()
 
         extensions.configure<KotlinMultiplatformExtension> {
+            // Sidekick publishes 14 modules across 5 independently-versioned families
+            // to Maven Central, so a default-public declaration is an accidental API
+            // commitment nobody reviewed. Strict mode makes every published symbol a
+            // deliberate choice: new code must say `public` or `internal` out loud.
+            explicitApi()
             // The Android KMP target extension is added to KotlinMultiplatformExtension by
             // the `com.android.kotlin.multiplatform.library` plugin. AGP 8.12.0 introduced
             // the `android { … }` accessor as a replacement for the older `androidLibrary { … }`,

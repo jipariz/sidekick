@@ -3,7 +3,7 @@ package dev.parez.sidekick.plugin
 import kotlinx.browser.document
 import org.w3c.dom.HTMLAnchorElement
 
-actual object SidekickShare {
+public actual object SidekickShare {
     /**
      * Browsers have no synchronous share primitive that works everywhere (`navigator.share` is
      * absent on desktop Firefox and requires a secure context), so this downloads the payload as a
@@ -13,7 +13,7 @@ actual object SidekickShare {
      * code: Blob construction differs between the JS and Wasm interop models, percent-encoding does
      * not.
      */
-    actual fun share(text: String, subject: String) {
+    public actual fun share(text: String, subject: String) {
         runCatching {
             val anchor = document.createElement("a") as HTMLAnchorElement
             anchor.href = "data:text/plain;charset=utf-8,${text.percentEncode()}"

@@ -12,8 +12,14 @@ package dev.parez.sidekick.network
  * JS heap rather than a SQLite file.
  */
 public object BodyBudget {
-    /** Default value: 16,777,216 characters (~16 MB of UTF-16 text). */
-    public const val Default: Int = 16 * 1024 * 1024
+    /**
+     * Default value: 8,388,608 characters.
+     *
+     * The budget counts *characters*, and a Kotlin `String` stores each as UTF-16, so this is the
+     * ~16 MiB of retained memory the ceiling is meant to express — before string and collection
+     * overhead. The previous 16,777,216 was ~32 MiB, which quietly doubled the limit it documented.
+     */
+    public const val Default: Int = 8 * 1024 * 1024
 
     /** Never drop bodies. */
     public const val Unlimited: Int = Int.MAX_VALUE

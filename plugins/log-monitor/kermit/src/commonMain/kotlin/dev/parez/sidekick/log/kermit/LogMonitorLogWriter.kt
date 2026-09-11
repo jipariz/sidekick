@@ -13,7 +13,8 @@ import dev.parez.sidekick.log.LogMonitorStore
  * Logger.setLogWriters(platformLogWriter(), LogMonitorLogWriter(store))
  * ```
  */
-class LogMonitorLogWriter(private val store: LogMonitorStore = LogMonitorStore) : LogWriter() {
+public class LogMonitorLogWriter(private val store: LogMonitorStore = LogMonitorStore) :
+    LogWriter() {
 
     override fun log(severity: Severity, message: String, tag: String, throwable: Throwable?) {
         store.record(

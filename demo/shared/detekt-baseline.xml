@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ModifierMissing:DemoApp.kt$DemoApp</ID>
+    <ID>ModifierMissing:PokemonDetailScreen.kt$PokemonDetailScreen</ID>
+    <ID>ModifierMissing:PokemonListScreen.kt$PokemonListScreen</ID>
+    <ID>ModifierMissing:SidekickShell.kt$SidekickShell</ID>
+    <ID>ParameterNaming:PokemonListScreen.kt$onQueryChanged</ID>
+  </CurrentIssues>
+</SmellBaseline>

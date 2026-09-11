@@ -31,7 +31,7 @@ import kotlin.time.Duration.Companion.hours
  *
  * @param retentionPeriod How long captured entries remain available in the panel.
  */
-fun kermitLogMonitor(retentionPeriod: Duration = 1.hours): LogMonitorPlugin {
+public fun kermitLogMonitor(retentionPeriod: Duration = 1.hours): LogMonitorPlugin {
     val plugin = LogMonitorPlugin(retentionPeriod = retentionPeriod)
     Logger.setLogWriters(platformLogWriter(), LogMonitorLogWriter(LogMonitorStore))
     return plugin

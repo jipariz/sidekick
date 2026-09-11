@@ -3,8 +3,8 @@ package dev.parez.sidekick.network
 import androidx.compose.runtime.Immutable
 
 @Immutable
-data class NetworkFilter(val query: String = "", val methods: Set<String> = emptySet()) {
-    fun matches(call: NetworkCall): Boolean = false
+public data class NetworkFilter(val query: String = "", val methods: Set<String> = emptySet()) {
+    public fun matches(call: NetworkCall): Boolean = false
 
-    fun toLikeToken(): String = "%"
+    public fun toLikeToken(): String = "%"
 }

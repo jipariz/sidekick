@@ -18,6 +18,8 @@ import io.ktor.client.HttpClientConfig
  * @param configure Optional [NetworkMonitorKtorConfig] customization (custom store, sanitized
  *   headers, body-size limits, request filter).
  */
-fun HttpClientConfig<*>.installSidekick(configure: NetworkMonitorKtorConfig.() -> Unit = {}) {
+public fun HttpClientConfig<*>.installSidekick(
+    configure: NetworkMonitorKtorConfig.() -> Unit = {}
+) {
     install(NetworkMonitorKtor, configure)
 }

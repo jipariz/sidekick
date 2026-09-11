@@ -14,7 +14,7 @@ import androidx.compose.runtime.remember
  * Obtain via [SidekickAppInfo.detect] (auto-detects the current platform) or construct manually.
  */
 @Immutable
-data class SidekickAppInfo(
+public data class SidekickAppInfo(
     /** Platform-specific metadata. Defaults to [PlatformInfo.Unknown]. */
     val platform: PlatformInfo = PlatformInfo.Unknown,
     /**
@@ -23,7 +23,7 @@ data class SidekickAppInfo(
      */
     val extras: Map<String, String> = emptyMap(),
 ) {
-    companion object
+    public companion object
 }
 
 /**
@@ -40,7 +40,7 @@ data class SidekickAppInfo(
  * )
  * ```
  */
-fun SidekickAppInfo.withExtras(vararg pairs: Pair<String, String>): SidekickAppInfo =
+public fun SidekickAppInfo.withExtras(vararg pairs: Pair<String, String>): SidekickAppInfo =
     copy(extras = extras + mapOf(*pairs))
 
 /**
@@ -65,13 +65,14 @@ fun SidekickAppInfo.withExtras(vararg pairs: Pair<String, String>): SidekickAppI
  *
  * To disable the header entirely, pass `appInfo = null` to [dev.parez.sidekick.Sidekick].
  */
-expect fun SidekickAppInfo.Companion.detect(): SidekickAppInfo
+public expect fun SidekickAppInfo.Companion.detect(): SidekickAppInfo
 
 /**
  * Returns a [SidekickAppInfo] that is auto-detected once and remembered across recompositions. Used
  * as the default value for [dev.parez.sidekick.Sidekick].
  */
-@Composable fun rememberSidekickAppInfo(): SidekickAppInfo = remember { SidekickAppInfo.detect() }
+@Composable
+public fun rememberSidekickAppInfo(): SidekickAppInfo = remember { SidekickAppInfo.detect() }
 
 // ── Platform info ─────────────────────────────────────────────────────────────
 
@@ -82,10 +83,10 @@ expect fun SidekickAppInfo.Companion.detect(): SidekickAppInfo
  * platforms can auto-detect them. [Desktop] and [Web] expose only runtime/OS info.
  */
 @Immutable
-sealed interface PlatformInfo {
+public sealed interface PlatformInfo {
 
     @Immutable
-    data class Android(
+    public data class Android(
         /** Application label from the package manager. */
         val appName: String,
         /** Version string from the package manifest (e.g. "1.2.3"). */
@@ -105,7 +106,7 @@ sealed interface PlatformInfo {
     ) : PlatformInfo
 
     @Immutable
-    data class Ios(
+    public data class Ios(
         /** App display name from `CFBundleDisplayName` / `CFBundleName`. */
         val appName: String?,
         /** Version from `CFBundleShortVersionString`. */
@@ -124,7 +125,7 @@ sealed interface PlatformInfo {
     ) : PlatformInfo
 
     @Immutable
-    data class Desktop(
+    public data class Desktop(
         /** OS name from `System.getProperty("os.name")` (e.g. "Mac OS X"). */
         val osName: String,
         /** OS version from `System.getProperty("os.version")` (e.g. "14.5"). */
@@ -136,7 +137,7 @@ sealed interface PlatformInfo {
     ) : PlatformInfo
 
     @Immutable
-    data class Web(
+    public data class Web(
         /** Full browser user-agent string from `navigator.userAgent`. */
         val userAgent: String,
         /** Human-readable browser name parsed from [userAgent] (e.g. "Chrome", "Firefox"). */
@@ -144,5 +145,5 @@ sealed interface PlatformInfo {
     ) : PlatformInfo
 
     /** Used when platform info is unavailable or not provided. Nothing extra is rendered. */
-    data object Unknown : PlatformInfo
+    public data object Unknown : PlatformInfo
 }

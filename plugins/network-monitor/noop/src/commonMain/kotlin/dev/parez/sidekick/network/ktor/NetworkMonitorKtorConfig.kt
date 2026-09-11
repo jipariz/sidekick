@@ -34,9 +34,10 @@ public class NetworkMonitorKtorConfig {
     public var retentionPeriod: Duration = 1.hours
     public var store: NetworkMonitorStore = NetworkMonitorKoinContext.getDefaultStore()
 
-    public fun filter(predicate: (HttpRequestBuilder) -> Boolean) = Unit
+    public fun filter(predicate: (HttpRequestBuilder) -> Boolean): Unit = Unit
 
-    public fun sanitizeHeader(placeholder: String = "***", predicate: (String) -> Boolean) = Unit
+    public fun sanitizeHeader(placeholder: String = "***", predicate: (String) -> Boolean): Unit =
+        Unit
 
-    public fun disableDefaultRedaction() = Unit
+    public fun disableDefaultRedaction(): Unit = Unit
 }

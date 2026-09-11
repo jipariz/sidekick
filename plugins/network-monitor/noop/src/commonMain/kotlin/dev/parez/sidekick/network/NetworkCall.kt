@@ -3,7 +3,7 @@ package dev.parez.sidekick.network
 import androidx.compose.runtime.Immutable
 
 @Immutable
-data class NetworkCall(
+public data class NetworkCall(
     val id: String,
     val url: String,
     val method: String,
@@ -22,7 +22,7 @@ data class NetworkCall(
         get() = if (responseTimestamp != null) responseTimestamp - requestTimestamp else null
 }
 
-enum class CallStatus {
+public enum class CallStatus {
     PENDING,
     COMPLETE,
     ERROR,

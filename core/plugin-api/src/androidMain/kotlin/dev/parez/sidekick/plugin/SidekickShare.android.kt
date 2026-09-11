@@ -2,8 +2,8 @@ package dev.parez.sidekick.plugin
 
 import android.content.Intent
 
-actual object SidekickShare {
-    actual fun share(text: String, subject: String) {
+public actual object SidekickShare {
+    public actual fun share(text: String, subject: String) {
         if (!ApplicationContextHolder.isInitialized) return
         val context = ApplicationContextHolder.context
         val send =

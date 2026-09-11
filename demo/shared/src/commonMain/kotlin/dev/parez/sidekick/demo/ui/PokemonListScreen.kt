@@ -33,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
@@ -161,7 +162,12 @@ private fun ContentState(
                             }
                         state.hasMore && state.query.isBlank() ->
                             Button(onClick = {}) {
-                                LaunchedEffect(Unit) { onLoadMore() }
+                                // Infinite-scroll sentinel: this item only composes once it
+                                // scrolls into view. rememberUpdatedState so the never-
+                                // restarting effect always calls the current lambda rather
+                                // than the one captured on first composition.
+                                val loadMore by rememberUpdatedState(onLoadMore)
+                                LaunchedEffect(Unit) { loadMore() }
                                 Text("Load more")
                             }
                         !state.hasMore ->

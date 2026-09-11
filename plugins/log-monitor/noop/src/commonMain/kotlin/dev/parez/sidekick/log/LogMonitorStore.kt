@@ -4,6 +4,9 @@ import androidx.paging.PagingData
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
 
 /**
@@ -12,28 +15,32 @@ import kotlinx.coroutines.flow.flowOf
  * results.
  */
 @Suppress("UNUSED_PARAMETER")
-object LogMonitorStore : LogCollector {
+public object LogMonitorStore : LogCollector {
 
-    fun init(retentionPeriod: Duration = 1.hours) = Unit
+    public fun init(retentionPeriod: Duration = 1.hours): Unit = Unit
 
-    fun pagedEntries(filter: Flow<LogFilter>): Flow<PagingData<LogEntry>> =
+    /** Release-variant stub — nothing is ever recorded, so the sequence never moves. */
+    public val recordedCount: StateFlow<Long> = MutableStateFlow(0L).asStateFlow()
+
+    public fun pagedEntries(filter: Flow<LogFilter>): Flow<PagingData<LogEntry>> =
         flowOf(PagingData.empty())
 
-    fun filteredCount(filter: Flow<LogFilter>): Flow<Long> = flowOf(0L)
+    public fun filteredCount(filter: Flow<LogFilter>): Flow<Long> = flowOf(0L)
 
-    fun entryById(id: String): Flow<LogEntry?> = flowOf(null)
+    public fun entryById(id: String): Flow<LogEntry?> = flowOf(null)
 
-    override fun log(level: LogLevel, tag: String, message: String, throwable: Throwable?) = Unit
+    override fun log(level: LogLevel, tag: String, message: String, throwable: Throwable?): Unit =
+        Unit
 
-    fun record(
+    public fun record(
         level: LogLevel,
         tag: String,
         message: String,
         throwable: Throwable?,
         metadata: Map<String, String>? = null,
-    ) = Unit
+    ): Unit = Unit
 
-    suspend fun exportAll(filter: LogFilter): List<LogEntry> = emptyList()
+    public suspend fun exportAll(filter: LogFilter): List<LogEntry> = emptyList()
 
-    suspend fun clear() = Unit
+    public suspend fun clear(): Unit = Unit
 }

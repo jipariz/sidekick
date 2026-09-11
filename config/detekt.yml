@@ -1,0 +1,122 @@
+# Sidekick detekt configuration.
+#
+# Deliberately narrow: ktfmt already owns formatting, and the compiler's
+# explicit-API mode already owns visibility. What is left for detekt is the
+# class of defect neither of those can see — Compose-specific smells, and a
+# small set of correctness rules that matter in a published SDK.
+#
+# Everything not listed here keeps its detekt default.
+
+build:
+  maxIssues: 0
+
+config:
+  validation: true
+  # The compose ruleset ships its own top-level `Compose` block.
+  excludes: "Compose"
+
+comments:
+  active: false
+
+# Formatting is ktfmt's job — running detekt's style rules alongside it would
+# produce conflicting demands on the same lines.
+style:
+  active: true
+  MaxLineLength:
+    active: false
+  ReturnCount:
+    active: false
+  # Debug-overlay UI legitimately branches on many enum states.
+  MagicNumber:
+    active: false
+  UnusedPrivateMember:
+    active: true
+    # @Preview composables are private and never called by design.
+    ignoreAnnotated: ['Preview']
+  UnusedParameter:
+    active: true
+    # noop modules exist precisely to accept every argument the real module takes
+    # and discard it — an unused parameter there is the contract, not a smell.
+    excludes: ['**/noop/**']
+  ForbiddenComment:
+    active: false
+  FunctionOnlyReturningConstant:
+    # Misfires without type resolution: it reads NetworkFilter.matches /
+    # toLikeToken — both of which have guard clauses and real branches — as
+    # constant returns. detekt 1.23 cannot run typed against Kotlin 2.4 sources.
+    active: false
+
+complexity:
+  active: true
+  LongParameterList:
+    active: false      # Compose slot APIs are parameter-heavy by design.
+  LongMethod:
+    active: false      # Composable trees are long by nature.
+  TooManyFunctions:
+    active: false
+  CyclomaticComplexMethod:
+    # Exhaustive `when` mappers (HTTP status -> label, Pokemon type -> colour)
+    # score high here without being complex in any way a reader would recognise.
+    threshold: 25
+  ComplexCondition:
+    threshold: 5
+
+exceptions:
+  active: true
+  TooGenericExceptionCaught:
+    active: false      # runCatching { } is the house style for best-effort paths.
+  SwallowedException:
+    active: false
+
+naming:
+  active: true
+  FunctionNaming:
+    # Composables are PascalCase.
+    functionPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    # Preview names conventionally carry an underscore: Foo_DarkPreview.
+    ignoreAnnotated: ['Preview']
+  MatchingDeclarationName:
+    # KMP actuals follow the `Foo.ios.kt` / `Foo.web.kt` convention, which this
+    # rule reads as a mismatch against the `Foo` declaration inside.
+    active: false
+
+potential-bugs:
+  active: true
+
+Compose:
+  # https://mrmans0n.github.io/compose-rules/rules/
+  CompositionLocalAllowlist:
+    active: true
+    # Sidekick hands plugins their back-navigation callback through a
+    # CompositionLocal deliberately: plugin Content() is rendered by the shell,
+    # so there is no call site to thread a parameter through.
+    allowedCompositionLocals:
+      - LocalSidekickBackNavigator
+  ComposableParamOrder:
+    active: true
+  ContentEmitterReturningValues:
+    active: true
+  ModifierComposable:
+    active: true
+  ModifierMissing:
+    active: true
+  ModifierNotUsedAtRoot:
+    active: true
+  ModifierReused:
+    active: true
+  ModifierWithoutDefault:
+    active: true
+  MultipleContentEmitters:
+    active: true
+  MutableParams:
+    active: true
+  MutableStateAutoboxing:
+    active: true
+  MutableStateParam:
+    active: true
+  UnstableCollections:
+    active: false      # kotlinx-collections-immutable is not a dependency here.
+  ViewModelForwarding:
+    active: true
+  ViewModelInjection:
+    active: true

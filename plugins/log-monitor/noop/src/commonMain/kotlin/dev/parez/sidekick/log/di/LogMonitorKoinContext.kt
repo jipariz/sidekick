@@ -23,5 +23,5 @@ public object LogMonitorKoinContext {
 
     public fun storeScope(): CoroutineScope = scope
 
-    @Suppress("UNUSED_PARAMETER") public fun loadViewModelModule(module: Module) = Unit
+    @Suppress("UNUSED_PARAMETER") public fun loadViewModelModule(module: Module): Unit = Unit
 }
