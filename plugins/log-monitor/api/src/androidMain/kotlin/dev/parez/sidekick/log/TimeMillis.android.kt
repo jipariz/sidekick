@@ -1,3 +1,3 @@
 package dev.parez.sidekick.log
 
-actual fun currentTimeMillis(): Long = System.currentTimeMillis()
+public actual fun currentTimeMillis(): Long = System.currentTimeMillis()

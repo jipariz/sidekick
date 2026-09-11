@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
 
 private val stores = ConcurrentHashMap<String, DataStore<Preferences>>()
 
-actual fun createPreferenceStore(storeName: String): PreferenceStore {
+public actual fun createPreferenceStore(storeName: String): PreferenceStore {
     val context = ApplicationContextHolder.context
     val dataStore = stores.getOrPut(storeName) {
         PreferenceDataStoreFactory.create(
@@ -32,7 +32,7 @@ actual fun createPreferenceStore(storeName: String): PreferenceStore {
     return DataStorePreferenceStore(dataStore)
 }
 
-class DataStorePreferenceStore(private val dataStore: DataStore<Preferences>) : PreferenceStore {
+public class DataStorePreferenceStore(private val dataStore: DataStore<Preferences>) : PreferenceStore {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val cache = ConcurrentHashMap<String, MutableStateFlow<Any>>()
 

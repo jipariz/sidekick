@@ -40,7 +40,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           cache-read-only: true
-      - name: Compile common metadata under explicit API mode
-        # Unqualified task name runs in every project that has it — all 13 library
-        # modules plus the demo. No hand-maintained module list to drift.
-        run: ./gradlew compileKotlinMetadata
+      - name: Compile under explicit API mode
+        # Unqualified task names run in every project that has them, so there is no
+        # hand-maintained module list to drift. Metadata covers commonMain;
+        # compileAndroidMain is included because androidMain sources are NOT part of
+        # the metadata compilation and would otherwise go unchecked.
+        run: ./gradlew compileKotlinMetadata compileAndroidMain
