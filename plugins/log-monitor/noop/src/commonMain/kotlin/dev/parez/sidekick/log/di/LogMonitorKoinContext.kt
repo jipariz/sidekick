@@ -1,6 +1,9 @@
 package dev.parez.sidekick.log.di
 
 import dev.parez.sidekick.log.LogMonitorStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import org.koin.core.KoinApplication
 import org.koin.core.module.Module
 import org.koin.dsl.koinApplication
@@ -15,6 +18,10 @@ public object LogMonitorKoinContext {
     public val koinApp: KoinApplication = koinApplication {}
 
     public fun getDefaultStore(): LogMonitorStore = LogMonitorStore
+
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+
+    public fun storeScope(): CoroutineScope = scope
 
     @Suppress("UNUSED_PARAMETER") public fun loadViewModelModule(module: Module) = Unit
 }

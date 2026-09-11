@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -39,6 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.parez.sidekick.log.LogEntry
 import dev.parez.sidekick.log.LogLevel
+import dev.parez.sidekick.plugin.SidekickShare
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,7 +70,16 @@ internal fun LogEntryDetailPane(
                         }
                     }
                 },
-                actions = { LevelBadge(entry.level, modifier = Modifier.padding(end = 12.dp)) },
+                actions = {
+                    IconButton(
+                        onClick = {
+                            SidekickShare.share(entry.toShareText(), subject = "sidekick-log")
+                        }
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = "Share entry")
+                    }
+                    LevelBadge(entry.level, modifier = Modifier.padding(end = 12.dp))
+                },
                 colors =
                     TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainer

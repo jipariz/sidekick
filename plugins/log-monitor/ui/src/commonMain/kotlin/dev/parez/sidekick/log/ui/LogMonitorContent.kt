@@ -44,6 +44,7 @@ internal fun LogMonitorContent(
     onQueryChange: (String) -> Unit,
     onToggleLevel: (LogLevel) -> Unit,
     onClear: () -> Unit,
+    onShare: () -> Unit,
     onBack: () -> Unit,
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<String>()
@@ -97,6 +98,7 @@ internal fun LogMonitorContent(
                     onQueryChange = onQueryChange,
                     onToggleLevel = onToggleLevel,
                     onClear = onClear,
+                    onShare = onShare,
                     showChevron = true,
                     onBack = onBack,
                 )

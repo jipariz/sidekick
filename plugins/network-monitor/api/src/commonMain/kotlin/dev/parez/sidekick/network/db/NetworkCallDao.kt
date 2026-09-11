@@ -87,4 +87,26 @@ internal interface NetworkCallDao {
         """
     )
     suspend fun deleteOldestOverLimit(limit: Long)
+
+    // Aggregate body ceiling, enforced in one statement. The window function walks
+    // newest -> oldest accumulating body length; every row whose running total has
+    // already passed :budget loses its bodies and is flagged. Rows that carry no
+    // body are excluded so repeat runs don't keep rewriting the same rows.
+    @Query(
+        """
+        UPDATE network_calls
+        SET requestBody = NULL, responseBody = NULL, bodiesEvicted = 1
+        WHERE (requestBody IS NOT NULL OR responseBody IS NOT NULL)
+          AND id IN (
+            SELECT id FROM (
+                SELECT id,
+                       SUM(LENGTH(COALESCE(requestBody, '')) + LENGTH(COALESCE(responseBody, '')))
+                           OVER (ORDER BY requestTimestamp DESC, id DESC) AS running
+                FROM network_calls
+            )
+            WHERE running > :budget
+          )
+        """
+    )
+    suspend fun evictBodiesOverBudget(budget: Long)
 }

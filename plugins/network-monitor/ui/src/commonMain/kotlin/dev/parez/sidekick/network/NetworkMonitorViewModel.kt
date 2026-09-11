@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import dev.parez.sidekick.network.ui.toShareText
+import dev.parez.sidekick.plugin.SidekickShare
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -67,6 +69,15 @@ internal class NetworkMonitorViewModel(private val store: NetworkMonitorStore) :
         viewModelScope.launch {
             store.clear()
             _selectedId.value = null
+        }
+    }
+
+    /** Exports every call matching the current filter through the platform share sheet. */
+    fun shareAll() {
+        viewModelScope.launch {
+            val calls =
+                store.exportAll(NetworkFilter(query = _query.value, methods = _methodFilter.value))
+            SidekickShare.share(calls.toShareText(), subject = "sidekick-network")
         }
     }
 }

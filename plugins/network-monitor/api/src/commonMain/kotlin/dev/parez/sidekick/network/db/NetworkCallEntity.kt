@@ -17,4 +17,6 @@ internal data class NetworkCallEntity(
     val responseTimestamp: Long?,
     val error: String?,
     val status: String,
+    /** True when body text was dropped to stay under the store's aggregate body budget. */
+    val bodiesEvicted: Boolean = false,
 )

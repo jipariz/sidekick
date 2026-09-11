@@ -41,7 +41,11 @@ internal interface LogEntryDao {
     @Query("SELECT * FROM log_entries WHERE id = :id")
     fun selectById(id: String): Flow<LogEntryEntity?>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insert(entity: LogEntryEntity)
+    // Bursty producers (logcat mirrors, tight loops) would otherwise cost one
+    // transaction per line on the host app's process. LogMonitorStore always
+    // batches, so there is no single-row insert.
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(entities: List<LogEntryEntity>)
 
     @Query("DELETE FROM log_entries") suspend fun deleteAll()
 

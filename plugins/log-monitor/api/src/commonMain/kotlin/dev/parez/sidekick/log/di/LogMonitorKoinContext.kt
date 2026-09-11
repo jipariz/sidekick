@@ -1,6 +1,9 @@
 package dev.parez.sidekick.log.di
 
 import dev.parez.sidekick.log.LogMonitorStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.koin.core.KoinApplication
 import org.koin.core.module.Module
@@ -28,6 +31,13 @@ public object LogMonitorKoinContext {
 
     public fun getDefaultStore(): LogMonitorStore = koin.get()
 
+    /**
+     * The shared background [CoroutineScope] from this isolated context. Exposed so plugin-level
+     * collectors (the unread badge, for one) live as long as the store rather than as long as a
+     * composition. Distinct from [LogMonitorStore]'s own internal writer scope.
+     */
+    public fun storeScope(): CoroutineScope = koin.get()
+
     public fun loadViewModelModule(module: Module) {
         if (viewModelModuleLoaded.compareAndSet(expect = false, update = true)) {
             koinApp.koin.loadModules(listOf(module))
@@ -35,4 +45,7 @@ public object LogMonitorKoinContext {
     }
 }
 
-internal val logMonitorCoreModule = module { single { LogMonitorStore } }
+internal val logMonitorCoreModule = module {
+    single { CoroutineScope(Dispatchers.Default + SupervisorJob()) }
+    single { LogMonitorStore }
+}

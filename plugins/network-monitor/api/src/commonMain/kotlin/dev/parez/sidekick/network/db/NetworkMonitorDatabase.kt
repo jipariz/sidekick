@@ -5,7 +5,7 @@ import androidx.room3.Database
 import androidx.room3.RoomDatabase
 import androidx.room3.RoomDatabaseConstructor
 
-@Database(entities = [NetworkCallEntity::class], version = 1)
+@Database(entities = [NetworkCallEntity::class], version = 2)
 @ConstructedBy(NetworkMonitorDatabaseConstructor::class)
 internal abstract class NetworkMonitorDatabase : RoomDatabase() {
     abstract fun networkCallDao(): NetworkCallDao

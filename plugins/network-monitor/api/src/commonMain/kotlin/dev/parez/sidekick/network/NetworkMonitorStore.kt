@@ -46,8 +46,12 @@ class NetworkMonitorStore(private val scope: CoroutineScope) {
 
     private val initialized = MutableStateFlow(false)
 
-    fun init(retentionPeriod: Duration = 1.hours) {
+    // Aggregate body ceiling, applied on both the Room and in-memory paths.
+    private var bodyBudgetChars: Int = BodyBudget.Default
+
+    fun init(retentionPeriod: Duration = 1.hours, bodyBudgetChars: Int = BodyBudget.Default) {
         if (!initialized.compareAndSet(expect = false, update = true)) return
+        this.bodyBudgetChars = bodyBudgetChars
 
         scope.launch {
             val db = createNetworkMonitorDatabase()
@@ -162,7 +166,7 @@ class NetworkMonitorStore(private val scope: CoroutineScope) {
                     status = CallStatus.PENDING,
                 )
             _inMemory.update { list ->
-                (listOf(call) + (list ?: emptyList())).take(MAX_CALLS.toInt())
+                (listOf(call) + (list ?: emptyList())).take(MAX_CALLS.toInt()).enforceBodyBudget()
             }
         }
     }
@@ -205,9 +209,11 @@ class NetworkMonitorStore(private val scope: CoroutineScope) {
             db.networkCallDao().updateResponseBody(id = id, body = body.truncate())
         } else if (_inMemory.value != null) {
             _inMemory.update { list ->
-                list?.map { call ->
-                    if (call.id == id) call.copy(responseBody = body.truncate()) else call
-                }
+                list
+                    ?.map { call ->
+                        if (call.id == id) call.copy(responseBody = body.truncate()) else call
+                    }
+                    ?.enforceBodyBudget()
             }
         }
     }
@@ -230,6 +236,28 @@ class NetworkMonitorStore(private val scope: CoroutineScope) {
         }
     }
 
+    /**
+     * Snapshot of every call matching [filter], for export. Bounded by the store's own row cap, so
+     * "all" is always a finite list — this reads the same rows the list screen pages through, not a
+     * separate unbounded query.
+     */
+    suspend fun exportAll(filter: NetworkFilter): List<NetworkCall> {
+        val db = _database.value
+        return if (db != null) {
+            db.networkCallDao()
+                .loadPaged(
+                    likeToken = filter.toLikeToken(),
+                    methods = filter.methods.toList(),
+                    hasMethodFilter = if (filter.methods.isEmpty()) 0 else 1,
+                    limit = MAX_CALLS.toInt(),
+                    offset = 0,
+                )
+                .map { it.toDomain() }
+        } else {
+            inMemorySnapshot.value.filter(filter::matches)
+        }
+    }
+
     suspend fun clear() {
         _database.value?.networkCallDao()?.deleteAll()
         if (_inMemory.value != null) _inMemory.value = emptyList()
@@ -239,6 +267,34 @@ class NetworkMonitorStore(private val scope: CoroutineScope) {
         val count = db.networkCallDao().countAll()
         val over = count - MAX_CALLS
         if (over > 0) db.networkCallDao().deleteOldestOverLimit(over)
+        if (bodyBudgetChars != BodyBudget.Unlimited) {
+            db.networkCallDao().evictBodiesOverBudget(bodyBudgetChars.toLong())
+        }
+    }
+
+    /**
+     * In-memory counterpart of [NetworkCallDao.evictBodiesOverBudget]. Walks newest -> oldest
+     * accumulating body length and drops both bodies once the running total passes the budget. This
+     * is the web fallback path, where the list lives in the JS heap.
+     */
+    private fun List<NetworkCall>.enforceBodyBudget(): List<NetworkCall> {
+        if (bodyBudgetChars == BodyBudget.Unlimited) return this
+        var running = 0L
+        var evicting = false
+        return map { call ->
+            if (evicting) {
+                if (call.requestBody == null && call.responseBody == null) call
+                else call.copy(requestBody = null, responseBody = null, bodiesEvicted = true)
+            } else {
+                running += (call.requestBody?.length ?: 0) + (call.responseBody?.length ?: 0)
+                if (running > bodyBudgetChars) {
+                    evicting = true
+                    call.copy(requestBody = null, responseBody = null, bodiesEvicted = true)
+                } else {
+                    call
+                }
+            }
+        }
     }
 
     private fun String.truncate() =
@@ -280,6 +336,7 @@ internal fun NetworkCallEntity.toDomain() =
         responseBody = responseBody,
         responseTimestamp = responseTimestamp,
         error = error,
+        bodiesEvicted = bodiesEvicted,
         status =
             when (status) {
                 "COMPLETE" -> CallStatus.COMPLETE

@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import dev.parez.sidekick.log.ui.toShareText
+import dev.parez.sidekick.plugin.SidekickShare
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -67,6 +69,15 @@ internal class LogMonitorViewModel(private val store: LogMonitorStore) : ViewMod
         viewModelScope.launch {
             store.clear()
             _selectedId.value = null
+        }
+    }
+
+    /** Exports every entry matching the current filter through the platform share sheet. */
+    fun shareAll() {
+        viewModelScope.launch {
+            val entries =
+                store.exportAll(LogFilter(query = _query.value, levels = _levelFilter.value))
+            SidekickShare.share(entries.toShareText(), subject = "sidekick-logs")
         }
     }
 }

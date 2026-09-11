@@ -33,5 +33,7 @@ object LogMonitorStore : LogCollector {
         metadata: Map<String, String>? = null,
     ) = Unit
 
+    suspend fun exportAll(filter: LogFilter): List<LogEntry> = emptyList()
+
     suspend fun clear() = Unit
 }
