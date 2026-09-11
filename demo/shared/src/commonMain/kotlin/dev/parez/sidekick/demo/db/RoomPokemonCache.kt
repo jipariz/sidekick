@@ -1,5 +1,6 @@
 package dev.parez.sidekick.demo.db
 
+import androidx.room3.RoomDatabase
 import dev.parez.sidekick.demo.AbilitySlot
 import dev.parez.sidekick.demo.PokemonDetail
 import dev.parez.sidekick.demo.PokemonListEntry
@@ -11,7 +12,13 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-class RoomPokemonCache(private val dao: PokemonCacheDao) : PokemonCache {
+class RoomPokemonCache(
+    private val dao: PokemonCacheDao,
+    private val database: RoomDatabase? = null,
+) : PokemonCache {
+
+    override val inspectableDatabase: RoomDatabase?
+        get() = database
 
     private val json = Json {
         ignoreUnknownKeys = true

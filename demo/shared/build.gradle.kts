@@ -96,6 +96,8 @@ kotlin {
                 implementation(projects.plugins.networkMonitor.ktor)
                 implementation(projects.plugins.logMonitor.ui)
                 implementation(projects.plugins.logMonitor.kermit)
+                implementation(projects.plugins.databaseInspector.ui)
+                implementation(projects.plugins.databaseInspector.room)
                 implementation(libs.kermit)
                 implementation(libs.ktor.client.core)
                 implementation(libs.kotlinx.serialization.json)

@@ -10,5 +10,5 @@ actual fun createPokemonCache(): PokemonCache {
             Worker(js("""new URL("sqlite-wasm-worker/worker.js", import.meta.url)"""))
         )
     val database = Room.inMemoryDatabaseBuilder<PokemonDatabase>().setDriver(driver).build()
-    return RoomPokemonCache(database.pokemonCacheDao())
+    return RoomPokemonCache(database.pokemonCacheDao(), database)
 }

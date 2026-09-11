@@ -27,5 +27,5 @@ actual fun createPokemonCache(): PokemonCache {
             .setDriver(BundledSQLiteDriver())
             .fallbackToDestructiveMigration(true)
             .build()
-    return RoomPokemonCache(database.pokemonCacheDao())
+    return RoomPokemonCache(database.pokemonCacheDao(), database)
 }

@@ -29,6 +29,9 @@ import com.svenjacobs.reveal.RevealCanvas
 import com.svenjacobs.reveal.RevealShape
 import com.svenjacobs.reveal.rememberRevealCanvasState
 import com.svenjacobs.reveal.rememberRevealState
+import dev.parez.sidekick.database.DatabaseInspectorPlugin
+import dev.parez.sidekick.database.room.DatabaseInspector
+import dev.parez.sidekick.demo.db.PokemonCache
 import dev.parez.sidekick.demo.di.LibraryKoinContext
 import dev.parez.sidekick.demo.navigation.BrowserHistoryEffect
 import dev.parez.sidekick.demo.navigation.DemoSavedStateConfiguration
@@ -46,6 +49,7 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.KoinIsolatedContext
+import org.koin.compose.koinInject
 
 internal enum class RevealKey {
     SidekickFab
@@ -56,6 +60,17 @@ fun DemoApp() {
     KoinIsolatedContext(context = LibraryKoinContext.koinApp) {
         val prefsPlugin = remember { AppPreferencesPlugin() }
         val networkPlugin = remember { NetworkMonitorPlugin(retentionPeriod = 1.hours) }
+        val pokemonCache: PokemonCache = koinInject()
+        val databasePlugin = remember {
+            DatabaseInspectorPlugin().also {
+                // Hands the inspector the demo's own Pokemon cache. On web this
+                // marks the panel unsupported rather than attaching — see
+                // databaseInspectionUnsupportedReason().
+                pokemonCache.inspectableDatabase?.let { db ->
+                    DatabaseInspector.attach(db, fileName = "pokemon_cache.db")
+                }
+            }
+        }
         val logPlugin = remember {
             LogMonitorPlugin(retentionPeriod = 1.hours).also {
                 Logger.setLogWriters(platformLogWriter(), LogMonitorLogWriter(LogMonitorStore))
@@ -87,8 +102,22 @@ fun DemoApp() {
         }
 
         val plugins =
-            remember(prefsPlugin, networkPlugin, logPlugin, buildInfoPlugin, customDebugPlugin) {
-                listOf(prefsPlugin, networkPlugin, logPlugin, buildInfoPlugin, customDebugPlugin)
+            remember(
+                prefsPlugin,
+                networkPlugin,
+                logPlugin,
+                databasePlugin,
+                buildInfoPlugin,
+                customDebugPlugin,
+            ) {
+                listOf(
+                    prefsPlugin,
+                    networkPlugin,
+                    logPlugin,
+                    databasePlugin,
+                    buildInfoPlugin,
+                    customDebugPlugin,
+                )
             }
 
         MaterialTheme(colorScheme = colorScheme, typography = AppTypography) {

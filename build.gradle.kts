@@ -32,6 +32,10 @@ val artifactIdMap = mapOf(
     ":plugins:log-monitor:kermit" to "log-monitor-kermit",
     ":plugins:log-monitor:noop" to "log-monitor-noop",
     ":plugins:custom-screen:api" to "custom-screen",
+    ":plugins:database-inspector:api" to "database-inspector",
+    ":plugins:database-inspector:ui" to "database-inspector-ui",
+    ":plugins:database-inspector:room" to "database-inspector-room",
+    ":plugins:database-inspector:noop" to "database-inspector-noop",
 )
 
 subprojects {
