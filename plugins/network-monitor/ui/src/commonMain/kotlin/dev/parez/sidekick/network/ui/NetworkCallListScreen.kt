@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -67,6 +68,7 @@ internal fun NetworkCallListPane(
     onQueryChange: (String) -> Unit,
     onToggleMethod: (String) -> Unit,
     onClear: () -> Unit,
+    onShare: () -> Unit,
     showChevron: Boolean = true,
     onBack: () -> Unit,
 ) {
@@ -83,6 +85,11 @@ internal fun NetworkCallListPane(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onShare) {
+                        Icon(Icons.Default.Share, contentDescription = "Export all")
                     }
                 },
             )

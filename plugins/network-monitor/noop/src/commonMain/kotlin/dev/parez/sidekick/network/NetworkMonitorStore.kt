@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.flowOf
 @Suppress("UNUSED_PARAMETER")
 class NetworkMonitorStore(scope: CoroutineScope? = null) {
 
-    fun init(retentionPeriod: Duration = 1.hours) = Unit
+    fun init(retentionPeriod: Duration = 1.hours, bodyBudgetChars: Int = BodyBudget.Default) = Unit
 
     fun pagedCalls(filter: Flow<NetworkFilter>): Flow<PagingData<NetworkCall>> =
         flowOf(PagingData.empty())
@@ -43,6 +43,8 @@ class NetworkMonitorStore(scope: CoroutineScope? = null) {
     suspend fun recordResponseBody(id: String, body: String) = Unit
 
     suspend fun recordError(id: String, error: Throwable) = Unit
+
+    suspend fun exportAll(filter: NetworkFilter): List<NetworkCall> = emptyList()
 
     suspend fun clear() = Unit
 }

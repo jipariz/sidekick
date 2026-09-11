@@ -16,6 +16,12 @@ data class NetworkCall(
     val responseTimestamp: Long?,
     val error: String?,
     val status: CallStatus,
+    /**
+     * True when this call's body text was dropped to stay under the store's aggregate body budget.
+     * The call itself is retained; [requestBody] and [responseBody] are null. Lets the UI
+     * distinguish "dropped to save memory" from "there was no body".
+     */
+    val bodiesEvicted: Boolean = false,
 ) {
     val durationMs: Long?
         get() = if (responseTimestamp != null) responseTimestamp - requestTimestamp else null

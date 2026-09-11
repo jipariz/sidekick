@@ -3,7 +3,10 @@ package dev.parez.sidekick.network
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.NetworkCheck
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.vector.ImageVector
+import dev.parez.sidekick.plugin.SidekickBadged
 import dev.parez.sidekick.plugin.SidekickPlugin
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
@@ -14,7 +17,13 @@ import kotlin.time.Duration.Companion.hours
  * typically pair this with `core/noop`'s `Sidekick()` so the panel is never composed anyway.
  */
 @Suppress("UNUSED_PARAMETER")
-class NetworkMonitorPlugin(retentionPeriod: Duration = 1.hours) : SidekickPlugin {
+class NetworkMonitorPlugin(
+    retentionPeriod: Duration = 1.hours,
+    bodyBudgetChars: Int = BodyBudget.Default,
+) : SidekickPlugin, SidekickBadged {
+
+    /** Always null — the noop variant records nothing, so there is never anything unread. */
+    override val badge: State<Int?> = mutableStateOf(null)
 
     override val id: String = "network-monitor"
     override val title: String = "Network"

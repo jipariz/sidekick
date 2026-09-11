@@ -23,6 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -65,6 +66,7 @@ internal fun LogEntryListPane(
     onQueryChange: (String) -> Unit,
     onToggleLevel: (LogLevel) -> Unit,
     onClear: () -> Unit,
+    onShare: () -> Unit,
     showChevron: Boolean = true,
     onBack: () -> Unit,
 ) {
@@ -81,6 +83,11 @@ internal fun LogEntryListPane(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onShare) {
+                        Icon(Icons.Default.Share, contentDescription = "Export all")
                     }
                 },
             )

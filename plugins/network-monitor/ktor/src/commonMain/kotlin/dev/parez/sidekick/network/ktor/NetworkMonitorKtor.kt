@@ -35,7 +35,7 @@ public val NetworkMonitorKtor: ClientPlugin<NetworkMonitorKtorConfig> =
             request.attributes.put(CallId, id)
 
             // ── Request capture ───────────────────────────────────────────────
-            val reqHeaders = request.headers.build().sanitize(config.sanitizedHeaders)
+            val reqHeaders = request.headers.build().sanitize(config.effectiveSanitizedHeaders)
             val reqBody =
                 runCatching { request.body.toString() }
                     .getOrNull()
@@ -71,7 +71,7 @@ public val NetworkMonitorKtor: ClientPlugin<NetworkMonitorKtorConfig> =
                 store.recordResponse(
                     id = id,
                     code = statusCode,
-                    headers = call.response.headers.sanitize(config.sanitizedHeaders),
+                    headers = call.response.headers.sanitize(config.effectiveSanitizedHeaders),
                     timestamp = currentTimeMillis(),
                 )
             }

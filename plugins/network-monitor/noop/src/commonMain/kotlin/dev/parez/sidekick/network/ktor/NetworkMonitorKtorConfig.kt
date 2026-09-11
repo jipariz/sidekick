@@ -17,6 +17,13 @@ public object ContentLength {
 }
 
 /**
+ * Release-variant stub for `DefaultRedactedHeaders`. Nothing is captured in the noop variant, so
+ * the set is informational only — kept so consumer code referencing it still resolves.
+ */
+public val DefaultRedactedHeaders: Set<String> =
+    setOf("authorization", "proxy-authorization", "cookie", "set-cookie", "x-api-key")
+
+/**
  * Release-variant stub for `NetworkMonitorKtorConfig`. Accepts every configuration call from the
  * real DSL but discards it.
  */
@@ -30,4 +37,6 @@ public class NetworkMonitorKtorConfig {
     public fun filter(predicate: (HttpRequestBuilder) -> Boolean) = Unit
 
     public fun sanitizeHeader(placeholder: String = "***", predicate: (String) -> Boolean) = Unit
+
+    public fun disableDefaultRedaction() = Unit
 }

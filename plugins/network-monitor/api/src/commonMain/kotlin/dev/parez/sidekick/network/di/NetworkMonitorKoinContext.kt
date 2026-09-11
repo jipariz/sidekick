@@ -48,6 +48,13 @@ public object NetworkMonitorKoinContext {
     public fun getDefaultStore(): NetworkMonitorStore = koin.get()
 
     /**
+     * The shared background [CoroutineScope] from this isolated context. Exposed so plugin-level
+     * collectors (the unread badge, for one) live as long as the store rather than as long as a
+     * composition.
+     */
+    public fun storeScope(): CoroutineScope = koin.get()
+
+    /**
      * Loads an additional [module] (e.g. the ViewModel module from `network-monitor:plugin`) into
      * this context exactly once. Subsequent calls are no-ops.
      */

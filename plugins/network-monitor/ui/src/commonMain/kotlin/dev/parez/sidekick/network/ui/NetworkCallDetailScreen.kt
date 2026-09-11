@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -60,6 +61,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.parez.sidekick.network.CallStatus
 import dev.parez.sidekick.network.NetworkCall
+import dev.parez.sidekick.plugin.SidekickShare
 import kotlin.math.abs
 import kotlinx.coroutines.launch
 
@@ -114,7 +116,10 @@ internal fun NetworkCallDetailPane(
                         }
                     }
                 },
-                actions = { MethodBadge(call.method, modifier = Modifier.padding(end = 12.dp)) },
+                actions = {
+                    ShareCallButton(call)
+                    MethodBadge(call.method, modifier = Modifier.padding(end = 12.dp))
+                },
                 colors =
                     TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -239,7 +244,10 @@ private fun NetworkCallRequestPane(call: NetworkCall) {
                         secondary = urlPath(call.url).takeIf { it.isNotEmpty() },
                     )
                 },
-                actions = { MethodBadge(call.method, modifier = Modifier.padding(end = 12.dp)) },
+                actions = {
+                    ShareCallButton(call)
+                    MethodBadge(call.method, modifier = Modifier.padding(end = 12.dp))
+                },
                 colors =
                     TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -463,6 +471,9 @@ private fun RequestTab(call: NetworkCall) {
         call.requestBody?.let {
             DetailSection(label = "Body") { CopyableCodeBlock(it.prettyPrintJson()) }
         }
+        if (call.requestBody == null && call.bodiesEvicted) {
+            DetailSection(label = "Body") { EvictedBodyNotice() }
+        }
         Spacer(Modifier.height(24.dp))
     }
 }
@@ -482,6 +493,9 @@ private fun ResponseTab(call: NetworkCall) {
         call.responseBody?.let {
             DetailSection(label = "Body") { CopyableCodeBlock(it.prettyPrintJson()) }
         }
+        if (call.responseBody == null && call.bodiesEvicted) {
+            DetailSection(label = "Body") { EvictedBodyNotice() }
+        }
         call.error?.let {
             DetailSection(label = "Error") { MonoText(it, color = MaterialTheme.colorScheme.error) }
         }
@@ -490,6 +504,33 @@ private fun ResponseTab(call: NetworkCall) {
 }
 
 // ── Shared sub-components ─────────────────────────────────────────────────────
+
+/**
+ * Exports the whole call — headers, bodies and a reproducing `curl` — via the platform share sheet.
+ */
+@Composable
+private fun ShareCallButton(call: NetworkCall) {
+    IconButton(onClick = { SidekickShare.share(call.toShareText(), subject = "sidekick-call") }) {
+        Icon(Icons.Default.Share, contentDescription = "Share call")
+    }
+}
+
+/**
+ * Shown in place of a body that the store dropped to stay under its aggregate body budget. Without
+ * this the pane would simply be absent, which reads as "this call had no body" — a materially
+ * different thing when you are debugging.
+ */
+@Composable
+private fun EvictedBodyNotice() {
+    // No padding here — DetailSection already wraps its content in a padded Box,
+    // matching how MonoText and the other section bodies behave.
+    Text(
+        text = "Body dropped to save memory — this call is older than the capture budget allows.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
 
 @Composable
 private fun DetailSection(label: String, content: @Composable () -> Unit) {

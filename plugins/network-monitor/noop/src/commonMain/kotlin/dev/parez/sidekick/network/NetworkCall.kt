@@ -16,6 +16,7 @@ data class NetworkCall(
     val responseTimestamp: Long?,
     val error: String?,
     val status: CallStatus,
+    val bodiesEvicted: Boolean = false,
 ) {
     val durationMs: Long?
         get() = if (responseTimestamp != null) responseTimestamp - requestTimestamp else null

@@ -15,6 +15,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -26,10 +28,19 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 private const val MAX_ENTRIES = 1000L
 private const val MAX_MESSAGE_LENGTH = 16_384
+
+// Entries buffered between the (non-suspending) log call and the DB writer.
+// Bounded, so logs recorded before init() — or faster than the writer drains —
+// cost a fixed amount of memory rather than growing without limit.
+private const val PENDING_CAPACITY = 4096
+
+// Upper bound on rows per insertAll transaction.
+private const val MAX_BATCH = 200
 
 @OptIn(ExperimentalCoroutinesApi::class)
 object LogMonitorStore : LogCollector {
@@ -41,6 +52,15 @@ object LogMonitorStore : LogCollector {
 
     private val inMemorySnapshot: StateFlow<List<LogEntry>> =
         _inMemory.filterNotNull().stateIn(scope, SharingStarted.Eagerly, emptyList())
+
+    // Producers hand entries off here and return immediately; a single writer
+    // coroutine drains the channel and writes in batches. DROP_OLDEST means a
+    // pathological burst loses the oldest pending lines rather than the host app.
+    private val pending =
+        Channel<LogEntryEntity>(
+            capacity = PENDING_CAPACITY,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST,
+        )
 
     private val initialized = MutableStateFlow(false)
 
@@ -65,6 +85,23 @@ object LogMonitorStore : LogCollector {
             } else {
                 _inMemory.value = emptyList()
             }
+            // Started only once storage is resolved. Anything logged before this
+            // point waited in `pending` and is flushed by the first drain.
+            launchWriter()
+        }
+    }
+
+    private fun CoroutineScope.launchWriter() = launch {
+        val batch = ArrayList<LogEntryEntity>(MAX_BATCH)
+        while (isActive) {
+            batch.clear()
+            // Suspends until there is at least one entry, then takes whatever else
+            // has already queued up without waiting for more.
+            batch += pending.receive()
+            while (batch.size < MAX_BATCH) {
+                batch += pending.tryReceive().getOrNull() ?: break
+            }
+            writeBatch(batch)
         }
     }
 
@@ -111,10 +148,7 @@ object LogMonitorStore : LogCollector {
     }
 
     override fun log(level: LogLevel, tag: String, message: String, throwable: Throwable?) {
-        val id = randomUuid()
-        val timestamp = currentTimeMillis()
-        val throwableStr = throwable?.stackTraceToString()
-        scope.launch { record(id, timestamp, level, tag, message, throwableStr, null) }
+        record(level, tag, message, throwable, metadata = null)
     }
 
     fun record(
@@ -124,50 +158,52 @@ object LogMonitorStore : LogCollector {
         throwable: Throwable?,
         metadata: Map<String, String>? = null,
     ) {
-        val id = randomUuid()
-        val timestamp = currentTimeMillis()
-        val throwableStr = throwable?.stackTraceToString()
-        scope.launch { record(id, timestamp, level, tag, message, throwableStr, metadata) }
+        // Timestamped here, not at write time, so batching never reorders or skews
+        // entries. trySend never suspends — a LogWriter must not block its caller.
+        pending.trySend(
+            LogEntryEntity(
+                id = randomUuid(),
+                timestamp = currentTimeMillis(),
+                level = level.name,
+                tag = tag,
+                message = message.truncate(),
+                throwable = throwable?.stackTraceToString()?.truncate(),
+                metadata = metadata?.encodeToJson(),
+            )
+        )
     }
 
-    private suspend fun record(
-        id: String,
-        timestamp: Long,
-        level: LogLevel,
-        tag: String,
-        message: String,
-        throwable: String?,
-        metadata: Map<String, String>?,
-    ) {
+    private suspend fun writeBatch(batch: List<LogEntryEntity>) {
         val db = _database.value
         if (db != null) {
-            db.logEntryDao()
-                .insert(
-                    LogEntryEntity(
-                        id = id,
-                        timestamp = timestamp,
-                        level = level.name,
-                        tag = tag,
-                        message = message.truncate(),
-                        throwable = throwable?.truncate(),
-                        metadata = metadata?.encodeToJson(),
-                    )
-                )
+            db.logEntryDao().insertAll(batch)
+            // Once per batch, not once per line — this is the whole point.
             trimDbIfNeeded(db)
         } else if (_inMemory.value != null) {
-            val entry =
-                LogEntry(
-                    id = id,
-                    timestamp = timestamp,
-                    level = level,
-                    tag = tag,
-                    message = message.truncate(),
-                    throwable = throwable?.truncate(),
-                    metadata = metadata,
+            // The list is newest-first; the batch arrives oldest-first, so reverse
+            // it before prepending.
+            val entries = batch.map { it.toDomain() }.asReversed()
+            _inMemory.update { list -> (entries + (list ?: emptyList())).take(MAX_ENTRIES.toInt()) }
+        }
+    }
+
+    /**
+     * Snapshot of every entry matching [filter], for export. Bounded by the store's own row cap.
+     */
+    suspend fun exportAll(filter: LogFilter): List<LogEntry> {
+        val db = _database.value
+        return if (db != null) {
+            db.logEntryDao()
+                .loadPaged(
+                    likeToken = filter.toLikeToken(),
+                    levels = filter.levels.map { it.name },
+                    hasLevelFilter = if (filter.levels.isEmpty()) 0 else 1,
+                    limit = MAX_ENTRIES.toInt(),
+                    offset = 0,
                 )
-            _inMemory.update { list ->
-                (listOf(entry) + (list ?: emptyList())).take(MAX_ENTRIES.toInt())
-            }
+                .map { it.toDomain() }
+        } else {
+            inMemorySnapshot.value.filter(filter::matches)
         }
     }
 

@@ -56,6 +56,7 @@ internal fun NetworkMonitorContent(
     onQueryChange: (String) -> Unit,
     onToggleMethod: (String) -> Unit,
     onClear: () -> Unit,
+    onShare: () -> Unit,
     onBack: () -> Unit,
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<String>()
@@ -119,6 +120,7 @@ internal fun NetworkMonitorContent(
                     onQueryChange = onQueryChange,
                     onToggleMethod = onToggleMethod,
                     onClear = onClear,
+                    onShare = onShare,
                     showChevron = true,
                     onBack = onBack,
                 )
