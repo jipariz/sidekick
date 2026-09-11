@@ -44,7 +44,7 @@ public actual object SidekickShare {
         val choice =
             runCatching {
                     JOptionPane.showOptionDialog(
-                        null,
+                        ownerFrame(),
                         "$subject — ${text.summary()}",
                         "Export",
                         JOptionPane.DEFAULT_OPTION,
@@ -65,7 +65,7 @@ public actual object SidekickShare {
 
     private fun saveAsTxt(text: String, subject: String) {
         val dialog =
-            FileDialog(null as Frame?, "Export $subject", FileDialog.SAVE).apply {
+            FileDialog(ownerFrame(), "Export $subject", FileDialog.SAVE).apply {
                 file = "${subject.toSafeFileName()}.txt"
                 isVisible = true
             }
@@ -80,6 +80,16 @@ public actual object SidekickShare {
             Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(text), null)
         }
     }
+
+    /**
+     * The app's own window.
+     *
+     * Passing `null` here lets AWT own the dialog with a hidden shared frame, which on macOS opens
+     * it *behind* whatever else is on screen — the dialog exists, blocks the app, and the user
+     * never sees it. Owning it from the real window keeps it on top of the app and moves with it.
+     */
+    private fun ownerFrame(): Frame? =
+        Frame.getFrames().firstOrNull { it.isVisible && it.isShowing }
 
     private fun onSwingThread(block: () -> Unit) {
         if (SwingUtilities.isEventDispatchThread()) block() else SwingUtilities.invokeLater(block)
