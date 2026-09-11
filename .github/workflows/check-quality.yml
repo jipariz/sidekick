@@ -24,6 +24,23 @@ jobs:
       - name: Run detekt
         run: ./gradlew detekt
 
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+      # jvmTest rather than allTests: the suite is pure common code, so one target
+      # proves it, and this keeps CI off the native/web toolchains.
+      - name: Run unit tests
+        run: ./gradlew jvmTest
+
   api-compatibility:
     # Fails when the published API surface drifts from the committed signature
     # files. A breaking change then shows up as a reviewable diff in api/*.api

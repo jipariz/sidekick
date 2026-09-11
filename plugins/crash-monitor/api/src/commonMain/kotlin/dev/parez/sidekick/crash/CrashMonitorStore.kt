@@ -71,15 +71,17 @@ public class CrashMonitorStore {
 /**
  * Splits a stack trace into frames, marking the ones belonging to [appPackagePrefix].
  *
- * `stackTraceToString()` is the only multiplatform way to get a trace; its first line is the
- * exception itself, which the record already carries, so it is dropped.
+ * `stackTraceToString()` is the only multiplatform way to get a trace, but its shape is not
+ * uniform: the JVM prefixes it with a `"<type>: <message>"` header line, Kotlin/Native does not.
+ * Dropping the first line unconditionally therefore discarded a real frame on iOS — the top one,
+ * which is the frame you most want. Drop it only when it is not itself a frame.
  */
 internal fun Throwable.toFrames(appPackagePrefix: String?): List<StackFrame> =
     stackTraceToString()
         .lineSequence()
-        .drop(1)
         .map { it.trim() }
         .filter { it.isNotEmpty() }
+        .dropWhile { !it.startsWith("at ") }
         .map { line ->
             StackFrame(
                 text = line,

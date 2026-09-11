@@ -91,6 +91,14 @@ class SidekickKmpLibraryPlugin : Plugin<Project> {
                 implementation(libs.findLibrary("compose-ui").get())
             }
 
+            // Every library module gets a commonTest source set wired for kotlin-test.
+            // KMP associates commonTest with commonMain, so tests can reach `internal`
+            // declarations — which is most of what is worth testing here, since the
+            // pure logic (codecs, SQL guards, formatters) is deliberately not public.
+            sourceSets.commonTest.dependencies {
+                implementation(libs.findLibrary("kotlin-test").get())
+            }
+
             // Sidekick uses `expect class` / `expect object` (Room database
             // constructors, SQLite drivers, …) by design. The classes-in-Beta
             // warning is informational, not a defect.
