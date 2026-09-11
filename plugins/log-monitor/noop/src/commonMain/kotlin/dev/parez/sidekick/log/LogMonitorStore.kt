@@ -4,6 +4,9 @@ import androidx.paging.PagingData
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
 
 /**
@@ -15,6 +18,9 @@ import kotlinx.coroutines.flow.flowOf
 public object LogMonitorStore : LogCollector {
 
     public fun init(retentionPeriod: Duration = 1.hours): Unit = Unit
+
+    /** Release-variant stub — nothing is ever recorded, so the sequence never moves. */
+    public val recordedCount: StateFlow<Long> = MutableStateFlow(0L).asStateFlow()
 
     public fun pagedEntries(filter: Flow<LogFilter>): Flow<PagingData<LogEntry>> =
         flowOf(PagingData.empty())
