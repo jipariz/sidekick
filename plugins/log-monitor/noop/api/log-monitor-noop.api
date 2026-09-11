@@ -72,12 +72,10 @@ package dev.parez.sidekick.log {
     method public kotlinx.coroutines.flow.Flow<dev.parez.sidekick.log.LogEntry?> entryById(String id);
     method public suspend Object? exportAll(dev.parez.sidekick.log.LogFilter filter, kotlin.coroutines.Continuation<? super java.util.List<dev.parez.sidekick.log.LogEntry>>);
     method public kotlinx.coroutines.flow.Flow<java.lang.Long> filteredCount(kotlinx.coroutines.flow.Flow<dev.parez.sidekick.log.LogFilter> filter);
-    method @InaccessibleFromKotlin public kotlinx.coroutines.flow.StateFlow<java.lang.Long> getRecordedCount();
     method @KotlinOnly public void init(optional kotlin.time.Duration retentionPeriod);
     method public void log(dev.parez.sidekick.log.LogLevel level, String tag, String message, Throwable? throwable);
     method public kotlinx.coroutines.flow.Flow<androidx.paging.PagingData<dev.parez.sidekick.log.LogEntry>> pagedEntries(kotlinx.coroutines.flow.Flow<dev.parez.sidekick.log.LogFilter> filter);
     method public void record(dev.parez.sidekick.log.LogLevel level, String tag, String message, Throwable? throwable, optional java.util.Map<java.lang.String,java.lang.String>? metadata);
-    property public kotlinx.coroutines.flow.StateFlow<java.lang.Long> recordedCount;
     field public static final dev.parez.sidekick.log.LogMonitorStore INSTANCE;
   }
 

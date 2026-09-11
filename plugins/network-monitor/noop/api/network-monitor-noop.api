@@ -95,14 +95,12 @@ package dev.parez.sidekick.network {
     method public suspend Object? clear(kotlin.coroutines.Continuation<? super kotlin.Unit>);
     method public suspend Object? exportAll(dev.parez.sidekick.network.NetworkFilter filter, kotlin.coroutines.Continuation<? super java.util.List<dev.parez.sidekick.network.NetworkCall>>);
     method public kotlinx.coroutines.flow.Flow<java.lang.Long> filteredCount(kotlinx.coroutines.flow.Flow<dev.parez.sidekick.network.NetworkFilter> filter);
-    method @InaccessibleFromKotlin public kotlinx.coroutines.flow.StateFlow<java.lang.Long> getRecordedCount();
     method @KotlinOnly public void init(optional kotlin.time.Duration retentionPeriod, optional int bodyBudgetChars);
     method public kotlinx.coroutines.flow.Flow<androidx.paging.PagingData<dev.parez.sidekick.network.NetworkCall>> pagedCalls(kotlinx.coroutines.flow.Flow<dev.parez.sidekick.network.NetworkFilter> filter);
     method public suspend Object? recordError(String id, Throwable error, kotlin.coroutines.Continuation<? super kotlin.Unit>);
     method public suspend Object? recordRequest(String id, String url, String method, java.util.Map<java.lang.String,java.lang.String> headers, String? body, long timestamp, kotlin.coroutines.Continuation<? super kotlin.Unit>);
     method public suspend Object? recordResponse(String id, int code, java.util.Map<java.lang.String,java.lang.String> headers, long timestamp, kotlin.coroutines.Continuation<? super kotlin.Unit>);
     method public suspend Object? recordResponseBody(String id, String body, kotlin.coroutines.Continuation<? super kotlin.Unit>);
-    property public kotlinx.coroutines.flow.StateFlow<java.lang.Long> recordedCount;
   }
 
 }

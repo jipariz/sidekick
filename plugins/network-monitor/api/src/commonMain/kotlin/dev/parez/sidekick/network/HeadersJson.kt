@@ -36,7 +36,20 @@ internal fun String.decodeToHeaderMap(): Map<String, String> {
 private fun String.nextUnescapedQuote(from: Int): Int {
     var i = from
     while (i < length) {
-        if (this[i] == '"' && (i == 0 || this[i - 1] != '\\')) return i
+        if (this[i] == '"') {
+            // A quote is escaped only when preceded by an ODD number of backslashes:
+            // `\"` is an escaped quote, but `\\"` is an escaped backslash followed by
+            // the closing quote. Testing only the single preceding character made any
+            // value ending in a backslash run past its own terminator and swallow the
+            // rest of the object.
+            var backslashes = 0
+            var j = i - 1
+            while (j >= from && this[j] == '\\') {
+                backslashes++
+                j--
+            }
+            if (backslashes % 2 == 0) return i
+        }
         i++
     }
     return i
