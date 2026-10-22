@@ -30,6 +30,8 @@ theme:
     - content.code.copy
     - content.code.annotate
     - toc.follow
+  logo: assets/logo.svg
+  favicon: assets/favicon.png
   icon:
     repo: fontawesome/brands/github
 
