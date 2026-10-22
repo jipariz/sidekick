@@ -16,14 +16,17 @@ Each Sidekick BOM is built against a fixed Kotlin and Compose Multiplatform stac
 
 | BOM | Kotlin | Compose Multiplatform | Android `compileSdk` |
 |---|---|---|---|
-| `2026.05.26` | 2.3.21 | 1.11.0 | **37+** ¹ |
-| `2026.05.18` | 2.3.20 | 1.10.3 | 36+       |
-| `2026.05.16` | 2.3.20 | 1.10.3 | 36+       |
+| `2026.09.11` | 2.4.0  | 1.12.0        | **37+** ¹ |
+| `2026.08.28` | 2.4.0  | 1.12.0        | **37+** ¹ |
+| `2026.07.21` | 2.4.0  | 1.12.0-beta02 | **37+** ¹ |
+| `2026.05.26` | 2.3.21 | 1.11.0        | **37+** ¹ |
+| `2026.05.18` | 2.3.20 | 1.10.3        | 36+       |
+| `2026.05.16` | 2.3.20 | 1.10.3        | 36+       |
 
 Android `minSdk` 24+ across all releases.
 
-!!! info "Why `compileSdk ≥ 37` is required for `2026.05.26`"
-    `2026.05.26` transitively depends on `androidx.compose.material3.adaptive:*:1.3.0-beta01`, which stamps an AAR-metadata constraint requiring consumers to compile against API 37. Builds below 37 fail fast with `"compile against version 37 or later"`. This affects build-time only — your app's `minSdk` and `targetSdk` are independent and unchanged.
+!!! info "Why `compileSdk ≥ 37` is required from `2026.05.26` onwards"
+    `2026.05.26` and every BOM after it transitively depend on `material3-adaptive` `1.3.0-beta01` or later (`beta02` from `2026.08.28`), which stamps an AAR-metadata constraint requiring consumers to compile against API 37. Builds below 37 fail fast with `"compile against version 37 or later"`. This affects build-time only — your app's `minSdk` and `targetSdk` are independent and unchanged.
 
     Older BOMs (`2026.05.18` and earlier) shipped the CMP-namespaced `org.jetbrains.compose.material3.adaptive:adaptive:1.2.0` instead, which has no AAR-metadata constraint.
 

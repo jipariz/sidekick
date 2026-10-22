@@ -1,0 +1,41 @@
+/* Sidekick brand colour. Material's stock "deep purple" is #673AB7, which is
+   not the mark's purple — these bind the theme to #7F52FF instead. */
+[data-md-color-primary="custom"] {
+  --md-primary-fg-color:        #7F52FF;
+  --md-primary-fg-color--light: #9B78FF;
+  --md-primary-fg-color--dark:  #6038D6;
+  --md-primary-bg-color:        #FFFFFF;
+  --md-primary-bg-color--light: #FFFFFFB3;
+}
+[data-md-color-accent="custom"] {
+  --md-accent-fg-color:            #7F52FF;
+  --md-accent-fg-color--transparent: #7F52FF1A;
+}
+[data-md-color-scheme="slate"][data-md-color-accent="custom"] {
+  --md-accent-fg-color: #9B78FF;
+}
+
+/* The hero is full-bleed artwork, not an inline illustration. */
+.sk-hero > p { margin: 0; }
+.sk-hero img {
+  width: 100%;
+  border-radius: .4rem;
+}
+
+/* Screenshot grid on the landing page. Markdown wraps consecutive images in a
+   single <p>, which would be the grid's only child — `display: contents` lifts
+   the images out so they become the grid items. */
+.sk-shots {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, 1fr);
+}
+.sk-shots > p { display: contents; }
+.sk-shots img {
+  width: 100%;
+  border-radius: .3rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+}
+@media screen and (max-width: 44.9375em) {
+  .sk-shots { grid-template-columns: 1fr; }
+}
