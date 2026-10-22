@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Sidekick app icon">
+  <title>Sidekick</title>
+  <rect width="256" height="256" rx="56" fill="#7F52FF"/>
+  <path fill="#FFFFFF" fill-rule="evenodd" d="M44 98H68V86H116V98H140V86H188V98H212V158H188V170H140V158H116V170H68V158H44ZM68 110H116V146H68ZM140 110H188V146H140Z"/>
+</svg>

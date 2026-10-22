@@ -1,15 +1,27 @@
 # Sidekick
 
-**A Kotlin Multiplatform debug panel for Compose apps** on Android, iOS, Desktop (JVM), and Web (JS / Wasm).
+<div class="sk-hero" markdown>
+![Sidekick — a Kotlin Multiplatform debug panel for Compose apps](assets/hero-light.svg#only-light)
+![Sidekick — a Kotlin Multiplatform debug panel for Compose apps](assets/hero-dark.svg#only-dark)
+</div>
+
+**A Kotlin Multiplatform debug panel for Compose apps** on Android, iOS, Desktop (JVM) and Web (JS / Wasm).
+
+[![BOM](https://img.shields.io/maven-central/v/dev.parez.sidekick/bom?label=BOM&color=7F52FF)](installation.md)
+![License](https://img.shields.io/badge/license-Apache_2.0-blue)
+![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?logo=kotlin&logoColor=white)
+![Compose Multiplatform](https://img.shields.io/badge/Compose_Multiplatform-4285F4)
 
 ![Android](https://img.shields.io/badge/Android-3DDC84?logo=android&logoColor=white)
 ![iOS](https://img.shields.io/badge/iOS-000000?logo=apple&logoColor=white)
 ![Desktop](https://img.shields.io/badge/Desktop_(JVM)-4E8EE9?logo=openjdk&logoColor=white)
 ![Web JS](https://img.shields.io/badge/Web_(JS)-F7DF1E?logo=javascript&logoColor=black)
 ![Web Wasm](https://img.shields.io/badge/Web_(Wasm)-654FF0?logo=webassembly&logoColor=white)
-![License](https://img.shields.io/badge/license-Apache_2.0-blue)
-![Kotlin](https://img.shields.io/badge/Kotlin-2.3.20-7F52FF?logo=kotlin&logoColor=white)
-![Compose](https://img.shields.io/badge/Compose_Multiplatform-1.10.3-4285F4)
+
+!!! tip "Version numbers live in one place"
+    The badges deliberately carry no Kotlin or Compose Multiplatform version — they went stale
+    the last time they did. The [compatibility matrix](installation.md#compatibility) is the
+    single source of truth for what each BOM was built against.
 
 Sidekick is a debug panel composable you render in your app during development — network inspector, log viewer, preferences editor, custom screens. Your app controls when and how it's shown. In release builds, a no-op module replaces it with a passthrough composable at zero overhead.
 
@@ -20,6 +32,20 @@ Sidekick is a debug panel composable you render in your app during development �
   <a href="installation/" class="md-button">
     Get Started
   </a>
+</div>
+
+---
+
+## What it looks like
+
+Every shot below is the `demo/` app on Desktop (JVM) — the same composable renders on Android,
+iOS and in the browser.
+
+<div class="sk-shots" markdown>
+![The Sidekick panel showing its plugin grid with live badge counts](assets/panel-grid.png)
+![The network monitor: captured HTTP calls, with the selected request and its response headers](assets/network-detail.png)
+![The log monitor: a searchable, level-filtered feed with the selected entry expanded](assets/log-monitor.png)
+![The database inspector browsing a table, with column types and an editable cell](assets/database-browser.png)
 </div>
 
 ---
